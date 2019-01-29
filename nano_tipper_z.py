@@ -7,9 +7,10 @@ from rpc_bindings import send, open_account, generate_account, generate_qr, nano
 import mysql.connector
 import pprint
 
-comment_footer = """
-\n\n*Nano Tipper Z Bot v0.1. Replies to this comment might be treated as PM commands. This program is in beta testing,
- and your funds could be lost.*
+comment_footer = """\n***\n
+[About Nano](https://nano.org) | [Where to use Nano](https://usenano.org/) | 
+[Nano Tipper Z](https://github.com/danhitchcock/nano_tipper_z) | [Community Nano Projects](https://nanocenter.org) | Transaction Fee: 0.00 Nano\n
+*Nano Tipper Z V0.1. This program is in early beta testing, please use with caution. Funds are not safe.*
 """
 
 help_text = """
@@ -24,7 +25,7 @@ To perform a command, create a new message with any of the following commands in
 'minimum <amount>' - Sets a minimum amount for receiving tips. Program minimum is 0.001 Nano.\n\n
 'help' - Get this help message\n\n\n
 If you have any questions or bug fixes, please contact /u/zily88.
-"""
+""" + """\n""" + comment_footer
 reddit = praw.Reddit('bot1')
 #submission = reddit.submission(id='39zje0')
 #print(submission.title) # to make it non-lazy
@@ -112,12 +113,17 @@ def add_history_record(username=None, action=None, sql_time=None, address=None, 
 
 def check_registered_by_address(address):
     address = address.split('_')[1]
-    mycursor.execute("SELECT username FROM accounts WHERE address='%s'" % ('xrb_' + address))
+
+    sql = "SELECT username FROM accounts WHERE address='%s'"
+    val = ('xrb_' + address, )
+    mycursor.execute(sql, val)
     result = mycursor.fetchall()
     if len(result) > 0:
         return result[0][0]
 
-    mycursor.execute("SELECT username FROM accounts WHERE address='%s'" % ('nano_' + address))
+    sql = "SELECT username FROM accounts WHERE address='%s'"
+    val = ('nano_' + address, )
+    mycursor.execute(sql, val)
     result = mycursor.fetchall()
     if len(result) > 0:
         return result[0][0]
@@ -149,7 +155,9 @@ def handle_create(message):
     )
 
     username = str(message.author)
-    mycursor.execute("SELECT address FROM accounts WHERE username='%s'" % username)
+    sql = "SELECT address FROM accounts WHERE username=%s"
+    val = (username, )
+    mycursor.execute(sql, val)
     result = mycursor.fetchall()
     if len(result) is 0:
         address = add_new_account(username)
@@ -159,7 +167,7 @@ def handle_create(message):
     else:
         response = "It looks like you already have an account made. Your Nano address is %s. Once Nano is sent to your account, your balance will be" \
                  " unpocketed until you respond and have 'receive' in the message body.\n\nhttps://www.nanode.co/account/%s" % (result[0][0], result[0][0])
-    x = reddit.redditor(username).message('Nano Tipper Z: Account Creation', response)
+    x = reddit.redditor(username).message('Nano Tipper Z: Account Creation', response + comment_footer)
     # message.reply(response)
 
 
@@ -174,7 +182,9 @@ def handle_private_key(message):
         action='private_key',
         comment_text=str(message.body)[:255]
     )
-    mycursor.execute("SELECT address, private_key FROM accounts WHERE name='%s'" %author)
+    sql = "SELECT address, private_key FROM accounts WHERE name='%s'"
+    val = (author, )
+    mycursor.execute(sql, val)
     result = mycursor.fetchall()
     if len(result) > 0:
         response = 'Your account: %s\n\nYour private key: %s'%(result[0][0],result[0][1])
@@ -197,18 +207,19 @@ def handle_balance(message):
         action='balance',
         comment_text=str(message.body)[:255]
     )
-
-    mycursor.execute("SELECT address FROM accounts WHERE username='%s'" % username)
+    sql = "SELECT address FROM accounts WHERE username=%s"
+    val = (username, )
+    mycursor.execute(sql, val)
     result = mycursor.fetchall()
     if len(result)>0:
         results = check_balance(result[0][0])
 
         response = "At address %s, you currently have %s Nano available, and %s Nano unpocketed. To pocket any, create a new " \
-                   "message containing the word 'receive'\n\nhttps://www.nanode.co/account/%s" % (result[0][0], results[0]/10**30, results[1]/10**30,result[0][0])
-        reddit.redditor(username).message('Nano Tipper Z account balance', response)
+                   "message containing the word 'receive'\n\nhttps://www.nanode.co/account/%s" % (result[0][0], results[0]/10**30, results[1]/10**30, result[0][0])
+        reddit.redditor(username).message('Nano Tipper Z account balance', response + comment_footer)
         return None
 
-    reddit.redditor(username).message('Nano Tipper Z: No account registered.', 'You do not have an open account yet')
+    reddit.redditor(username).message('Nano Tipper Z: No account registered.', 'You do not have an open account yet' + comment_footer)
 
 # currently deactivated
 def handle_new_address(message):
@@ -293,7 +304,9 @@ def handle_send_nano(message, parsed_text, comment_or_message):
         return 'You must send amounts of Nano above the program limit of %s.' % program_minimum
 
     # check if author has an account, and if they have enough funds
-    mycursor.execute("SELECT address, private_key FROM accounts WHERE username='%s'" % username)
+    sql = "SELECT address, private_key FROM accounts WHERE username=%s"
+    val = (username, )
+    mycursor.execute(sql, val)
     result = mycursor.fetchall()
     if len(result) < 1:
         sql = "UPDATE history SET notes = %s WHERE id = %s"
@@ -428,12 +441,12 @@ def handle_send_nano(message, parsed_text, comment_or_message):
                                                     'You have been tipped %s Nano at your address of %s. Your new account balance will be '
                                                     '%s received and %s unpocketed.' % (
                                                     amount, recipient_address, receiving_new_balance[0] / 10 ** 30,
-                                                    (receiving_new_balance[1] / 10 ** 30 + amount)))
+                                                    (receiving_new_balance[1] / 10 ** 30 + amount)) + comment_footer)
 
         if user_or_address == 'user':
-            return "Sent %s Nano to %s." % (amount, recipient_username)
+            return "Sent ```%s Nano``` to %s.\nhttps://www.nanode.co/block/%s" % (amount, recipient_username, sent['hash'])
         else:
-            return "Sent %s Nano to %s." % (amount, recipient_address)
+            return "Sent ```%s Nano``` to %s.\nhttps://www.nanode.co/block/%s" % (amount, recipient_address, sent['hash'])
 
     elif recipient_address:
         # or if we have an address but no account, just send
@@ -451,7 +464,7 @@ def handle_send_nano(message, parsed_text, comment_or_message):
         val = (sent['hash'], entry_id)
         mycursor.execute(sql, val)
         mydb.commit()
-        return "Sent %s Nano to address %s." % (amount, recipient_address)
+        return "Sent ```%s Nano``` to address %s.\nhttps://www.nanode.co/block/%s" % (amount, recipient_address, sent['hash'])
 
     else:
         # create a new account for redditor
@@ -463,7 +476,7 @@ def handle_send_nano(message, parsed_text, comment_or_message):
             message('Congrats on receiving your first Nano Tip!',
                     'Welcome to Nano Tip Bot! You have just received a Nano tip in the amount of %s at your address '
                     'of %s. Here is some boilerplate.\n\n' % (
-                    amount, recipient_address) + help_text)
+                    amount, recipient_address) + help_text + comment_footer)
 
         sql = "UPDATE history SET notes = %s, address = %s, username = %s, recipient_username = %s, recipient_address = %s, amount = %s WHERE id = %s"
         val = (
@@ -480,29 +493,32 @@ def handle_send_nano(message, parsed_text, comment_or_message):
         mydb.commit()
         print("Sending New Account Address: ", address, private_key, nano_to_raw(amount), recipient_address, recipient_username)
         return "Creating a new account for %s and "\
-                      "sending %s Nano." % (recipient_username, amount)
+                      "sending ```%s Nano```.\nhttps://www.nanode.co/block/%s" % (recipient_username, amount, sent['hash'])
 
 
 def handle_receive(message):
     message_time = datetime.utcfromtimestamp(message.created_utc)
     username = str(message.author)
     # find any accounts associated with the redditor
-    mycursor.execute("SELECT address, private_key FROM accounts WHERE username='%s'" % username)
+    sql = "SELECT address, private_key FROM accounts WHERE username=%s"
+    val = (username, )
+    mycursor.execute(sql, val)
     result = mycursor.fetchall()
     if len(result) > 0:
-
-        open_or_receive(result[0][0], result[0][1])
-        balance = check_balance(result[0][0])
+        address = result[0][0]
+        open_or_receive(address, result[0][1])
+        balance = check_balance(address)
         add_history_record(
             username=username,
             action='receive',
             reddit_time=message_time.strftime('%Y-%m-%d %H:%M:%S'),
-            address=result[0][0],
+            address=address,
             comment_or_message='message'
         )
-        response = "You currently have %s Nano available, and %s Nano unpocketed. To pocket any, create a new " \
-                   "message containing the word 'receive' in the body" % (balance[0] / 10 ** 30, balance[1] / 10 ** 30)
-        message.reply(response)
+        response = "At address %s, you currently have %s Nano available, and %s Nano unpocketed. To pocket any, create a new " \
+                   "message containing the word 'receive'\n\nhttps://www.nanode.co/account/%s" % (
+                   address, balance[0] / 10 ** 30, balance[1] / 10 ** 30, address)
+        message.reply(response + comment_footer)
     else:
         add_history_record(
             username=username,
@@ -511,7 +527,7 @@ def handle_receive(message):
             comment_or_message='message'
         )
         response = "You do not currently have an account open. To create one, respond with the text 'create' in the message body."
-        message.reply(response)
+        message.reply(response + comment_footer)
 
 # updated
 def handle_minimum(message):
