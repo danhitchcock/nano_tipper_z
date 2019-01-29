@@ -2,7 +2,7 @@
 
 
 Nano Tipper Z is a reddit tipping service to easily give Nano to your favorite redditors!
-[Nano currency](http://www.nano.org) is one of a kind -- feeless and nearly instant in its transactions. This allows for a few unique features:
+[Nano currency](http://www.nano.org) is one of a kind -- feeless and nearly instant transactions. This allows for a few unique features:
 * Every transaction is on chain! View the hashes on the block explorer http://www.nanode.co
 * Every account is a full featured wallet!
 * You can request your private keys or a new address!
