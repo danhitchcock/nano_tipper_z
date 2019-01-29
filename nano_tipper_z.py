@@ -33,7 +33,7 @@ reddit = praw.Reddit('bot1')
 #print(datetime.utcfromtimestamp(submission.created_utc).strftime('%Y-%m-%d %H:%M:%S'))
 #pprint.pprint(vars(submission))
 
-subreddit = reddit.subreddit("nano_tipper_z+cryptocurrency247")
+subreddit = reddit.subreddit("nano_tipper_z+cryptocurrency247+nanotrade")
 
 tip_froms = []
 tip_parents = []
@@ -436,17 +436,18 @@ def handle_send_nano(message, parsed_text, comment_or_message):
         val = (sent['hash'], entry_id)
         mycursor.execute(sql, val)
         mydb.commit()
-
+        """
         x = reddit.redditor(recipient_username).message('You just received a new Nano tip!',
                                                     'You have been tipped %s Nano at your address of %s. Your new account balance will be '
                                                     '%s received and %s unpocketed.' % (
                                                     amount, recipient_address, receiving_new_balance[0] / 10 ** 30,
                                                     (receiving_new_balance[1] / 10 ** 30 + amount)) + comment_footer)
+        """
 
         if user_or_address == 'user':
-            return "Sent ```%s Nano``` to %s.\nhttps://www.nanode.co/block/%s" % (amount, recipient_username, sent['hash'])
+            return "Sent ```%s Nano``` to /u/%s.\nhttps://www.nanode.co/block/%s" % (amount, recipient_username, sent['hash'])
         else:
-            return "Sent ```%s Nano``` to %s.\nhttps://www.nanode.co/block/%s" % (amount, recipient_address, sent['hash'])
+            return "Sent ```%s Nano``` to /u/%s.\nhttps://www.nanode.co/block/%s" % (amount, recipient_address, sent['hash'])
 
     elif recipient_address:
         # or if we have an address but no account, just send
@@ -492,7 +493,7 @@ def handle_send_nano(message, parsed_text, comment_or_message):
         mycursor.execute(sql, val)
         mydb.commit()
         print("Sending New Account Address: ", address, private_key, nano_to_raw(amount), recipient_address, recipient_username)
-        return "Creating a new account for %s and "\
+        return "Creating a new account for /u/%s and "\
                       "sending ```%s Nano```.\nhttps://www.nanode.co/block/%s" % (recipient_username, amount, sent['hash'])
 
 
