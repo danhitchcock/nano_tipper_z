@@ -2,15 +2,15 @@
 
 
 Nano Tipper Z is a reddit tipping service to easily give Nano to your favorite redditors!
-Nano Currency has some unique features, including being feeless and nearly instant in its transactions. This allows for a few unique features:
-
-* Every transaction is on chain!
+[Nano currency](http://www.nano.org) is one of a kind -- feeless and nearly instant in its transactions. This allows for a few unique features:
+* Every transaction is on chain! View the hashes on the block explorer http://www.nanode.co
 * Every account is a full featured wallet!
 * You can request your private keys or a new address!
 
-A few other nice features:
-* Set a tip minimum to prevent
+A few other nice features (to be implemented):
+* Set a tip minimum to prevent spam or annoying cheapskates
 * Set your account to 'auto-receive' transactions
+* Turn off notifications. You can still get money, you just won't be informed when you get tipped.
 
 Feel free to test any functionality at https://reddit.com/r/nano_tipper_z
 
