@@ -94,7 +94,7 @@ def delete_user(username):
 
 
 history()
-#accounts()
+accounts()
 #delete_testers()
 
 

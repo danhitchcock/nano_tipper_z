@@ -33,7 +33,7 @@ reddit = praw.Reddit('bot1')
 #print(datetime.utcfromtimestamp(submission.created_utc).strftime('%Y-%m-%d %H:%M:%S'))
 #pprint.pprint(vars(submission))
 
-subreddit = reddit.subreddit("nano_tipper_z+cryptocurrency247+nanotrade")
+subreddit = reddit.subreddit("nano_tipper_z+cryptocurrency247")
 
 tip_froms = []
 tip_parents = []
@@ -114,14 +114,14 @@ def add_history_record(username=None, action=None, sql_time=None, address=None, 
 def check_registered_by_address(address):
     address = address.split('_')[1]
 
-    sql = "SELECT username FROM accounts WHERE address='%s'"
+    sql = "SELECT username FROM accounts WHERE address=%s"
     val = ('xrb_' + address, )
     mycursor.execute(sql, val)
     result = mycursor.fetchall()
     if len(result) > 0:
         return result[0][0]
 
-    sql = "SELECT username FROM accounts WHERE address='%s'"
+    sql = "SELECT username FROM accounts WHERE address=%s"
     val = ('nano_' + address, )
     mycursor.execute(sql, val)
     result = mycursor.fetchall()
@@ -182,7 +182,7 @@ def handle_private_key(message):
         action='private_key',
         comment_text=str(message.body)[:255]
     )
-    sql = "SELECT address, private_key FROM accounts WHERE name='%s'"
+    sql = "SELECT address, private_key FROM accounts WHERE name=%s"
     val = (author, )
     mycursor.execute(sql, val)
     result = mycursor.fetchall()
@@ -336,7 +336,7 @@ def handle_send_nano(message, parsed_text, comment_or_message):
         if comment_or_message == 'comment':
             recipient = str(message.parent().author)
         else:
-            sql = "UPDATE history SET notes = %s, WHERE id = %s"
+            sql = "UPDATE history SET notes = %s WHERE id = %s"
             val = ("no recipient specified", entry_id)
             mycursor.execute(sql, val)
             mydb.commit()
@@ -447,7 +447,7 @@ def handle_send_nano(message, parsed_text, comment_or_message):
         if user_or_address == 'user':
             return "Sent ```%s Nano``` to /u/%s.\nhttps://www.nanode.co/block/%s" % (amount, recipient_username, sent['hash'])
         else:
-            return "Sent ```%s Nano``` to /u/%s.\nhttps://www.nanode.co/block/%s" % (amount, recipient_address, sent['hash'])
+            return "Sent ```%s Nano``` to %s.\nhttps://www.nanode.co/block/%s" % (amount, recipient_address, sent['hash'])
 
     elif recipient_address:
         # or if we have an address but no account, just send
@@ -465,7 +465,7 @@ def handle_send_nano(message, parsed_text, comment_or_message):
         val = (sent['hash'], entry_id)
         mycursor.execute(sql, val)
         mydb.commit()
-        return "Sent ```%s Nano``` to address %s.\nhttps://www.nanode.co/block/%s" % (amount, recipient_address, sent['hash'])
+        return "Sent ```%s Nano``` to %s.\nhttps://www.nanode.co/block/%s" % (amount, recipient_address, sent['hash'])
 
     else:
         # create a new account for redditor
