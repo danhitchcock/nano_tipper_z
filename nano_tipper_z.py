@@ -14,7 +14,7 @@ comment_footer = """\n***\n
 """
 
 help_text = """
-Nano Tipper Z Bot v0.1. Use at your own risk, and don't put in more Nano than you're willing to lose.\n\n
+Welcome to Nano Tipper Z Bot v0.1. Nano Tipper Z is a Reddit tip bot which handles on-chain tips! \n\n
 To perform a command, create a new message with any of the following commands in the message body.\n\n
 'create' - Create a new account if one does not exist\n\n
 'private_key' -  (disabled) Retrieve your account private key\n\n
@@ -33,7 +33,7 @@ reddit = praw.Reddit('bot1')
 #print(datetime.utcfromtimestamp(submission.created_utc).strftime('%Y-%m-%d %H:%M:%S'))
 #pprint.pprint(vars(submission))
 
-subreddit = reddit.subreddit("nano_tipper_z+cryptocurrency247")
+subreddit = reddit.subreddit("nano_tipper_z+cryptocurrency247+nanotrade")
 
 tip_froms = []
 tip_parents = []
