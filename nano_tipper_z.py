@@ -8,7 +8,7 @@ import mysql.connector
 import pprint
 
 comment_footer = """\n***\n
-[About Nano](https://nano.org) | [Where to use Nano](https://usenano.org/) | 
+[About Nano](https://nano.org) | [Where to spend Nano](https://usenano.org/) | 
 [Nano Tipper Z](https://github.com/danhitchcock/nano_tipper_z) | [Community Nano Projects](https://nanocenter.org) | Transaction Fee: 0.00 Nano\n
 *Nano Tipper Z V0.1. This program is in early beta testing, please use with caution. Funds are not safe.*
 """
@@ -366,7 +366,7 @@ def handle_send_nano(message, parsed_text, comment_or_message):
                 val = ('invalid address or address-like redditor does not exist', entry_id)
                 mycursor.execute(sql, val)
                 mydb.commit()
-                return '%s is neither a valid address or redditor' % recipient
+                return '%s is neither a valid address nor a redditor' % recipient
     else:
         try:
             print(getattr(reddit.redditor(recipient), 'is_suspended', False))
