@@ -3,15 +3,16 @@
 
 Nano Tipper Z is a reddit tipping service to easily give Nano to your favorite redditors!
 Nano Currency has some unique features, including being feeless and nearly instant in its transactions. This allows for a few unique features:
-*Every transaction is on chain!
-*Every account is a full featured wallet!
-*You can request your private keys! (soon)
+
+Every transaction is on chain!
+Every account is a full featured wallet!
+You can request your private keys! (soon)
 
 To get started, either:
 
 A) **Create an account** by sending a message to /u/nano_tipper_z with 'create' in the message body. You will receive a Nano address, to which you can add Nano\* (\**this project is in early beta! Only send small amounts of Nano*.)
 
-\-or-
+-or-
 
 B) **Receive a Nano tip** from a fellow redditor, and you will automatically have an account made!
 
@@ -45,7 +46,6 @@ Send 0.1 Nano to an address:
     -or-
     !nano_tip 0.1 nano_1ssr4sbop5wnkbkpk7y7ekewie7tygtjgdukm9jq7d1m3j6ocfskwyx77awd
 
-&#x200B;
 
 # Private Messages
 
