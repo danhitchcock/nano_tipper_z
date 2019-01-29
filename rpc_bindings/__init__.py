@@ -28,7 +28,7 @@ def send_block(origin, key, amount, destination, rep=None):
     balance = int(balance - amount)
     previous = get_previous_hash(origin)
     if rep is None:
-        rep = "xrb_1brainb3zz81wmhxndsbrjb94hx3fhr1fyydmg6iresyk76f3k7y7jiazoji"
+        rep = "xrb_374qyw8xwyie1hhws4cfo1fbrkis44dd6aputrujmrteeexcyag4ej84kkni"
     data = {
         "action": "block_create",
         "type": "state",
