@@ -22,7 +22,9 @@ To perform a command, create a new message with any of the following commands in
 'send <amount> <user/address> - Send Nano to a reddit user or an address\n\n
 'receive' - Receive all pending transactions\n\n
 'balance' - Retrieve your account balance. Includes both pocketed and unpocketed transactions.\n\n
-'minimum <amount>' - Sets a minimum amount for receiving tips. Program minimum is 0.001 Nano.\n\n
+'minimum <amount>' - (default 0.01) Sets a minimum amount for receiving tips.\n\n
+'autoreceive <yes/no>' - (disabled, default 'no') Automatically receives transactions\n\n
+'silence <yes/no>' - (disabled, default 'no') Prevents bot from sending messages, unless specifically requested from user\n\n
 'help' - Get this help message\n\n\n
 If you have any questions or bug fixes, please contact /u/zily88.
 """ + """\n""" + comment_footer

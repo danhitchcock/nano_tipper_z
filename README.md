@@ -67,10 +67,13 @@ To send 0.1 Nano to xrb\_1ssr4sbop5wnkbkpk7y7ekewie7tygtjgdukm9jq7d1m3j6ocfskwyx
 
 There are many other commands.
 
-    'minimum <amount>' - Set your receiving tip mimimum to prevent spam. Default 0.01. Program minimum is 0.001
-    'send <amount> <user/address> - Send Nano to a reddit user or an address
-    'private_key' - (disabled) Retrieve your account private key
+    'create' - Create a new account if one does not exist
+    'private_key' -  (disabled) Retrieve your account private key
     'new_address' - (disabled) If you feel this address was compromised, create a new account and key
+    'send <amount> <user/address> - Send Nano to a reddit user or an address
     'receive' - Receive all pending transactions
-    'balance' - Retrieve your account balance. Includes both pocketed and unpocketed transactions.
-    'help' - Get help message
+    'balance' - Retrieve your account balance. Includes both pocketed and unpocketed transactions
+    'minimum <amount>' - (default 0.01) Sets a minimum amount for receiving tips
+    'autoreceive <yes/no>' - (disabled, default 'no') Automatically receives transactions
+    'silence <yes/no>' - (disabled, default 'no') Prevents bot from sending messages, unless specifically requested from user
+    'help' - Get this help message\n\n\n
