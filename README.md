@@ -6,7 +6,13 @@ Nano Currency has some unique features, including being feeless and nearly insta
 
 * Every transaction is on chain!
 * Every account is a full featured wallet!
-* You can request your private keys! (soon)
+* You can request your private keys or a new address!
+
+A few other nice features:
+* Set a tip minimum to prevent
+* Set your account to 'auto-receive' transactions
+
+Feel free to test any functionality at https://reddit.com/r/nano_tipper_z
 
 To get started, either:
 
@@ -17,16 +23,14 @@ A) **Create an account** by sending a message to /u/nano_tipper_z with 'create' 
 B) **Receive a Nano tip** from a fellow redditor, and you will automatically have an account made!
 
 Once you have funds in your account, you can tip other redditors, or send to nano address via PM to /u/nano_tipper_z.
-
-&#x200B;
-
+# Usage
 ## Comment Replies:
 
 Nano Tipper Z is intended for tipping on reddit posts and replies.
 
     !nano_tip <amount> <(optional) username/address>
 
-Watch for spaces. !nano\_tip must be the first thing in your message, and it cannot be a part of a reply.
+Watch for spaces. !nano_tip must be the first thing in your message, and it cannot be a part of a reply.
 
 Examples:
 
@@ -34,7 +38,7 @@ Send 0.1 Nano to the parent-comment author:
 
     !nano_tip 0.1
 
-Send 0.1 Nano to zily88:
+Send 0.1 Nano to /u/zily88:
 
     !nano_tip 0.1 /u/zily88
     -or-
