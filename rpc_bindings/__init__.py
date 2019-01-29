@@ -58,7 +58,7 @@ def open_block(account, key, rep=None):
     :return: str block-string for json
     """
     if rep is None:
-        rep = "xrb_1brainb3zz81wmhxndsbrjb94hx3fhr1fyydmg6iresyk76f3k7y7jiazoji"
+        rep = "xrb_374qyw8xwyie1hhws4cfo1fbrkis44dd6aputrujmrteeexcyag4ej84kkni"
     sent_hash = get_pending(account, -1)["blocks"][0]
     previous_exists = False
     try:
@@ -94,7 +94,7 @@ def receive_block(account, key, sent_hash, rep=None):
     :return: str block-string for json
     """
     if rep is None:
-        rep = "xrb_1brainb3zz81wmhxndsbrjb94hx3fhr1fyydmg6iresyk76f3k7y7jiazoji"
+        rep = "xrb_374qyw8xwyie1hhws4cfo1fbrkis44dd6aputrujmrteeexcyag4ej84kkni"
     previous = get_previous_hash(account)
     sent_block = get_block_by_hash(sent_hash)
     sent_previous_hash = sent_block['previous']
