@@ -689,7 +689,7 @@ def handle_message(message):
         print("Setting Minimum")
         handle_minimum(message)
 
-    elif parsed_text[0].lower() == 'create':
+    elif (parsed_text[0].lower() == 'create') or parsed_text[0].lower() == 'register':
         print("Creating")
         handle_create(message)
 
@@ -709,7 +709,7 @@ def handle_message(message):
         print("receive")
         handle_receive(message)
 
-    elif (parsed_text[0].lower() == 'balance') or (parsed_text[0].lower() == 'address') :
+    elif (parsed_text[0].lower() == 'balance') or (parsed_text[0].lower() == 'address'):
         print("balance")
         handle_balance(message)
     else:
