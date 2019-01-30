@@ -81,6 +81,9 @@ def list_columns():
     for result in myresult:
         print(result)
 
+history()
+print("************************************************************")
+accounts()
 
 def delete_user(username):
     sql = 'DELETE FROM accounts WHERE username = %s'
@@ -88,18 +91,9 @@ def delete_user(username):
     mycursor.execute(sql, val)
     mydb.commit()
 
-#mycursor.execute('ALTER TABLE accounts ADD auto_receive BOOL')
-#mycursor.execute("UPDATE accounts SET auto_receive = TRUE")
-#mycursor.execute("UPDATE accounts SET auto_receive = TRUE WHERE username = 'nano_tipper_z_test2'")
-#mydb.commit()
+history()
+print("************************************************************")
+accounts()
 
-history()
-print("************************************************************")
-accounts()
-#delete_user('nano_tipper_z_test2')
-history()
-print("************************************************************")
-accounts()
-#delete_testers()
 
 
