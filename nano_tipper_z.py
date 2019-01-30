@@ -450,7 +450,7 @@ def handle_send_nano(message, parsed_text, comment_or_message):
             # if it was a PM, send a message to notify the recipient
             # also check to see if the recipient has elected 'silence'
             x = reddit.redditor(recipient_username).message('You just received a new Nano tip!',
-                                                    'You have been tipped %s Nano at your address %s. Your new account balance will be '
+                                                    'Somebody just tipped you %s Nano at your address %s. Your new account balance will be '
                                                     '%s received and %s unpocketed. [Transaction on Nanode](https://www.nanode.co/block/%s)\n\n' % (
                                                     amount, recipient_address, receiving_new_balance[0] / 10 ** 30,
                                                     (receiving_new_balance[1] / 10 ** 30 + amount), sent['hash']) + comment_footer)
@@ -739,6 +739,28 @@ def auto_receive():
 
     pass
 
+
+def allowed_request(username, seconds=30, num_requests=5):
+    """
+    :param username: str (username)
+    :param seconds: int (time period to allow the num_requests)
+    :param num_requests: int (number of allowed requests)
+    :return:
+    """
+    #return True
+    print(username, seconds, num_requests)
+    sql = 'SELECT sql_time FROM history WHERE username=%s'
+    val = (str(username), )
+    mycursor.execute(sql, val)
+    myresults = mycursor.fetchall()
+    if len(myresults) < num_requests:
+        return True
+    else:
+        print(myresults[-5][0], datetime.fromtimestamp(time.time()))
+        print((datetime.fromtimestamp(time.time()) - myresults[-5][0]).total_seconds())
+        return (datetime.fromtimestamp(time.time()) - myresults[-5][0]).total_seconds() > seconds
+
+
 # main loop
 for action_item in stream_comments_messages():
     auto_receive()
@@ -758,11 +780,16 @@ for action_item in stream_comments_messages():
             print('\n')
             print('*****************************************************')
             print('found an item.')
-            handle_comment(action_item[1])
+            if allowed_request(action_item[1].author, 30, 5):
+                handle_comment(action_item[1])
+            else:
+                print('Too many requests for %s' % action_item[1].author)
 
     elif action_item[0] == 'message':
         if action_item[1].author == 'nano_tipper_z':
             pass
+        elif not allowed_request(action_item[1].author, 30, 5):
+            print('Too many requests for %s' % action_item[1].author)
         else:
             print(time.strftime('%Y-%m-%d %H:%M:%S'))
             print('A new message was found %s, sent by %s.'%(action_item[1], action_item[1].author ))

@@ -1,5 +1,6 @@
 import mysql.connector
-
+import time
+from datetime import datetime
 with open('../sql_password.txt') as f:
     sql_password = f.read()
 
@@ -81,6 +82,27 @@ def list_columns():
     for result in myresult:
         print(result)
 
+
+def allowed_request(username, seconds=30, num_requests=5):
+    """
+    :param username: str (username)
+    :param seconds: int (time period to allow the num_requests)
+    :param num_requests: int (number of allowed requests)
+    :return:
+    """
+    sql = 'SELECT sql_time FROM history WHERE username=%s'
+    val = (username, )
+    mycursor.execute(sql, val)
+    myresults = mycursor.fetchall()
+    if len(myresults) < num_requests:
+        return True
+    else:
+        print(myresults[-5][0], datetime.fromtimestamp(time.time()))
+        print((datetime.fromtimestamp(time.time()) - myresults[-5][0]).total_seconds())
+        return (datetime.fromtimestamp(time.time()) - myresults[-5][0]).total_seconds() > seconds
+
+
+
 history()
 print("************************************************************")
 accounts()
@@ -94,6 +116,8 @@ def delete_user(username):
 history()
 print("************************************************************")
 accounts()
+
+print(allowed_request('zily88', 30, 5))
 
 
 
