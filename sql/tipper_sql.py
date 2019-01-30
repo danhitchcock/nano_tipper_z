@@ -93,7 +93,9 @@ def delete_user(username):
 #mycursor.execute("UPDATE accounts SET auto_receive = TRUE WHERE username = 'nano_tipper_z_test2'")
 #mydb.commit()
 
-
+history()
+print("************************************************************")
+accounts()
 #delete_user('nano_tipper_z_test2')
 history()
 print("************************************************************")
