@@ -62,7 +62,7 @@ To send 0.1 Nano to zily88, include this text in the message body:
     -or-
     send 0.1 zily88
 
-To send 0.1 Nano to xrb\_1ssr4sbop5wnkbkpk7y7ekewie7tygtjgdukm9jq7d1m3j6ocfskwyx77awd, include this text in the message body:
+To send 0.1 Nano to xrb_1ssr4sbop5wnkbkpk7y7ekewie7tygtjgdukm9jq7d1m3j6ocfskwyx77awd, include this text in the message body:
 
     send 0.1 xrb_1ssr4sbop5wnkbkpk7y7ekewie7tygtjgdukm9jq7d1m3j6ocfskwyx77awd
 
@@ -75,6 +75,6 @@ There are many other commands.
     'receive' - Receive all pending transactions
     'balance' - Retrieve your account balance. Includes both pocketed and unpocketed transactions
     'minimum <amount>' - (default 0.01) Sets a minimum amount for receiving tips
-    'autoreceive <yes/no>' - (disabled, default 'no') Automatically receives transactions
+    'auto_receive <yes/no>' - (default 'yes') Automatically pcokets transactions
     'silence <yes/no>' - (disabled, default 'no') Prevents bot from sending messages, unless specifically requested from user
     'help' - Get this help message\n\n\n
