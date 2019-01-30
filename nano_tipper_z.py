@@ -67,9 +67,8 @@ def stream_comments_messages():
     global toggle_receive
     while True:
         if toggle_receive:
-
             auto_receive()
-            toggle_receive = not toggle_receive
+        toggle_receive = not toggle_receive
         sleep(6)
         global last_action
         last_action = time.time()
