@@ -8,9 +8,11 @@ import mysql.connector
 import pprint
 
 comment_footer = """\n***\n
-[About Nano](https://nano.org) | [Where to spend Nano](https://usenano.org/) | 
-[Nano Tipper Z](https://github.com/danhitchcock/nano_tipper_z) | [Community Nano Projects](https://nanocenter.org) | Fee: ```Always 0.0 Nano!```
- *Nano Tipper Z V0.1. This program is in early beta testing, please use with caution. Funds are not safe.*
+[Nano Tipper Z](https://github.com/danhitchcock/nano_tipper_z) | [About Nano](https://nano.org) | 
+[Where to spend Nano](https://usenano.org/) | [Community Nano Projects](https://nanocenter.org) |  
+Fee: ```Always 0.0 Nano!``` | 
+^Nano ^Tipper ^Z ^V0.1. ^This ^program ^is ^in ^early ^beta ^testing, ^please ^use ^with ^caution. ^Funds ^are ^not 
+^safe.
 """
 
 help_text = """
@@ -222,7 +224,7 @@ def handle_balance(message):
     if len(result)>0:
         results = check_balance(result[0][0])
 
-        response = "At address %s, you currently have %s Nano available, and %s Nano unpocketed. To pocket any, create a new " \
+        response = "At address %s, you currently have %s Nano available, and %s Nano unpocketed. If you have any unpocketed, create a new " \
                    "message containing the word 'receive'\n\nhttps://www.nanode.co/account/%s" % (result[0][0], results[0]/10**30, results[1]/10**30, result[0][0])
         reddit.redditor(username).message('Nano Tipper Z account balance', response + comment_footer)
         return None
@@ -529,7 +531,7 @@ def handle_receive(message):
             address=address,
             comment_or_message='message'
         )
-        response = "At address %s, you currently have %s Nano available, and %s Nano unpocketed. To pocket any, create a new " \
+        response = "At address %s, you currently have %s Nano available, and %s Nano unpocketed. If you have any unpocketed, create a new " \
                    "message containing the word 'receive'\n\nhttps://www.nanode.co/account/%s" % (
                    address, balance[0] / 10 ** 30, balance[1] / 10 ** 30, address)
         message.reply(response + comment_footer)
