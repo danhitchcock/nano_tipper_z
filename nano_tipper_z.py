@@ -39,7 +39,7 @@ reddit = praw.Reddit('bot1')
 #print(datetime.utcfromtimestamp(submission.created_utc).strftime('%Y-%m-%d %H:%M:%S'))
 #pprint.pprint(vars(submission))
 
-subreddit = reddit.subreddit("nano_tipper_z+cryptocurrency247+nanotrade")
+subreddit = reddit.subreddit("nano_tipper_z+cryptocurrency247+nanotrade+nanocurrency")
 
 tip_froms = []
 tip_parents = []
