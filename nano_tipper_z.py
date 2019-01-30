@@ -9,8 +9,8 @@ import pprint
 
 comment_footer = """\n***\n
 [About Nano](https://nano.org) | [Where to spend Nano](https://usenano.org/) | 
-[Nano Tipper Z](https://github.com/danhitchcock/nano_tipper_z) | [Community Nano Projects](https://nanocenter.org) | Fee: ```Always 0.0 Nano!```\n
-*Nano Tipper Z V0.1. This program is in early beta testing, please use with caution. Funds are not safe.*
+[Nano Tipper Z](https://github.com/danhitchcock/nano_tipper_z) | [Community Nano Projects](https://nanocenter.org) | Fee: ```Always 0.0 Nano!```
+ *Nano Tipper Z V0.1. This program is in early beta testing, please use with caution. Funds are not safe.*
 """
 
 help_text = """
@@ -165,13 +165,17 @@ def handle_create(message):
     result = mycursor.fetchall()
     if len(result) is 0:
         address = add_new_account(username)
-        response = "Hi! I have created a new account for you. Your Nano address is %s. Once Nano is sent to your new account," \
-                   " your balance will be" \
-                   " unpocketed until you respond and have 'receive' in the message body.\n\nhttps://www.nanode.co/account/%s" % (address, address)
+        response = "Hi, welcome to Nano Tipper Z! Your Nano address is %s.\n\n"\
+                   "To get Nano, deposit some to the your address. Click on the Nanode link for a QR code. " \
+                   "-OR- receive a tip from a fellow redditor!\n\n"\
+                   "To withdraw your Nano to your own wallet, reply: ```send <amount> <address>```.\n\n"\
+                   'Or to send to another redditor: ```send <amount> <redditor username>```.\n\n'\
+                   'Or tip on a reddit post/comment: ```!nano_tip <amount>```.\n\n'\
+                   'View your account on Nanode: https://www.nanode.co/account/%s\n\nHere are some additional resources and usage notes:\n***' % (address, address)
     else:
-        response = "It looks like you already have an account made. Your Nano address is %s. Once Nano is sent to your account, your balance will be" \
-                 " unpocketed until you respond and have 'receive' in the message body.\n\nhttps://www.nanode.co/account/%s" % (result[0][0], result[0][0])
-    x = reddit.redditor(username).message('Nano Tipper Z: Account Creation', response + comment_footer)
+        response = "It looks like you already have an account made. Your Nano address is %s." \
+                   "\n\nhttps://www.nanode.co/account/%s" % (result[0][0], result[0][0])
+    x = reddit.redditor(username).message('Nano Tipper Z: Account Creation', response + help_text)
     # message.reply(response)
 
 
@@ -440,18 +444,20 @@ def handle_send_nano(message, parsed_text, comment_or_message):
         val = (sent['hash'], entry_id)
         mycursor.execute(sql, val)
         mydb.commit()
-        """
-        x = reddit.redditor(recipient_username).message('You just received a new Nano tip!',
-                                                    'You have been tipped %s Nano at your address of %s. Your new account balance will be '
-                                                    '%s received and %s unpocketed.' % (
+        if comment_or_message == "message":
+            # if it was a PM, send a message to notify the recipient
+            # also check to see if the recipient has elected 'silence'
+            x = reddit.redditor(recipient_username).message('You just received a new Nano tip!',
+                                                    'You have been tipped %s Nano at your address %s. Your new account balance will be '
+                                                    '%s received and %s unpocketed. [Transaction on Nanode](https://www.nanode.co/block/%s)\n\n' % (
                                                     amount, recipient_address, receiving_new_balance[0] / 10 ** 30,
-                                                    (receiving_new_balance[1] / 10 ** 30 + amount)) + comment_footer)
-        """
+                                                    (receiving_new_balance[1] / 10 ** 30 + amount), sent['hash']) + comment_footer)
+
 
         if user_or_address == 'user':
-            return "Sent ```| %s Nano |``` to /u/%s.\n\n[Transaction on Nanode](https://www.nanode.co/block/%s)" % (amount, recipient_username, sent['hash'])
+            return "Sent ```| %s Nano |``` to /u/%s | [Transaction on Nanode](https://www.nanode.co/block/%s)" % (amount, recipient_username, sent['hash'])
         else:
-            return "Sent ```| %s Nano |``` to %s.\n\n[Transaction on Nanode](https://www.nanode.co/block/%s)" % (amount, recipient_address, sent['hash'])
+            return "Sent ```| %s Nano |``` to %s | [Transaction on Nanode](https://www.nanode.co/block/%s)" % (amount, recipient_address, sent['hash'])
 
     elif recipient_address:
         # or if we have an address but no account, just send
@@ -469,7 +475,7 @@ def handle_send_nano(message, parsed_text, comment_or_message):
         val = (sent['hash'], entry_id)
         mycursor.execute(sql, val)
         mydb.commit()
-        return "Sent ```| %s Nano |``` to %s.\n\n[Transaction on Nanode](https://www.nanode.co/block/%s)" % (amount, recipient_address, sent['hash'])
+        return "Sent ```| %s Nano |``` to %s. | [Transaction on Nanode](https://www.nanode.co/block/%s)" % (amount, recipient_address, sent['hash'])
 
     else:
         # create a new account for redditor
@@ -480,11 +486,11 @@ def handle_send_nano(message, parsed_text, comment_or_message):
             redditor(recipient_username). \
             message('Congrats on receiving your first Nano Tip!',
                     'Welcome to Nano Tip Bot! You have just received a Nano tip in the amount of ```| %s Nano |``` at your address '
-                    '%s.\n\n To withdraw your Nano to your own wallet, reply with ```send <amount> <address>```.\n\n'
-                    'Or to send to another redditor with ```send <amount> <redditor username>```.\n\n'
-                    'Or tip on a reddit post/comment with ```!nanotip <amount>```.\n\n'
-                    'Here are some additional resources and usage notes:\n***\n\n' % (
-                    amount, recipient_address) + help_text)
+                    '%s.\n\n To withdraw your Nano to your own wallet, reply: ```send <amount> <address>```.\n\n'
+                    'Or to send to another redditor: ```send <amount> <redditor username>```.\n\n'
+                    'Or tip on a reddit post/comment: ```!nano_tip <amount>```.\n\n'
+                    'View your account on Nanode: https://www.nanode.co/account/%s\n\nHere are some additional resources and usage notes:\n***'% (
+                    amount, recipient_address, recipient_address) + help_text)
 
         sql = "UPDATE history SET notes = %s, address = %s, username = %s, recipient_username = %s, recipient_address = %s, amount = %s WHERE id = %s"
         val = (
@@ -705,7 +711,7 @@ def handle_message(message):
         print("send via PM")
         handle_send(message)
 
-    elif parsed_text[0].lower() == 'receive':
+    elif (parsed_text[0].lower() == 'receive') or (parsed_text[0].lower() == 'pocket'):
         print("receive")
         handle_receive(message)
 
