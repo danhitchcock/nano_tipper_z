@@ -41,14 +41,11 @@ def init_accounts():
                         "private_key VARCHAR(255), "
                         "key_released BOOL, "
                         "minimum VARCHAR(255), "
-                        "notes VARCHAR(255)"
+                        "notes VARCHAR(255), "
+                        "auto_receive BOOL"
                      ")"
                      )
     mydb.commit()
-
-
-
-#mycursor.execute("DROP TABLE history")
 
 
 def history():
