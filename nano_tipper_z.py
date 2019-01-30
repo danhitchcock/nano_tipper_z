@@ -3,7 +3,7 @@ import time
 from datetime import datetime
 from time import sleep
 from rpc_bindings import send, open_account, generate_account, generate_qr, nano_to_raw, receive_all, send_all, \
-    check_balance, validate_address, open_or_receive
+    check_balance, validate_address, open_or_receive, get_pendings
 import mysql.connector
 import pprint
 
@@ -49,7 +49,7 @@ tip_amounts = []
 last_action = time.time()
 program_minimum = 0.001
 recipient_minimum = 0.01
-
+toggle_receive = True
 with open('sql_password.txt') as f:
     sql_password = f.read()
 
@@ -59,11 +59,17 @@ mydb = mysql.connector.connect(user='root', password=sql_password,
 mycursor = mydb.cursor()
 
 #generator for our comments. Maybe this wasn't necessary, but I never get to use generators
+#also has the code for autoreceive
 def stream_comments_messages():
     previous_comments = {comment for comment in subreddit.comments()}
     previous_messages = {message for message in reddit.inbox.unread()}
     print('received first stream')
+    global toggle_receive
     while True:
+        if toggle_receive:
+
+            auto_receive()
+            toggle_receive = not toggle_receive
         sleep(6)
         global last_action
         last_action = time.time()
@@ -731,13 +737,24 @@ def handle_message(message):
 def auto_receive():
     mycursor.execute("SELECT username, address, private_key FROM accounts WHERE auto_receive=TRUE")
     myresult = mycursor.fetchall()
+
+    # for some reason, requesting 15 addresses takes a whole second
+    addresses = [str(result[1]) for result in myresult]
+    private_keys = [str(result[2]) for result in myresult]
+    pendings = get_pendings(addresses)
+    for address, private_key in zip(addresses, private_keys):
+        try:
+            if pendings['blocks'][address]:
+                print('Receiving these blocks: ', pendings['blocks'][address])
+                open_or_receive(address, private_key)
+        except KeyError:
+            pass
+    """
+
+
     for result in myresult:
         open_or_receive(result[1], result[2])
-
-    # select autoreceive users
-    # open/receive for each user
-
-    pass
+    """
 
 
 def allowed_request(username, seconds=30, num_requests=5):
@@ -763,8 +780,6 @@ def allowed_request(username, seconds=30, num_requests=5):
 
 # main loop
 for action_item in stream_comments_messages():
-    auto_receive()
-
     if action_item is None:
         pass
         #print('No news.')

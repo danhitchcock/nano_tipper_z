@@ -2,6 +2,7 @@ import pycurl
 import json
 import qrcode
 from io import BytesIO
+import time
 
 def perform_curl(data=None, URL=None):
     if URL is None:
@@ -59,14 +60,12 @@ def open_block(account, key, rep=None):
     """
     if rep is None:
         rep = "xrb_374qyw8xwyie1hhws4cfo1fbrkis44dd6aputrujmrteeexcyag4ej84kkni"
-    sent_hash = get_pending(account, -1)["blocks"][0]
-    previous_exists = False
     try:
         get_previous_hash(account)
         return "Previous block exists. Use receive."
     except:
         pass
-
+    sent_hash = get_pending(account, -1)["blocks"][0]
 
     sent_block = get_block_by_hash(sent_hash)
     sent_previous_hash = sent_block['previous']
@@ -136,7 +135,6 @@ def receive_all(account, key, rep=None):
     sent_hashes = get_pending(account)["blocks"]
     #print("these are sent hashes. ", sent_hashes)
     if len(sent_hashes) < 1:
-        #print("no pending transactions")
         return "No Pending Transactions."
     else:
         for sent_hash in sent_hashes:
@@ -192,6 +190,16 @@ def get_pending(account, count=-1):
     #print(results)
     return results
 
+def get_pendings(accounts, count=-1):
+    data = {
+        "action": "accounts_pending",
+        "accounts": accounts,
+        "count": str(count)
+    }
+    results = perform_curl(data)
+    return results
+
+
 
 def validate_address(address):
     data = {
@@ -229,6 +237,7 @@ def raw_to_nano(amount):
 
 
 def open_or_receive(account, key):
+    pass
     #print(account, key)
     #print('attempting to receive')
     try:
@@ -239,4 +248,5 @@ def open_or_receive(account, key):
         received = receive_all(account, key)
     except:
         pass
+
 
