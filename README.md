@@ -60,7 +60,7 @@ To send 0.1 Nano to zily88, include this text in the message body:
 
     send 0.1 /u/zily88
     -or-
-    send 0.1 /zily88
+    send 0.1 zily88
 
 To send 0.1 Nano to xrb\_1ssr4sbop5wnkbkpk7y7ekewie7tygtjgdukm9jq7d1m3j6ocfskwyx77awd, include this text in the message body:
 
