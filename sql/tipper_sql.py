@@ -47,7 +47,7 @@ def init_accounts():
     mydb.commit()
 
 
-#mycursor.execute('ALTER TABLE history ADD comment_time TIMESTAMP')
+
 #mycursor.execute("DROP TABLE history")
 
 
@@ -91,8 +91,13 @@ def delete_user(username):
     mycursor.execute(sql, val)
     mydb.commit()
 
+#mycursor.execute('ALTER TABLE accounts ADD auto_receive BOOL')
+mycursor.execute("UPDATE accounts SET auto_receive = TRUE")
+#mycursor.execute("UPDATE accounts SET auto_receive = TRUE WHERE username = 'nano_tipper_z_test2'")
+#mydb.commit()
 
 
+#delete_user('nano_tipper_z_test2')
 history()
 accounts()
 #delete_testers()

@@ -9,22 +9,24 @@ import pprint
 
 comment_footer = """\n***\n
 [About Nano](https://nano.org) | [Where to spend Nano](https://usenano.org/) | 
-[Nano Tipper Z](https://github.com/danhitchcock/nano_tipper_z) | [Community Nano Projects](https://nanocenter.org) | Transaction Fee: 0.00 Nano\n
+[Nano Tipper Z](https://github.com/danhitchcock/nano_tipper_z) | [Community Nano Projects](https://nanocenter.org) | Transaction Fee: ```Always 0.0 Nano!```\n
 *Nano Tipper Z V0.1. This program is in early beta testing, please use with caution. Funds are not safe.*
 """
 
 help_text = """
 Welcome to Nano Tipper Z Bot v0.1. Nano Tipper Z is a Reddit tip bot which handles on-chain tips! \n\n
+[Visit us on GitHub](https://github.com/danhitchcock/nano_tipper_z) for more information on its use \n\n
 To perform a command, create a new message with any of the following commands in the message body.\n\n
 'create' - Create a new account if one does not exist\n\n
 'private_key' -  (disabled) Retrieve your account private key\n\n
 'new_address' - (disabled) If you feel this address was compromised, create a new account and key\n\n
 'send <amount> <user/address> - Send Nano to a reddit user or an address\n\n
-'receive' - Receive all pending transactions\n\n
-'balance' - Retrieve your account balance. Includes both pocketed and unpocketed transactions.\n\n
+'receive' - Receive all pending transactions (if autoreceive is set to 'no')\n\n
+'balance' or 'address' - Retrieve your account balance. Includes both pocketed and unpocketed transactions.\n\n
 'minimum <amount>' - (default 0.01) Sets a minimum amount for receiving tips.\n\n
-'autoreceive <yes/no>' - (disabled, default 'no') Automatically receives transactions\n\n
+'autoreceive <yes/no>' - (disabled, default 'yes') Automatically receives transactions\n\n
 'silence <yes/no>' - (disabled, default 'no') Prevents bot from sending messages, unless specifically requested from user\n\n
+'history' - (disabled) Grabs the last 20 records of your account history\n\n 
 'help' - Get this help message\n\n\n
 If you have any questions or bug fixes, please contact /u/zily88.
 """ + """\n""" + comment_footer
@@ -139,8 +141,8 @@ def add_new_account(username):
     address = address['account']
     print(type(private), type(address), type(username))
     print(private, address, username)
-    sql = "INSERT INTO accounts (username, private_key, address, minimum) VALUES (%s, %s, %s, %s)"
-    val = (username, private, address, nano_to_raw(0.01))
+    sql = "INSERT INTO accounts (username, private_key, address, minimum, auto_receive) VALUES (%s, %s, %s, %s)"
+    val = (username, private, address, nano_to_raw(0.01), True)
     mycursor.execute(sql, val)
     mydb.commit()
     return address
@@ -447,9 +449,9 @@ def handle_send_nano(message, parsed_text, comment_or_message):
         """
 
         if user_or_address == 'user':
-            return "Sent ```%s Nano``` to /u/%s.\nhttps://www.nanode.co/block/%s" % (amount, recipient_username, sent['hash'])
+            return "Sent ```| %s Nano |``` to /u/%s.\nhttps://www.nanode.co/block/%s" % (amount, recipient_username, sent['hash'])
         else:
-            return "Sent ```%s Nano``` to %s.\nhttps://www.nanode.co/block/%s" % (amount, recipient_address, sent['hash'])
+            return "Sent ```| %s Nano |``` to %s.\nhttps://www.nanode.co/block/%s" % (amount, recipient_address, sent['hash'])
 
     elif recipient_address:
         # or if we have an address but no account, just send
@@ -467,7 +469,7 @@ def handle_send_nano(message, parsed_text, comment_or_message):
         val = (sent['hash'], entry_id)
         mycursor.execute(sql, val)
         mydb.commit()
-        return "Sent ```%s Nano``` to %s.\nhttps://www.nanode.co/block/%s" % (amount, recipient_address, sent['hash'])
+        return "Sent ```| %s Nano |``` to %s.\nhttps://www.nanode.co/block/%s" % (amount, recipient_address, sent['hash'])
 
     else:
         # create a new account for redditor
@@ -478,8 +480,12 @@ def handle_send_nano(message, parsed_text, comment_or_message):
             redditor(recipient_username). \
             message('Congrats on receiving your first Nano Tip!',
                     'Welcome to Nano Tip Bot! You have just received a Nano tip in the amount of %s at your address '
-                    'of %s. Here is some boilerplate.\n\n' % (
-                    amount, recipient_address) + help_text + comment_footer)
+                    'of %s.\n\nTo pocket this transaction, reply with the message ```receive```\n\n'
+                    'Once pocketed, to withdraw your Nano to your own wallet, reply with ```send <amount> <address>```\n\n'
+                    'Or to send to another redditor with ```send <amount> <redditor username>```\n\n'
+                    'Or tip on a reddit post/comment with ```!nanotip <amount>```\n\n'
+                    'Here are some additional resources and usage notes:\n\n\n' % (
+                    amount, recipient_address) + help_text)
 
         sql = "UPDATE history SET notes = %s, address = %s, username = %s, recipient_username = %s, recipient_address = %s, amount = %s WHERE id = %s"
         val = (
@@ -663,7 +669,7 @@ def handle_message(message):
         print("receive")
         handle_receive(message)
 
-    elif parsed_text[0].lower() == 'balance':
+    elif (parsed_text[0].lower() == 'balance') or (parsed_text[0].lower() == 'address') :
         print("balance")
         handle_balance(message)
     else:
@@ -674,8 +680,21 @@ def handle_message(message):
         )
 
 
+def autoreceive():
+    mycursor.execute("SELECT username, address, private_key FROM accounts WHERE auto_receive=TRUE")
+    myresult = mycursor.fetchall()
+    for result in myresult:
+        open_or_receive(result[1], result[2])
+
+    # select autoreceive users
+    # open/receive for each user
+
+    pass
+
 # main loop
 for action_item in stream_comments_messages():
+    autoreceive()
+
     if action_item is None:
         pass
         #print('No news.')

@@ -134,9 +134,9 @@ def open_account(*argv):
 def receive_all(account, key, rep=None):
     hashes = []
     sent_hashes = get_pending(account)["blocks"]
-    print("these are sent hashes. ", sent_hashes)
+    #print("these are sent hashes. ", sent_hashes)
     if len(sent_hashes) < 1:
-        print("no pending transactions")
+        #print("no pending transactions")
         return "No Pending Transactions."
     else:
         for sent_hash in sent_hashes:
@@ -229,7 +229,7 @@ def raw_to_nano(amount):
 
 
 def open_or_receive(account, key):
-    print(account, key)
+    #print(account, key)
     #print('attempting to receive')
     try:
         hash = open_account(account, key)
