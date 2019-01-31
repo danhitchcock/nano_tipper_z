@@ -7,13 +7,21 @@ from rpc_bindings import send, open_account, generate_account, generate_qr, nano
 import mysql.connector
 import pprint
 
-comment_footer = """\n***\n
-[Nano Tipper Z](https://github.com/danhitchcock/nano_tipper_z) | [About Nano](https://nano.org) | 
-[Where to spend Nano](https://usenano.org/) | [Community Nano Projects](https://nanocenter.org) |  
-Fee: ```Always 0.0 Nano!``` | 
-^Nano ^Tipper ^Z ^V0.1. ^This ^program ^is ^in ^early ^beta ^testing, ^please ^use ^with ^caution. ^Funds ^are ^not 
-^safe.
-"""
+
+
+comment_footer = """\n\n
+[*^(Nano_Tipper_Z)*](https://github.com/danhitchcock/nano_tipper_z)*^( | )*
+[*^(Nano)*](https://nano.org)*^( | )*
+[*^(S Nano)*](https://usenano.org/)*^( | )*
+[*^(Nano Projects)*](https://nanocenter.org)*^( | Fee: Always 0.0 Nano! | This program is in early beta testing, funds are not safe.)*"""
+
+#comment_footer = """\n***\n
+#[Nano Tipper Z](https://github.com/danhitchcock/nano_tipper_z) | [About Nano](https://nano.org) |
+#[Where to spend Nano](https://usenano.org/) | [Community Nano Projects](https://nanocenter.org) |
+#Fee: Always 0.0 Nano! |
+#Nano Tipper Z V0.1. This program is in early beta testing, please use with caution. Funds are not
+#safe.
+#"""
 
 help_text = """
 Welcome to Nano Tipper Z Bot v0.1. Nano Tipper Z is a Reddit tip bot which handles on-chain tips! \n\n
@@ -26,7 +34,7 @@ To use the bot, create a new message with any of the following commands in the m
       "    'send <amount> <user/address> - Send Nano to a reddit user or an address\n" \
       "    'receive' - Receive all pending transactions (if autoreceive is set to 'no')\n" \
       "    'balance' or 'address' - Retrieve your account balance. Includes both pocketed and unpocketed transactions.\n" \
-      "    'minimum <amount>' - (default 0.01) Sets a minimum amount for receiving tips.\n" \
+      "    'minimum <amount>' - (default 0.0001) Sets a minimum amount for receiving tips.\n" \
       "    'auto_receive <yes/no>' - (default 'yes') Automatically pockets transactions. Checks every 12 seconds.\n" \
       "    'silence <yes/no>' - (disabled, default 'no') stops uncommanded notifications from the bot\n" \
       "    'history' - (disabled) Grabs the last 20 records of your account history\n" \
@@ -47,8 +55,8 @@ tip_tos = []
 tip_comments = []
 tip_amounts = []
 last_action = time.time()
-program_minimum = 0.001
-recipient_minimum = 0.01
+program_minimum = 0.0001
+recipient_minimum = 0.0001
 toggle_receive = True
 with open('sql_password.txt') as f:
     sql_password = f.read()
@@ -316,7 +324,7 @@ def handle_send_nano(message, parsed_text, comment_or_message):
         val = ('amount below program limit', entry_id)
         mycursor.execute(sql, val)
         mydb.commit()
-        return 'You must send amounts of Nano above the program limit of %s.' % program_minimum
+        return 'You must send amounts of Nano above the program minimum of %s Nano.' % program_minimum
 
     # check if author has an account, and if they have enough funds
     sql = "SELECT address, private_key FROM accounts WHERE username=%s"
@@ -462,9 +470,9 @@ def handle_send_nano(message, parsed_text, comment_or_message):
 
 
         if user_or_address == 'user':
-            return "Sent ```| %s Nano |``` to /u/%s | [Transaction on Nanode](https://www.nanode.co/block/%s)" % (amount, recipient_username, sent['hash'])
+            return "Sent ```%s Nano``` to /u/%s -- [Transaction on Nanode](https://www.nanode.co/block/%s)" % (amount, recipient_username, sent['hash'])
         else:
-            return "Sent ```| %s Nano |``` to %s | [Transaction on Nanode](https://www.nanode.co/block/%s)" % (amount, recipient_address, sent['hash'])
+            return "Sent ```%s Nano``` to %s -- [Transaction on Nanode](https://www.nanode.co/block/%s)" % (amount, recipient_address, sent['hash'])
 
     elif recipient_address:
         # or if we have an address but no account, just send
@@ -482,7 +490,7 @@ def handle_send_nano(message, parsed_text, comment_or_message):
         val = (sent['hash'], entry_id)
         mycursor.execute(sql, val)
         mydb.commit()
-        return "Sent ```| %s Nano |``` to %s. | [Transaction on Nanode](https://www.nanode.co/block/%s)" % (amount, recipient_address, sent['hash'])
+        return "Sent ```%s Nano``` to %s. -- [Transaction on Nanode](https://www.nanode.co/block/%s)" % (amount, recipient_address, sent['hash'])
 
     else:
         # create a new account for redditor
@@ -495,6 +503,7 @@ def handle_send_nano(message, parsed_text, comment_or_message):
                     'Welcome to Nano Tip Bot! You have just received a Nano tip in the amount of ```| %s Nano |``` at your address '
                     '%s.\n\n To withdraw your Nano to your own wallet, reply: ```send <amount> <address>```.\n\n'
                     'Or to send to another redditor: ```send <amount> <redditor username>```.\n\n'
+                    'Or set your minimum tip amount to prevent spam: ```minimum <amount>```.\n\n'
                     'Or tip on a reddit post/comment: ```!nano_tip <amount>```.\n\n'
                     'View your account on Nanode: https://www.nanode.co/account/%s\n\nHere are some additional resources and usage notes:\n***'% (
                     amount, recipient_address, recipient_address) + help_text)
@@ -514,7 +523,7 @@ def handle_send_nano(message, parsed_text, comment_or_message):
         mydb.commit()
         print("Sending New Account Address: ", address, private_key, nano_to_raw(amount), recipient_address, recipient_username)
         return "Creating a new account for /u/%s and "\
-                      "sending ```%s Nano```.\n\n[Transaction on Nanode](https://www.nanode.co/block/%s)" % (recipient_username, amount, sent['hash'])
+                      "sending ```%s Nano```. [Transaction on Nanode](https://www.nanode.co/block/%s)" % (recipient_username, amount, sent['hash'])
 
 
 def handle_receive(message):

@@ -113,11 +113,11 @@ def delete_user(username):
     mycursor.execute(sql, val)
     mydb.commit()
 
-history()
-print("************************************************************")
-accounts()
+#history()
+#print("************************************************************")
+#accounts()
 
-print(allowed_request('zily88', 30, 5))
+#print(allowed_request('zily88', 30, 5))
 
 
 
