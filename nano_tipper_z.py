@@ -26,7 +26,7 @@ comment_footer = """\n\n
 [*^(Get Free Nano!)*](https://nano-faucet.org/)*^( | )*
 [*^(Nano_Tipper_Z)*](https://github.com/danhitchcock/nano_tipper_z)*^( | )*
 [*^(Nano)*](https://nano.org)*^( | )*
-[*^(S Nano)*](https://usenano.org/)*^( | )*
+[*^(Spend Nano)*](https://usenano.org/)*^( | )*
 [*^(Nano Projects)*](https://nanocenter.org)*^( | This program is in early beta testing, 
 funds are not safe.)*"""
 
@@ -37,7 +37,7 @@ To use the bot, create a new message with any of the following commands in the m
     'create' - Create a new account if one does not exist
     'private_key' - (disabled) Retrieve your account private key
     'new_address' - (disabled) If you feel this address was compromised, create a new account and key
-    'send <amount> <user/address> - Send Nano to a reddit user or an address
+    'send <amount or all> <user/address>' - Send Nano to a reddit user or an address
     'receive' - Receive all pending transactions (if autoreceive is set to 'no')
     'balance' or 'address' - Retrieve your account balance. Includes both pocketed and unpocketed transactions
     'minimum <amount>' - (default 0.0001) Sets a minimum amount for receiving tips
@@ -274,23 +274,34 @@ def handle_send_nano(message, parsed_text, comment_or_message):
         return 'Could not read your tip or send command, or find an amount. Be sure the amount and recipient are separated by a space.'
 
 
-    # check that the tip amount is a number, and if it is high enough
-    # we will also check if the tip amount is above the user minimum after we get user information
+    # check that the tip is a number or 'all'
     if parsed_text[1].lower() == 'nan' or ('inf' in parsed_text[1].lower()):
         sql = "UPDATE history SET notes = %s WHERE id = %s"
         val = ('could not parse amount', entry_id)
         mycursor.execute(sql, val)
         mydb.commit()
         return "Could not read your tip or send amount. Is '%s' a number?" % parsed_text[1]
-
-    try:
-        amount = float(parsed_text[1])
-    except:
-        sql = "UPDATE history SET notes = %s WHERE id = %s"
-        val = ('could not parse amount', entry_id)
+    elif parsed_text[1].lower() == 'all':
+        sql = "SELECT address FROM accounts WHERE username = %s"
+        val = (username,)
         mycursor.execute(sql, val)
-        mydb.commit()
-        return "Could not read your tip or send amount. Is '%s' a number?" % parsed_text[1]
+        result = mycursor.fetchall()
+        if len(result) > 0:
+            address = result[0][0]
+            balance = check_balance(address)
+            amount = balance[0]/(10**30)
+        else:
+            return 'You do not have a tip bot account yet. To create one, send me a PM containing the' \
+                   " text 'create' in the message body, or get a tip from a fellow redditor!."
+    else:
+        try:
+            amount = float(parsed_text[1])
+        except:
+            sql = "UPDATE history SET notes = %s WHERE id = %s"
+            val = ('could not parse amount', entry_id)
+            mycursor.execute(sql, val)
+            mydb.commit()
+            return "Could not read your tip or send amount. Is '%s' a number?" % parsed_text[1]
 
     if amount < program_minimum:
         sql = "UPDATE history SET notes = %s WHERE id = %s"
@@ -321,7 +332,7 @@ def handle_send_nano(message, parsed_text, comment_or_message):
             val = ('insufficient funds', entry_id)
             mycursor.execute(sql, val)
             mydb.commit()
-            return 'You have insufficient funds. Your account has %s pocketed (+%s unpocketed) and you are '\
+            return 'You have insufficient funds. Your account has %s Nano pocketed (+%s Nano unpocketed) and you are '\
                           'trying to send %s. If you have unpocketed funds, create a new message containing the text'\
                           ' "receive" to pocket your incoming money.'%(results[0]/10**30, results[1]/10**30, amount)
 

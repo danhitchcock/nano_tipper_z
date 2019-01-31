@@ -50,6 +50,12 @@ Send 0.1 Nano to an address:
     !nano_tip 0.1 xrb_1ssr4sbop5wnkbkpk7y7ekewie7tygtjgdukm9jq7d1m3j6ocfskwyx77awd
     -or-
     !nano_tip 0.1 nano_1ssr4sbop5wnkbkpk7y7ekewie7tygtjgdukm9jq7d1m3j6ocfskwyx77awd
+    
+Send all your Nano to an address (for withdrawing)
+
+    !nano_tip all xrb_1ssr4sbop5wnkbkpk7y7ekewie7tygtjgdukm9jq7d1m3j6ocfskwyx77awd
+    -or-
+    !nano_tip all nano_1ssr4sbop5wnkbkpk7y7ekewie7tygtjgdukm9jq7d1m3j6ocfskwyx77awd
 
 
 ## Private Messages
@@ -66,15 +72,20 @@ To send 0.1 Nano to xrb_1ssr4sbop5wnkbkpk7y7ekewie7tygtjgdukm9jq7d1m3j6ocfskwyx7
 
     send 0.1 xrb_1ssr4sbop5wnkbkpk7y7ekewie7tygtjgdukm9jq7d1m3j6ocfskwyx77awd
 
-There are many other commands.
+To send all your Nano to xrb_1ssr4sbop5wnkbkpk7y7ekewie7tygtjgdukm9jq7d1m3j6ocfskwyx77awd:
+
+    send all xrb_1ssr4sbop5wnkbkpk7y7ekewie7tygtjgdukm9jq7d1m3j6ocfskwyx77awd
+
+There are many other PM commands:
 
     'create' - Create a new account if one does not exist
-    'private_key' -  (disabled) Retrieve your account private key
+    'private_key' - (disabled) Retrieve your account private key
     'new_address' - (disabled) If you feel this address was compromised, create a new account and key
-    'send <amount> <user/address> - Send Nano to a reddit user or an address
-    'receive' - Receive all pending transactions
-    'balance' - Retrieve your account balance. Includes both pocketed and unpocketed transactions
-    'minimum <amount>' - (default 0.01) Sets a minimum amount for receiving tips
-    'auto_receive <yes/no>' - (default 'yes') Automatically pcokets transactions
-    'silence <yes/no>' - (disabled, default 'no') Prevents bot from sending messages, unless specifically requested from user
-    'help' - Get this help message\n\n\n
+    'send <amount or "all"> <user/address>' - Send Nano to a reddit user or an address
+    'receive' - Receive all pending transactions (if autoreceive is set to 'no')
+    'balance' or 'address' - Retrieve your account balance. Includes both pocketed and unpocketed transactions
+    'minimum <amount>' - (default 0.0001) Sets a minimum amount for receiving tips
+    'auto_receive <yes/no>' - (default 'yes') Automatically pockets transactions. Checks every 12 seconds
+    'silence <yes/no>' - (disabled, default 'no') stops uncommanded notifications from the bot
+    'history' - (disabled) Grabs the last 20 records of your account history
+    'help' - Get this help message\n

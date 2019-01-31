@@ -112,7 +112,7 @@ def delete_user(username):
     val = (username, )
     mycursor.execute(sql, val)
     mydb.commit()
-delete_user('nano_tipper_z_test2')
+#delete_user('nano_tipper_z_test2')
 #history()
 #print("************************************************************")
 #accounts()
