@@ -5,10 +5,10 @@
 [Nano currency](http://www.nano.org) is one of a kind -- feeless and nearly instant transactions. 
 This allows for a few unique features for the tipbot:
 * Every transaction is on chain! View the hashes on the block explorer http://www.nanode.co
-* Every account is a full featured wallet!
+* Every account is a (nearly) full featured wallet!
 * You can request your private keys or a new address! (Still on the fence, but *soon*)
 
-Some Features:
+Some Other Features:
 * Set a tip minimum to prevent spam or annoying cheapskates
 * Set your account to 'auto-receive' transactions
 
@@ -22,7 +22,7 @@ Feel free to test any functionality at https://reddit.com/r/nano_tipper_z
 
 To get started, either:
 
-A) **Create an account** by sending a message to /u/nano_tipper_z with 'create' in the message body. You will receive a Nano address, to which you can add Nano\* (\**this project is in early beta! Only send small amounts of Nano*.)
+A) **Create an account** by sending a message to /u/nano_tipper_z with 'create' in the message body. You will receive a Nano address, to which you can add Nano\*. Try http://nano-faucet.org to receive some free Nano! (\**this project is in early beta! Only send small amounts of Nano*.)
 
 -or-
 

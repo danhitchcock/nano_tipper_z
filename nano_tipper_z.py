@@ -133,8 +133,8 @@ def add_new_account(username):
     address = generate_account()
     private = address['private']
     address = address['account']
-    sql = "INSERT INTO accounts (username, private_key, address, minimum, auto_receive) VALUES (%s, %s, %s, %s, %s)"
-    val = (username, private, address, nano_to_raw(0.01), True)
+    sql = "INSERT INTO accounts (username, private_key, address, minimum, auto_receive, silence, active) VALUES (%s, %s, %s, %s, %s, %s, %s)"
+    val = (username, private, address, nano_to_raw(0.01), True, False, False)
     mycursor.execute(sql, val)
     mydb.commit()
     return address
@@ -241,6 +241,12 @@ def handle_send(message):
 
 # amount is converted to raw in this function!
 def handle_send_nano(message, parsed_text, comment_or_message):
+    # set the account to active if it was a new one
+    sql = "UPDATE accounts SET active = TRUE WHERE username = %s"
+    val = (str(message.author),)
+    mycursor.execute(sql, val)
+    mydb.commit()
+
     # declare a few variables so I can keep track of them. They will be redefined
     username = str(message.author)  # the sender
     private_key = ''  # the sender's private key
@@ -717,6 +723,11 @@ def handle_message(message):
             comment_text=str(message.body)[:255],
             comment_or_message='message',
         )
+    # if a message was received, perform the command and then make sure the user is set to active
+    sql = "UPDATE accounts SET active = TRUE WHERE username = %s"
+    val = (str(message.author), )
+    mycursor.execute(sql, val)
+    mydb.commit()
 
 
 def auto_receive():

@@ -9,6 +9,7 @@ mydb = mysql.connector.connect(user='root', password=sql_password,
                               auth_plugin='mysql_native_password',database='nano_tipper_z')
 mycursor = mydb.cursor()
 
+
 def init_db():
     mycursor.execute("CREATE DATABASE nano_tipper_z")
     mydb.commit()
@@ -43,7 +44,19 @@ def init_accounts():
                         "key_released BOOL, "
                         "minimum VARCHAR(255), "
                         "notes VARCHAR(255), "
-                        "auto_receive BOOL"
+                        "auto_receive BOOL, "
+                        "silence BOOL, "
+                        "active BOOL"
+                     ")"
+                     )
+    mydb.commit()
+
+
+def init_subreddits():
+    mycursor.execute("CREATE TABLE subreddits ("
+                        "subreddit VARCHAR(255) PRIMARY KEY, "
+                        "reply_to_comments BOOL, "
+                        "footer VARCHAR(255)"
                      ")"
                      )
     mydb.commit()
@@ -65,6 +78,7 @@ def accounts():
     myresult = mycursor.fetchall()
     for result in myresult:
         print(result)
+
     mycursor.execute("SELECT * FROM accounts")
     myresult = mycursor.fetchall()
     for result in myresult:
@@ -102,17 +116,16 @@ def allowed_request(username, seconds=30, num_requests=5):
         return (datetime.fromtimestamp(time.time()) - myresults[-5][0]).total_seconds() > seconds
 
 
-
-history()
-print("************************************************************")
-accounts()
-
 def delete_user(username):
     sql = 'DELETE FROM accounts WHERE username = %s'
     val = (username, )
     mycursor.execute(sql, val)
     mydb.commit()
+
+history()
+accounts()
 #delete_user('nano_tipper_z_test2')
+
 #history()
 #print("************************************************************")
 #accounts()
