@@ -5,33 +5,6 @@ from time import sleep
 from rpc_bindings import send, open_account, generate_account, generate_qr, nano_to_raw, receive_all, send_all, \
     check_balance, validate_address, open_or_receive, get_pendings
 import mysql.connector
-import pprint
-
-
-
-comment_footer = """\n\n
-[*^(Nano_Tipper_Z)*](https://github.com/danhitchcock/nano_tipper_z)*^( | )*
-[*^(Nano)*](https://nano.org)*^( | )*
-[*^(S Nano)*](https://usenano.org/)*^( | )*
-[*^(Nano Projects)*](https://nanocenter.org)*^( | Fee: Always 0.0 Nano! | This program is in early beta testing, funds are not safe.)*"""
-
-
-help_text = """
-Welcome to Nano Tipper Z Bot v0.1. Nano Tipper Z is a Reddit tip bot which handles on-chain tips! \n\n
-[Visit us on GitHub](https://github.com/danhitchcock/nano_tipper_z) for more information on its use.\n\n
-To use the bot, create a new message with any of the following commands in the message body.\n\n
-    'create' - Create a new account if one does not exist\n
-    'private_key' - (disabled) Retrieve your account private key\n
-    'new_address' - (disabled) If you feel this address was compromised, create a new account and key\n
-    'send <amount> <user/address> - Send Nano to a reddit user or an address\n
-    'receive' - Receive all pending transactions (if autoreceive is set to 'no')\n
-   'balance' or 'address' - Retrieve your account balance. Includes both pocketed and unpocketed transactions.\n
-    'minimum <amount>' - (default 0.0001) Sets a minimum amount for receiving tips.\n
-    'auto_receive <yes/no>' - (default 'yes') Automatically pockets transactions. Checks every 12 seconds.\n
-    'silence <yes/no>' - (disabled, default 'no') stops uncommanded notifications from the bot\n
-    'history' - (disabled) Grabs the last 20 records of your account history\n
-    'help' - Get this help message\n
-If you have any questions or bug fixes, please contact /u/zily88.\n""" + comment_footer
 
 # initiate the reddit object library
 reddit = praw.Reddit('bot1')
@@ -49,7 +22,30 @@ mycursor = mydb.cursor()
 program_minimum = 0.0001
 recipient_minimum = 0.0001
 toggle_receive = True
+comment_footer = """\n\n
+[*^(Get Free Nano!)*](https://nano-faucet.org/)*^( | )*
+[*^(Nano_Tipper_Z)*](https://github.com/danhitchcock/nano_tipper_z)*^( | )*
+[*^(Nano)*](https://nano.org)*^( | )*
+[*^(S Nano)*](https://usenano.org/)*^( | )*
+[*^(Nano Projects)*](https://nanocenter.org)*^( | This program is in early beta testing, 
+funds are not safe.)*"""
 
+help_text = """
+Welcome to Nano Tipper Z Bot v0.1. Nano Tipper Z is a Reddit tip bot which handles on-chain tips! 
+[Visit us on GitHub](https://github.com/danhitchcock/nano_tipper_z) for more information on its use. 
+To use the bot, create a new message with any of the following commands in the message body:\n
+    'create' - Create a new account if one does not exist
+    'private_key' - (disabled) Retrieve your account private key
+    'new_address' - (disabled) If you feel this address was compromised, create a new account and key
+    'send <amount> <user/address> - Send Nano to a reddit user or an address
+    'receive' - Receive all pending transactions (if autoreceive is set to 'no')
+    'balance' or 'address' - Retrieve your account balance. Includes both pocketed and unpocketed transactions
+    'minimum <amount>' - (default 0.0001) Sets a minimum amount for receiving tips
+    'auto_receive <yes/no>' - (default 'yes') Automatically pockets transactions. Checks every 12 seconds
+    'silence <yes/no>' - (disabled, default 'no') stops uncommanded notifications from the bot
+    'history' - (disabled) Grabs the last 20 records of your account history
+    'help' - Get this help message\n
+If you have any questions or bug fixes, please contact /u/zily88.\n""" + comment_footer
 
 # generator to stream comments and messages to the main loop at the bottom, and contains the auto_receive functionality.
 # Maybe this wasn't necessary, but I never get to use generators.
@@ -162,8 +158,9 @@ def handle_create(message):
     if len(result) is 0:
         address = add_new_account(username)
         response = "Hi, welcome to Nano Tipper Z! Your Nano address is %s.\n\n"\
-                   "To get Nano, deposit some to the your address. Click on the Nanode link for a QR code. " \
-                   "-OR- receive a tip from a fellow redditor!\n\n"\
+                   "To load Nano, try the free [Nano Faucet](https://nano-faucet.org/), or deposit some " \
+                   "(click on Nanode for a QR code), " \
+                   "or receive a tip from a fellow redditor!\n\n"\
                    "To withdraw your Nano to your own wallet, reply: ```send <amount> <address>```.\n\n"\
                    'Or to send to another redditor: ```send <amount> <redditor username>```.\n\n'\
                    'Or tip on a reddit post/comment: ```!nano_tip <amount>```.\n\n'\
