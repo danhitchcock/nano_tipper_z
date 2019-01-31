@@ -35,15 +35,15 @@ Welcome to Nano Tipper Z Bot v0.1. Nano Tipper Z is a Reddit tip bot which handl
 [Visit us on GitHub](https://github.com/danhitchcock/nano_tipper_z) for more information on its use. 
 To use the bot, create a new message with any of the following commands in the message body:\n
     'create' - Create a new account if one does not exist
-    'private_key' - (disabled) Retrieve your account private key
-    'new_address' - (disabled) If you feel this address was compromised, create a new account and key
     'send <amount or all> <user/address>' - Send Nano to a reddit user or an address
     'receive' - Receive all pending transactions (if autoreceive is set to 'no')
     'balance' or 'address' - Retrieve your account balance. Includes both pocketed and unpocketed transactions
     'minimum <amount>' - (default 0.0001) Sets a minimum amount for receiving tips
     'auto_receive <yes/no>' - (default 'yes') Automatically pockets transactions. Checks every 12 seconds
-    'silence <yes/no>' - (disabled, default 'no') stops uncommanded notifications from the bot
+    'silence <yes/no>' - (default 'no') Prevents the bot from sending you tip notifications or tagging in posts 
     'history' - (disabled) Grabs the last 20 records of your account history
+    'private_key' - (disabled) Retrieve your account private key
+    'new_address' - (disabled) If you feel this address was compromised, create a new account and key
     'help' - Get this help message\n
 If you have any questions or bug fixes, please contact /u/zily88.\n""" + comment_footer
 
@@ -452,22 +452,36 @@ def handle_send_nano(message, parsed_text, comment_or_message):
         val = (sent['hash'], entry_id)
         mycursor.execute(sql, val)
         mydb.commit()
-        if comment_or_message == "message":
-            # if it was a PM, send a message to notify the recipient
-            # also check to see if the recipient has elected 'silence'
+        # also check to see if the recipient has elected 'silence'
+        # this will prevent a message from being sent as well as no tag in the post response
+        sql = "SELECT silence FROM accounts WHERE username = %s"
+        val = (recipient_username,)
+        mycursor.execute(sql, val)
+        myresult = mycursor.fetchall()
+        silence = myresult[0][0]
+        print(silence)
+        if comment_or_message == "message" and (not silence):
             x = reddit.\
                 redditor(recipient_username).\
                 message('You just received a new Nano tip!',
                         'Somebody just tipped you %s Nano at your address %s. Your new account balance will be '
-                        '%s received and %s unpocketed. [Transaction on Nanode](https://www.nanode.co/block/%s)\n\n' % (
+                        '%s received and %s unpocketed. [Transaction on Nanode](https://www.nanode.co/block/%s)\n\n'
+                        'To turn off these notifications, reply with "silence yes"' % (
                         amount / 10 ** 30, recipient_address, receiving_new_balance[0] / 10 ** 30,
                         (receiving_new_balance[1] / 10 ** 30 + amount / 10 ** 30), sent['hash']) + comment_footer)
 
 
         if user_or_address == 'user':
-            return "Sent ```%s Nano``` to /u/%s -- [Transaction on Nanode](https://www.nanode.co/block/%s)" % (amount / 10 ** 30, recipient_username, sent['hash'])
+            if silence:
+                return "Sent ```%s Nano``` to %s -- [Transaction on Nanode](https://www.nanode.co/block/%s)" % (
+                       amount / 10 ** 30, recipient_username, sent['hash'])
+            else:
+                return "Sent ```%s Nano``` to /u/%s -- [Transaction on Nanode](https://www.nanode.co/block/%s)" % (
+                       amount / 10 ** 30, recipient_username, sent['hash'])
         else:
-            return "Sent ```%s Nano``` to [%s](https://www.nanode.co/account/%s) -- [Transaction on Nanode](https://www.nanode.co/block/%s)" % (amount / 10 ** 30, recipient_address, recipient_address, sent['hash'])
+            return "Sent ```%s Nano``` to [%s](https://www.nanode.co/account/%s) -- " \
+                   "[Transaction on Nanode](https://www.nanode.co/block/%s)" % (
+                   amount / 10 ** 30, recipient_address, recipient_address, sent['hash'])
 
     elif recipient_address:
         # or if we have an address but no account, just send
@@ -673,6 +687,40 @@ def handle_auto_receive(message):
     message.reply(response)
 
 
+def handle_silence(message):
+    message_time = datetime.utcfromtimestamp(message.created_utc)  # time the reddit message was created
+    username = str(message.author)
+    add_history_record(
+        username=str(message.author),
+        action='silence',
+        comment_or_message='message',
+        reddit_time=message_time.strftime('%Y-%m-%d %H:%M:%S')
+        )
+
+    parsed_text = message.body.replace('\\', '').split('\n')[0].split(' ')
+
+    if len(parsed_text) < 2:
+        response = "I couldn't parse your command. I was expecting 'silence <yes/no>'. Be sure to check your spacing."
+        message.reply(response)
+        return None
+
+    if parsed_text[1] == 'yes':
+        sql = "UPDATE accounts SET silence = TRUE WHERE username = %s "
+        val = (username, )
+        mycursor.execute(sql, val)
+        response = "silence set to 'yes'. You will no longer receive tip notifications or be tagged by the bot."
+    elif parsed_text[1] == 'no':
+        sql = "UPDATE accounts SET silence = FALSE WHERE username = %s"
+        val = (username, )
+        mycursor.execute(sql, val)
+        response = "silence set to 'no'. You will receive tip notifications and be tagged by the bot in replies."
+    else:
+        response = "I did not see 'no' or 'yes' after 'silence'. If you did type that, check your spacing."
+    mydb.commit()
+
+    message.reply(response)
+
+
 def handle_message(message):
     message_body = str(message.body).lower()
     print("Body: **", message_body, "**")
@@ -709,6 +757,10 @@ def handle_message(message):
     elif parsed_text[0].lower() == 'send':
         print("send via PM")
         handle_send(message)
+
+    elif parsed_text[0].lower() == 'silence':
+        print("silencing")
+        handle_silence(message)
 
     elif (parsed_text[0].lower() == 'receive') or (parsed_text[0].lower() == 'pocket'):
         print("receive")

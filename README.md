@@ -84,13 +84,13 @@ To send all your Nano to xrb_1ssr4sbop5wnkbkpk7y7ekewie7tygtjgdukm9jq7d1m3j6ocfs
 There are many other PM commands:
 
     'create' - Create a new account if one does not exist
-    'private_key' - (disabled) Retrieve your account private key
-    'new_address' - (disabled) If you feel this address was compromised, create a new account and key
-    'send <amount or "all"> <user/address>' - Send Nano to a reddit user or an address
+    'send <amount or all> <user/address>' - Send Nano to a reddit user or an address
     'receive' - Receive all pending transactions (if autoreceive is set to 'no')
     'balance' or 'address' - Retrieve your account balance. Includes both pocketed and unpocketed transactions
     'minimum <amount>' - (default 0.0001) Sets a minimum amount for receiving tips
     'auto_receive <yes/no>' - (default 'yes') Automatically pockets transactions. Checks every 12 seconds
-    'silence <yes/no>' - (disabled, default 'no') stops uncommanded notifications from the bot
+    'silence <yes/no>' - (default 'no') Prevents the bot from sending you tip notifications or tagging in posts 
     'history' - (disabled) Grabs the last 20 records of your account history
-    'help' - Get this help message\n
+    'private_key' - (disabled) Retrieve your account private key
+    'new_address' - (disabled) If you feel this address was compromised, create a new account and key
+    'help' - Get this help message
