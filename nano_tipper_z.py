@@ -239,6 +239,7 @@ def handle_send(message):
     message.reply(response + comment_footer)
 
 
+# amount is converted to raw in this function!
 def handle_send_nano(message, parsed_text, comment_or_message):
     # declare a few variables so I can keep track of them. They will be redefined
     username = str(message.author)  # the sender
@@ -289,13 +290,13 @@ def handle_send_nano(message, parsed_text, comment_or_message):
         if len(result) > 0:
             address = result[0][0]
             balance = check_balance(address)
-            amount = balance[0]/(10**30)
+            amount = balance[0]
         else:
             return 'You do not have a tip bot account yet. To create one, send me a PM containing the' \
-                   " text 'create' in the message body, or get a tip from a fellow redditor!."
+                   " text 'create' in the message body, or get a tip from a fellow redditor!"
     else:
         try:
-            amount = float(parsed_text[1])
+            amount = nano_to_raw(float(parsed_text[1]))
         except:
             sql = "UPDATE history SET notes = %s WHERE id = %s"
             val = ('could not parse amount', entry_id)
@@ -303,7 +304,7 @@ def handle_send_nano(message, parsed_text, comment_or_message):
             mydb.commit()
             return "Could not read your tip or send amount. Is '%s' a number?" % parsed_text[1]
 
-    if amount < program_minimum:
+    if amount < nano_to_raw(program_minimum):
         sql = "UPDATE history SET notes = %s WHERE id = %s"
         val = ('amount below program limit', entry_id)
         mycursor.execute(sql, val)
@@ -322,19 +323,19 @@ def handle_send_nano(message, parsed_text, comment_or_message):
         mydb.commit()
 
         return 'You do not have a tip bot account yet. To create one, send me a PM containing the'\
-               " text 'create' in the message body, or get a tip from a fellow redditor!."
+               " text 'create' in the message body, or get a tip from a fellow redditor!"
     else:
         address = result[0][0]
         private_key = result[0][1]
         results = check_balance(result[0][0])
-        if nano_to_raw(amount) > results[0]:
+        if amount > results[0]:
             sql = "UPDATE history SET notes = %s WHERE id = %s"
             val = ('insufficient funds', entry_id)
             mycursor.execute(sql, val)
             mydb.commit()
             return 'You have insufficient funds. Your account has %s Nano pocketed (+%s Nano unpocketed) and you are '\
                           'trying to send %s. If you have unpocketed funds, create a new message containing the text'\
-                          ' "receive" to pocket your incoming money.'%(results[0]/10**30, results[1]/10**30, amount)
+                          ' "receive" to pocket your incoming money.'%(results[0]/10**30, results[1]/10**30, amount/10**30)
 
     # if there was only the command and the amount, we need to find the recipient.
     # if it was a comment, the recipient is the parent author
@@ -388,7 +389,7 @@ def handle_send_nano(message, parsed_text, comment_or_message):
             return "Could not find redditor %s. Make sure you aren't writing or copy/pasting markdown." % recipient
 
     # at this point:
-    # 'amount' is a valid positive number and above the program minimum
+    # 'amount' is a valid positive number in raw and above the program minimum
     # 'username' has a valid account and enough Nano for the tip
     # 'user_or_address' is either 'user' or 'address',
     # 'recipient' is either a valid redditor or a valid Nano address
@@ -415,18 +416,18 @@ def handle_send_nano(message, parsed_text, comment_or_message):
             val = (recipient_username,)
             mycursor.execute(sql, val)
             myresult = mycursor.fetchall()
-            user_minimum = float(myresult[0][0])
+            user_minimum = int(myresult[0][0])
 
     # if either we had an account or address which has been registered, recipient_address and recipient_username will
     # have values instead of being ''. We will check the minimum
     if (user_minimum >= 0) and recipient_address and recipient_username:
-        if nano_to_raw(amount) < user_minimum:
+        if amount < user_minimum:
             sql = "UPDATE history SET notes = %s WHERE id = %s"
             val = ("below user minimum", entry_id)
             mycursor.execute(sql, val)
             mydb.commit()
             return "Sorry, the user has set a tip minimum of %s. " \
-                   "Your tip of %s is below this amount." % (user_minimum/10**30, amount)
+                   "Your tip of %s is below this amount." % (user_minimum/10**30, amount/10**30)
 
         if user_or_address == 'user':
             notes = "sent to registered redditor"
@@ -436,11 +437,11 @@ def handle_send_nano(message, parsed_text, comment_or_message):
         receiving_new_balance = check_balance(recipient_address)
         sql = "UPDATE history SET notes = %s, address = %s, username = %s, recipient_username = %s, " \
               "recipient_address = %s, amount = %s WHERE id = %s"
-        val = (notes, address, username, recipient_username, recipient_address, str(nano_to_raw(amount)), entry_id)
+        val = (notes, address, username, recipient_username, recipient_address, str(amount), entry_id)
         mycursor.execute(sql, val)
         mydb.commit()
-        print("Sending Nano: ", address, private_key, nano_to_raw(amount), recipient_address, recipient_username)
-        sent = send(address, private_key, nano_to_raw(amount), recipient_address)
+        print("Sending Nano: ", address, private_key, amount, recipient_address, recipient_username)
+        sent = send(address, private_key, amount, recipient_address)
         sql = "UPDATE history SET hash = %s WHERE id = %s"
         val = (sent['hash'], entry_id)
         mycursor.execute(sql, val)
@@ -453,30 +454,30 @@ def handle_send_nano(message, parsed_text, comment_or_message):
                 message('You just received a new Nano tip!',
                         'Somebody just tipped you %s Nano at your address %s. Your new account balance will be '
                         '%s received and %s unpocketed. [Transaction on Nanode](https://www.nanode.co/block/%s)\n\n' % (
-                        amount, recipient_address, receiving_new_balance[0] / 10 ** 30,
-                        (receiving_new_balance[1] / 10 ** 30 + amount), sent['hash']) + comment_footer)
+                        amount / 10 ** 30, recipient_address, receiving_new_balance[0] / 10 ** 30,
+                        (receiving_new_balance[1] / 10 ** 30 + amount / 10 ** 30), sent['hash']) + comment_footer)
 
 
         if user_or_address == 'user':
-            return "Sent ```%s Nano``` to /u/%s -- [Transaction on Nanode](https://www.nanode.co/block/%s)" % (amount, recipient_username, sent['hash'])
+            return "Sent ```%s Nano``` to /u/%s -- [Transaction on Nanode](https://www.nanode.co/block/%s)" % (amount / 10 ** 30, recipient_username, sent['hash'])
         else:
-            return "Sent ```%s Nano``` to %s -- [Transaction on Nanode](https://www.nanode.co/block/%s)" % (amount, recipient_address, sent['hash'])
+            return "Sent ```%s Nano``` to %s -- [Transaction on Nanode](https://www.nanode.co/block/%s)" % (amount / 10 ** 30, recipient_address, sent['hash'])
 
     elif recipient_address:
         # or if we have an address but no account, just send
         sql = "UPDATE history SET notes = %s, address = %s, username = %s, recipient_address = %s, amount = %s WHERE id = %s"
         val = (
-            'sent to unregistered address', address, username, recipient_address, str(nano_to_raw(amount)), entry_id)
+            'sent to unregistered address', address, username, recipient_address, str(amount), entry_id)
         mycursor.execute(sql, val)
         mydb.commit()
 
-        print("Sending Unregistered Address: ", address, private_key, nano_to_raw(amount), recipient_address)
-        sent = send(address, private_key, nano_to_raw(amount), recipient_address)
+        print("Sending Unregistered Address: ", address, private_key, amount, recipient_address)
+        sent = send(address, private_key, amount, recipient_address)
         sql = "UPDATE history SET hash = %s WHERE id = %s"
         val = (sent['hash'], entry_id)
         mycursor.execute(sql, val)
         mydb.commit()
-        return "Sent ```%s Nano``` to %s. -- [Transaction on Nanode](https://www.nanode.co/block/%s)" % (amount, recipient_address, sent['hash'])
+        return "Sent ```%s Nano``` to %s. -- [Transaction on Nanode](https://www.nanode.co/block/%s)" % (amount/ 10 ** 30, recipient_address, sent['hash'])
     else:
         # create a new account for redditor
         recipient_address = add_new_account(recipient_username)
@@ -490,21 +491,21 @@ def handle_send_nano(message, parsed_text, comment_or_message):
                     'Or set your minimum tip amount to prevent spam: ```minimum <amount>```.\n\n'
                     'Or tip on a reddit post/comment: ```!nano_tip <amount>```.\n\n'
                     'View your account on Nanode: https://www.nanode.co/account/%s\n\nHere are some additional resources and usage notes:\n***'% (
-                    amount, recipient_address, recipient_address) + help_text)
+                    amount/ 10 ** 30, recipient_address, recipient_address) + help_text)
 
         sql = "UPDATE history SET notes = %s, address = %s, username = %s, recipient_username = %s, recipient_address = %s, amount = %s WHERE id = %s"
         val = ("new user created", address, username, recipient_username, recipient_address,
-               str(nano_to_raw(amount)), entry_id)
+               str(amount), entry_id)
         mycursor.execute(sql, val)
         mydb.commit()
-        sent = send(address, private_key, nano_to_raw(amount), recipient_address)
+        sent = send(address, private_key, amount, recipient_address)
         sql = "UPDATE history SET hash = %s WHERE id = %s"
         val = (sent['hash'], entry_id)
         mycursor.execute(sql, val)
         mydb.commit()
-        print("Sending New Account Address: ", address, private_key, nano_to_raw(amount), recipient_address, recipient_username)
+        print("Sending New Account Address: ", address, private_key, amount, recipient_address, recipient_username)
         return "Creating a new account for /u/%s and "\
-                      "sending ```%s Nano```. [Transaction on Nanode](https://www.nanode.co/block/%s)" % (recipient_username, amount, sent['hash'])
+                      "sending ```%s Nano```. [Transaction on Nanode](https://www.nanode.co/block/%s)" % (recipient_username, amount / 10 **30, sent['hash'])
 
 
 def handle_receive(message):
@@ -541,6 +542,7 @@ def handle_receive(message):
         message.reply(response + comment_footer)
 
 
+# amount is a float in Nano in this function!
 def handle_minimum(message):
     message_time = datetime.utcfromtimestamp(message.created_utc)  # time the reddit message was created
     # user may select a minimum tip amount to avoid spamming. Tipbot minimum is 0.001
