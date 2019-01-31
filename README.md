@@ -6,12 +6,17 @@
 This allows for a few unique features for the tipbot:
 * Every transaction is on chain! View the hashes on the block explorer http://www.nanode.co
 * Every account is a full featured wallet!
-* You can request your private keys or a new address!
+* You can request your private keys or a new address! (Still on the fence, but *soon*)
 
-A few other nice features (some to be implemented):
+Some Features:
 * Set a tip minimum to prevent spam or annoying cheapskates
 * Set your account to 'auto-receive' transactions
-* Turn off notifications. You can still get money, you just won't be informed when you get tipped.
+
+Features to be added:
+* 30 day return if an account remains unactivated -- activation is easy! Just perform *any* command
+* Turn off notifications. You can still get money, you just won't be informed when you get tipped. Great if you get a lot of tips, even if they're above your minimum!
+* Custom footers and response behavior for subreddits
+* Tipping a currency equivalent in Nano -- USD/EUR/YEN and a few others
 
 Feel free to test any functionality at https://reddit.com/r/nano_tipper_z
 

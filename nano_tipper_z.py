@@ -485,8 +485,10 @@ def handle_send_nano(message, parsed_text, comment_or_message):
         x = reddit. \
             redditor(recipient_username). \
             message('Congrats on receiving your first Nano Tip!',
-                    'Welcome to Nano Tip Bot! You have just received a Nano tip in the amount of ```| %s Nano |``` at your address '
-                    '%s.\n\n To withdraw your Nano to your own wallet, reply: ```send <amount> <address>```.\n\n'
+                    'Welcome to Nano Tip Bot! You have just received a Nano tip in the amount of ```%s Nano``` at your address '
+                    '%s. Please activate your account or any tips which are 30 days old will be returned. '
+                    'To activate your account, simply type any command listed below.'
+                    '\n\nTo withdraw your Nano to your own wallet, reply: ```send <amount> <address>```.\n\n'
                     'Or to send to another redditor: ```send <amount> <redditor username>```.\n\n'
                     'Or set your minimum tip amount to prevent spam: ```minimum <amount>```.\n\n'
                     'Or tip on a reddit post/comment: ```!nano_tip <amount>```.\n\n'
