@@ -461,7 +461,7 @@ def handle_send_nano(message, parsed_text, comment_or_message):
         if user_or_address == 'user':
             return "Sent ```%s Nano``` to /u/%s -- [Transaction on Nanode](https://www.nanode.co/block/%s)" % (amount / 10 ** 30, recipient_username, sent['hash'])
         else:
-            return "Sent ```%s Nano``` to %s -- [Transaction on Nanode](https://www.nanode.co/block/%s)" % (amount / 10 ** 30, recipient_address, sent['hash'])
+            return "Sent ```%s Nano``` to [%s](https://www.nanode.co/account/%s) -- [Transaction on Nanode](https://www.nanode.co/block/%s)" % (amount / 10 ** 30, recipient_address, recipient_address, sent['hash'])
 
     elif recipient_address:
         # or if we have an address but no account, just send
@@ -477,7 +477,7 @@ def handle_send_nano(message, parsed_text, comment_or_message):
         val = (sent['hash'], entry_id)
         mycursor.execute(sql, val)
         mydb.commit()
-        return "Sent ```%s Nano``` to %s. -- [Transaction on Nanode](https://www.nanode.co/block/%s)" % (amount/ 10 ** 30, recipient_address, sent['hash'])
+        return "Sent ```%s Nano``` to [%s](https://www.nanode.co/account/%s). -- [Transaction on Nanode](https://www.nanode.co/block/%s)" % (amount/ 10 ** 30, recipient_address, recipient_address, sent['hash'])
     else:
         # create a new account for redditor
         recipient_address = add_new_account(recipient_username)
