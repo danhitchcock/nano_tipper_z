@@ -357,7 +357,7 @@ def handle_send_nano(message, parsed_text, comment_or_message):
     # or the u/
     if recipient[:2].lower() == 'u/':
         recipient = recipient[2:]
-
+    print(recipient)
     # recipient -- first check if it is a valid address. Otherwise, check if it's a redditor
     if (recipient[:5].lower() == "nano_") or (recipient[:4].lower() == "xrb_"):
         # check valid address
@@ -760,6 +760,10 @@ def allowed_request(username, seconds=30, num_requests=5):
 
 # main loop
 for action_item in stream_comments_messages():
+    # every 86400 seconds (once a day) scan for 30 day old tips to inactive accounts
+    # get transactions to those accounts which are 30 days or older
+    # reverse them
+
     # our 'stream_comments_messages()' generator will give us either messages or comments by checking the tag on the message name
     # (t1 = comment, t4 = message)
     # The bot handles these differently
