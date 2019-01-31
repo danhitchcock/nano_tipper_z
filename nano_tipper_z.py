@@ -15,71 +15,56 @@ comment_footer = """\n\n
 [*^(S Nano)*](https://usenano.org/)*^( | )*
 [*^(Nano Projects)*](https://nanocenter.org)*^( | Fee: Always 0.0 Nano! | This program is in early beta testing, funds are not safe.)*"""
 
-#comment_footer = """\n***\n
-#[Nano Tipper Z](https://github.com/danhitchcock/nano_tipper_z) | [About Nano](https://nano.org) |
-#[Where to spend Nano](https://usenano.org/) | [Community Nano Projects](https://nanocenter.org) |
-#Fee: Always 0.0 Nano! |
-#Nano Tipper Z V0.1. This program is in early beta testing, please use with caution. Funds are not
-#safe.
-#"""
 
 help_text = """
 Welcome to Nano Tipper Z Bot v0.1. Nano Tipper Z is a Reddit tip bot which handles on-chain tips! \n\n
 [Visit us on GitHub](https://github.com/danhitchcock/nano_tipper_z) for more information on its use.\n\n
 To use the bot, create a new message with any of the following commands in the message body.\n\n
-""" + "\n" \
-      "    'create' - Create a new account if one does not exist\n" \
-      "    'private_key' - (disabled) Retrieve your account private key\n" \
-      "    'new_address' - (disabled) If you feel this address was compromised, create a new account and key\n" \
-      "    'send <amount> <user/address> - Send Nano to a reddit user or an address\n" \
-      "    'receive' - Receive all pending transactions (if autoreceive is set to 'no')\n" \
-      "    'balance' or 'address' - Retrieve your account balance. Includes both pocketed and unpocketed transactions.\n" \
-      "    'minimum <amount>' - (default 0.0001) Sets a minimum amount for receiving tips.\n" \
-      "    'auto_receive <yes/no>' - (default 'yes') Automatically pockets transactions. Checks every 12 seconds.\n" \
-      "    'silence <yes/no>' - (disabled, default 'no') stops uncommanded notifications from the bot\n" \
-      "    'history' - (disabled) Grabs the last 20 records of your account history\n" \
-      "    'help' - Get this help message\n" \
-      "If you have any questions or bug fixes, please contact /u/zily88." + """\n""" + comment_footer
-reddit = praw.Reddit('bot1')
-#submission = reddit.submission(id='39zje0')
-#print(submission.title) # to make it non-lazy
-#print(submission.created)
-#print(datetime.utcfromtimestamp(submission.created_utc).strftime('%Y-%m-%d %H:%M:%S'))
-#pprint.pprint(vars(submission))
+    'create' - Create a new account if one does not exist\n
+    'private_key' - (disabled) Retrieve your account private key\n
+    'new_address' - (disabled) If you feel this address was compromised, create a new account and key\n
+    'send <amount> <user/address> - Send Nano to a reddit user or an address\n
+    'receive' - Receive all pending transactions (if autoreceive is set to 'no')\n
+   'balance' or 'address' - Retrieve your account balance. Includes both pocketed and unpocketed transactions.\n
+    'minimum <amount>' - (default 0.0001) Sets a minimum amount for receiving tips.\n
+    'auto_receive <yes/no>' - (default 'yes') Automatically pockets transactions. Checks every 12 seconds.\n
+    'silence <yes/no>' - (disabled, default 'no') stops uncommanded notifications from the bot\n
+    'history' - (disabled) Grabs the last 20 records of your account history\n
+    'help' - Get this help message\n
+If you have any questions or bug fixes, please contact /u/zily88.\n""" + comment_footer
 
+# initiate the reddit object library
+reddit = praw.Reddit('bot1')
 subreddit = reddit.subreddit("nano_tipper_z+cryptocurrency247+nanotrade+nanocurrency")
 
-tip_froms = []
-tip_parents = []
-tip_tos = []
-tip_comments = []
-tip_amounts = []
-last_action = time.time()
-program_minimum = 0.0001
-recipient_minimum = 0.0001
-toggle_receive = True
+# access the sql library
 with open('sql_password.txt') as f:
     sql_password = f.read()
-
 mydb = mysql.connector.connect(user='root', password=sql_password,
                               host='localhost',
                               auth_plugin='mysql_native_password', database='nano_tipper_z')
 mycursor = mydb.cursor()
 
-#generator for our comments. Maybe this wasn't necessary, but I never get to use generators
-#also has the code for autoreceive
+# a few globals
+program_minimum = 0.0001
+recipient_minimum = 0.0001
+toggle_receive = True
+
+
+# generator to stream comments and messages to the main loop at the bottom, and contains the auto_receive functionality.
+# Maybe this wasn't necessary, but I never get to use generators.
+# To check for new messages and comments, the function scans the subreddits and inbox every 6 seconds and builds a
+# set of current message. I compare the old set with the new set.
 def stream_comments_messages():
     previous_comments = {comment for comment in subreddit.comments()}
     previous_messages = {message for message in reddit.inbox.unread()}
-    print('received first stream')
+    print('Received first stream!')
     global toggle_receive
     while True:
         if toggle_receive:
             auto_receive()
         toggle_receive = not toggle_receive
         sleep(6)
-        global last_action
-        last_action = time.time()
 
         updated_comments = {comment for comment in subreddit.comments()}
         new_comments = updated_comments - previous_comments
@@ -95,13 +80,11 @@ def stream_comments_messages():
         if len(new_comments) >= 1:
             for new_comment in new_comments:
                 # if new_comment starts with 't1_'
-                print('full name: ', new_comment.name)
                 if new_comment.name[:3] == 't1_':
                     yield ('comment', new_comment)
         if len(new_messages) >= 1:
             for new_message in new_messages:
                 # if message starts with 't4_'
-                print('full name: ', new_message.name)
                 if new_message.name[:3] == 't4_':
                     yield ('message', new_message)
 
@@ -149,13 +132,11 @@ def check_registered_by_address(address):
 
     return None
 
-#updated
+
 def add_new_account(username):
     address = generate_account()
     private = address['private']
     address = address['account']
-    print(type(private), type(address), type(username))
-    print(private, address, username)
     sql = "INSERT INTO accounts (username, private_key, address, minimum, auto_receive) VALUES (%s, %s, %s, %s, %s)"
     val = (username, private, address, nano_to_raw(0.01), True)
     mycursor.execute(sql, val)
@@ -194,7 +175,6 @@ def handle_create(message):
     # message.reply(response)
 
 
-# currently deactivated
 def handle_private_key(message):
     author = str(message.author)
     message_time = datetime.utcfromtimestamp(message.created_utc)  # time the reddit message was created
@@ -219,7 +199,6 @@ def handle_private_key(message):
         return None
 
 
-#updated
 def handle_balance(message):
     username = str(message.author)
     message_time = datetime.utcfromtimestamp(message.created_utc)  # time the reddit message was created
@@ -244,7 +223,7 @@ def handle_balance(message):
 
     reddit.redditor(username).message('Nano Tipper Z: No account registered.', 'You do not have an open account yet' + comment_footer)
 
-# currently deactivated
+
 def handle_new_address(message):
     message_time = datetime.utcfromtimestamp(message.created_utc)  # time the reddit message was created
     add_history_record(
@@ -257,23 +236,21 @@ def handle_new_address(message):
     message.reply('not activated yet.')
 
 
-#updated
 def handle_send(message):
     parsed_text = str(message.body).lower().replace('\\', '').split('\n')[0].split(' ')
     response = handle_send_nano(message, parsed_text, 'message')
     message.reply(response + comment_footer)
 
 
-#updated
 def handle_send_nano(message, parsed_text, comment_or_message):
-    user_or_address = '' # either 'user' or 'address', depending on how the recipient was specified
-    private_key = ''
-    adrress = ''
-    recipient = ''
-    recipient_username = ''
-    recipient_address = ''
+    # declare a few variables so I can keep track of them. They will be redefined
+    username = str(message.author)  # the sender
+    private_key = ''  # the sender's private key
+    user_or_address = ''  # either 'user' or 'address', depending on how the recipient was specified
+    recipient = ''  # could be an address or redditor. Will be renamed recipient_username or recipient_address below
+    recipient_username = ''  # the recipient username, should one exist
+    recipient_address = ''  # the recipient nano address
     message_time = datetime.utcfromtimestamp(message.created_utc) # time the reddit message was created
-    username = str(message.author) # the sender
 
     entry_id = add_history_record(
         username=username,
@@ -288,7 +265,6 @@ def handle_send_nano(message, parsed_text, comment_or_message):
     # with a failure and return the message. If the length is 2 (meaning recipient is parent author) we will
     # check that after tip amounts to limit API requests
     if len(parsed_text) >= 3:
-        amount = parsed_text[1]
         recipient = parsed_text[2]
     elif len(parsed_text) == 2:
         # parse the user info in a later block of code to minimize API requests
@@ -368,7 +344,10 @@ def handle_send_nano(message, parsed_text, comment_or_message):
     # remove the /u/ if a redditor was specified
     if recipient[:3].lower() == '/u/':
         recipient = recipient[3:]
-        print(recipient)
+
+    # or the u/
+    if recipient[:2].lower() == 'u/':
+        recipient = recipient[2:]
 
     # recipient -- first check if it is a valid address. Otherwise, check if it's a redditor
     if (recipient[:5].lower() == "nano_") or (recipient[:4].lower() == "xrb_"):
@@ -376,10 +355,10 @@ def handle_send_nano(message, parsed_text, comment_or_message):
         success = validate_address(recipient)
         if success['valid'] == '1':
             user_or_address = 'address'
-        # if not, check if it is a redditor disguised as an address (e.g. nano_is_awesome, xrb_for_life)
+        # if not, check if it is a redditor disguised as an address (e.g. nano_is_awesome, nano_tipper_z)
         else:
             try:
-                print(getattr(reddit.redditor(recipient), 'is_suspended', False))
+                dummy = getattr(reddit.redditor(recipient), 'is_suspended', False)
                 user_or_address = 'user'
             except:
                 # not a valid address or a redditor
@@ -389,8 +368,9 @@ def handle_send_nano(message, parsed_text, comment_or_message):
                 mydb.commit()
                 return '%s is neither a valid address nor a redditor' % recipient
     else:
+        # a username was specified
         try:
-            print(getattr(reddit.redditor(recipient), 'is_suspended', False))
+            dummy = getattr(reddit.redditor(recipient), 'is_suspended', False)
             user_or_address = 'user'
         except:
             sql = "UPDATE history SET notes = %s WHERE id = %s"
@@ -416,7 +396,6 @@ def handle_send_nano(message, parsed_text, comment_or_message):
         myresult = mycursor.fetchall()
         # if there is a result, pull out the minimum (in raw) and nano address for the recipient
         if len(myresult) > 0:
-            print(myresult[0])
             user_minimum = int(myresult[0][0])
             recipient_address = myresult[0][1]
     else:
@@ -428,7 +407,6 @@ def handle_send_nano(message, parsed_text, comment_or_message):
             val = (recipient_username,)
             mycursor.execute(sql, val)
             myresult = mycursor.fetchall()
-            print(myresult[0])
             user_minimum = float(myresult[0][0])
 
     # if either we had an account or address which has been registered, recipient_address and recipient_username will
@@ -439,8 +417,8 @@ def handle_send_nano(message, parsed_text, comment_or_message):
             val = ("below user minimum", entry_id)
             mycursor.execute(sql, val)
             mydb.commit()
-
-            return "Sorry, the user has set a tip minimum of %s. Your tip of %s is below this amount."%(user_minimum/10**30, amount)
+            return "Sorry, the user has set a tip minimum of %s. " \
+                   "Your tip of %s is below this amount." % (user_minimum/10**30, amount)
 
         if user_or_address == 'user':
             notes = "sent to registered redditor"
@@ -448,13 +426,13 @@ def handle_send_nano(message, parsed_text, comment_or_message):
             notes = "sent to registered address"
 
         receiving_new_balance = check_balance(recipient_address)
-        sql = "UPDATE history SET notes = %s, address = %s, username = %s, recipient_username = %s, recipient_address = %s, amount = %s WHERE id = %s"
+        sql = "UPDATE history SET notes = %s, address = %s, username = %s, recipient_username = %s, " \
+              "recipient_address = %s, amount = %s WHERE id = %s"
         val = (notes, address, username, recipient_username, recipient_address, str(nano_to_raw(amount)), entry_id)
         mycursor.execute(sql, val)
         mydb.commit()
         print("Sending Nano: ", address, private_key, nano_to_raw(amount), recipient_address, recipient_username)
         sent = send(address, private_key, nano_to_raw(amount), recipient_address)
-        print("Hash: ", sent)
         sql = "UPDATE history SET hash = %s WHERE id = %s"
         val = (sent['hash'], entry_id)
         mycursor.execute(sql, val)
@@ -462,11 +440,13 @@ def handle_send_nano(message, parsed_text, comment_or_message):
         if comment_or_message == "message":
             # if it was a PM, send a message to notify the recipient
             # also check to see if the recipient has elected 'silence'
-            x = reddit.redditor(recipient_username).message('You just received a new Nano tip!',
-                                                    'Somebody just tipped you %s Nano at your address %s. Your new account balance will be '
-                                                    '%s received and %s unpocketed. [Transaction on Nanode](https://www.nanode.co/block/%s)\n\n' % (
-                                                    amount, recipient_address, receiving_new_balance[0] / 10 ** 30,
-                                                    (receiving_new_balance[1] / 10 ** 30 + amount), sent['hash']) + comment_footer)
+            x = reddit.\
+                redditor(recipient_username).\
+                message('You just received a new Nano tip!',
+                        'Somebody just tipped you %s Nano at your address %s. Your new account balance will be '
+                        '%s received and %s unpocketed. [Transaction on Nanode](https://www.nanode.co/block/%s)\n\n' % (
+                        amount, recipient_address, receiving_new_balance[0] / 10 ** 30,
+                        (receiving_new_balance[1] / 10 ** 30 + amount), sent['hash']) + comment_footer)
 
 
         if user_or_address == 'user':
@@ -483,19 +463,15 @@ def handle_send_nano(message, parsed_text, comment_or_message):
         mydb.commit()
 
         print("Sending Unregistered Address: ", address, private_key, nano_to_raw(amount), recipient_address)
-
         sent = send(address, private_key, nano_to_raw(amount), recipient_address)
-        print("Hash: ", sent)
         sql = "UPDATE history SET hash = %s WHERE id = %s"
         val = (sent['hash'], entry_id)
         mycursor.execute(sql, val)
         mydb.commit()
         return "Sent ```%s Nano``` to %s. -- [Transaction on Nanode](https://www.nanode.co/block/%s)" % (amount, recipient_address, sent['hash'])
-
     else:
         # create a new account for redditor
         recipient_address = add_new_account(recipient_username)
-
 
         x = reddit. \
             redditor(recipient_username). \
@@ -509,14 +485,11 @@ def handle_send_nano(message, parsed_text, comment_or_message):
                     amount, recipient_address, recipient_address) + help_text)
 
         sql = "UPDATE history SET notes = %s, address = %s, username = %s, recipient_username = %s, recipient_address = %s, amount = %s WHERE id = %s"
-        val = (
-        "new user created", address, username, recipient_username, recipient_address, str(nano_to_raw(amount)), entry_id)
+        val = ("new user created", address, username, recipient_username, recipient_address,
+               str(nano_to_raw(amount)), entry_id)
         mycursor.execute(sql, val)
         mydb.commit()
-
         sent = send(address, private_key, nano_to_raw(amount), recipient_address)
-        print("Hash: ", sent)
-
         sql = "UPDATE history SET hash = %s WHERE id = %s"
         val = (sent['hash'], entry_id)
         mycursor.execute(sql, val)
@@ -559,7 +532,7 @@ def handle_receive(message):
         response = "You do not currently have an account open. To create one, respond with the text 'create' in the message body."
         message.reply(response + comment_footer)
 
-# updated
+
 def handle_minimum(message):
     message_time = datetime.utcfromtimestamp(message.created_utc)  # time the reddit message was created
     # user may select a minimum tip amount to avoid spamming. Tipbot minimum is 0.001
@@ -596,7 +569,6 @@ def handle_minimum(message):
     val = (username, )
     mycursor.execute(sql, val)
     result = mycursor.fetchall()
-    print(result)
     if len(result) > 0:
         #open_or_receive(result[0][0], result[0][1])
         #balance = check_balance(result[0][0])
@@ -610,10 +582,7 @@ def handle_minimum(message):
             comment_text=str(message.body)[:255]
         )
         sql = "UPDATE accounts SET minimum = %s WHERE username = %s"
-        print(amount)
-        print(nano_to_raw(amount))
         val = (str(nano_to_raw(amount)), username)
-        print(val)
         mycursor.execute(sql, val)
         mydb.commit()
         response = "Updating tip minimum to %s"%amount
@@ -630,7 +599,6 @@ def handle_minimum(message):
         message.reply(response)
 
 
-# updated
 def handle_help(message):
     message_time = datetime.utcfromtimestamp(message.created_utc)  # time the reddit message was created
     add_history_record(
@@ -643,15 +611,12 @@ def handle_help(message):
     message.reply(response)
 
 
-# updated
 def handle_comment(message):
     # remove an annoying extra space that might be in the front
     if message.body[0] == ' ':
         parsed_text = str(message.body[1:]).lower().replace('\\', '').split('\n')[0].split(' ')
     else:
         parsed_text = str(message.body).lower().replace('\\', '').split('\n')[0].split(' ')
-    print(parsed_text)
-    print(len(parsed_text))
     response = handle_send_nano(message, parsed_text, 'comment')
     message.reply(response + comment_footer)
 
@@ -773,7 +738,6 @@ def allowed_request(username, seconds=30, num_requests=5):
     :return:
     """
     #return True
-    print(username, seconds, num_requests)
     sql = 'SELECT sql_time FROM history WHERE username=%s'
     val = (str(username), )
     mycursor.execute(sql, val)
@@ -781,28 +745,27 @@ def allowed_request(username, seconds=30, num_requests=5):
     if len(myresults) < num_requests:
         return True
     else:
-        print(myresults[-5][0], datetime.fromtimestamp(time.time()))
-        print((datetime.fromtimestamp(time.time()) - myresults[-5][0]).total_seconds())
         return (datetime.fromtimestamp(time.time()) - myresults[-5][0]).total_seconds() > seconds
 
 
 # main loop
 for action_item in stream_comments_messages():
+    # our 'stream_comments_messages()' generator will give us either messages or comments by checking the tag on the message name
+    # (t1 = comment, t4 = message)
+    # The bot handles these differently
     if action_item is None:
         pass
         #print('No news.')
     elif action_item[0] == 'comment':
-        print(time.strftime('%Y-%m-%d %H:%M:%S'))
-        print('Comment: ', action_item[1].author, action_item[1].body[:20])
         if action_item[1].body[0]==' ':
             parsed_text = str(action_item[1].body[1:]).lower().replace('\\', '').split('\n')[0].split(' ')
         else:
             parsed_text = str(action_item[1].body).lower().replace('\\', '').split('\n')[0].split(' ')
-        print('Parsed comment: ', parsed_text)
+        # print('Parsed comment: ', parsed_text)
         if parsed_text[0] == r'!nano_tip':
-            print('\n')
             print('*****************************************************')
-            print('found an item.')
+            print('Comment: ', action_item[1].author, ' - ', action_item[1].body[:20])
+            print('*****************************************************')
             if allowed_request(action_item[1].author, 30, 5):
                 handle_comment(action_item[1])
             else:
@@ -815,7 +778,9 @@ for action_item in stream_comments_messages():
             print('Too many requests for %s' % action_item[1].author)
         else:
             print(time.strftime('%Y-%m-%d %H:%M:%S'))
-            print('A new message was found %s, sent by %s.'%(action_item[1], action_item[1].author ))
+            print('*****************************************************')
+            print('Comment: ', action_item[1].author, ' - ', action_item[1].body[:20])
+            print('*****************************************************')
             handle_message(action_item[1])
 
 
