@@ -85,7 +85,7 @@ There are many other PM commands:
 # Terms of Service
 * Don't keep a lot of Nano in your Nano Tip Bot account
 * This program is not-for-profit
-* You accept the risks of using this Tip Bot--I won't steal your Nanos, but they might be lost at any point, and under no obligation to replace them. Don't put in more than you're willing to lose.
+* You accept the risks of using this Tip Bot--I won't steal your Nanos, but they might be lost at any point, and I'm under no obligation to replace them. Don't put in more than you're willing to lose.
 * Don't submit more than 5 requests every 30 seconds
 * I can change the Terms of Service at any time. The only thing I promise is I will return your Nanos if I have posession of them. 
 
