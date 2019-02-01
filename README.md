@@ -77,3 +77,17 @@ There are many other PM commands:
     'private_key' - (disabled) Retrieve your account private key
     'new_address' - (disabled) If you feel this address was compromised, create a new account and key
     'help' - Get this help message
+    
+# FAQ
+## Why does the message have to start with !nano_tip?
+This is to prevent uninentional tips! If the program simply scanned the entire comment, a user might accidently quote someone else's 
+tip command in a response.
+
+## Are my funds safe?
+**NO! Unless you and you alone control your private keys, your funds are never safe!** Please don't keep more than a few Nanos on the tipbot at any time! Because this program is in early beta testing, I am no responsible for lost funds! *Use at your own risk!* (sorry for all the exclamation marks)
+
+## I sent a tip to the wrong redditor. Can I get it back?
+You basically gave a stranger a dollar, and I have no control over that. If the stranger doesn't activate their accound, you will get your tip back in 30 days. If they *do* activate their account, it's theirs. You can try asking them for it back.
+
+## I found a bug or I have a concern. Question Mark?
+Send /u/zily88 a PM on reddit, or post on https://reddit.com/r/nano_tipper_z
