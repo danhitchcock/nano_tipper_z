@@ -19,6 +19,7 @@ mydb = mysql.connector.connect(user='root', password=sql_password,
 mycursor = mydb.cursor()
 
 # a few globals
+tip_bot_on = True
 program_minimum = 0.0001
 recipient_minimum = 0.0001
 toggle_receive = True
@@ -33,7 +34,12 @@ funds are not safe.)*"""
 help_text = """
 Welcome to Nano Tipper Z Bot v0.1. Nano Tipper Z is a Reddit tip bot which handles on-chain tips! 
 [Visit us on GitHub](https://github.com/danhitchcock/nano_tipper_z) for more information on its use. 
-To use the bot, create a new message with any of the following commands in the message body:\n
+
+To tip on a comment or post on a subreddit, make a comment starting with:\n
+    '!nano_tip <amount>'\n
+This will tip the comment's author the specified amount of Nano. If you want to tip a specific redditor, use the PM commands.\n\n
+    
+For PM commands, create a new message with any of the following commands in the message body:\n
     'create' - Create a new account if one does not exist
     'send <amount or all> <user/address>' - Send Nano to a reddit user or an address
     'receive' - Receive all pending transactions (if autoreceive is set to 'no')
@@ -157,7 +163,7 @@ def handle_create(message):
     result = mycursor.fetchall()
     if len(result) is 0:
         address = add_new_account(username)
-        response = "Hi, welcome to Nano Tipper Z! Your Nano address is %s.\n\n"\
+        response = "Hi, welcome to Nano Tipper Z! Your account is **active** and your Nano address is %s.\n\n"\
                    "To load Nano, try the free [Nano Faucet](https://nano-faucet.org/), or deposit some " \
                    "(click on Nanode for a QR code), " \
                    "or receive a tip from a fellow redditor!\n\n"\
@@ -166,7 +172,7 @@ def handle_create(message):
                    'Or tip on a reddit post/comment: ```!nano_tip <amount>```.\n\n'\
                    'View your account on Nanode: https://www.nanode.co/account/%s\n\nHere are some additional resources and usage notes:\n***' % (address, address)
     else:
-        response = "It looks like you already have an account made. Your Nano address is %s." \
+        response = "It looks like you already have an account made, and it is now **active**. Your Nano address is %s." \
                    "\n\nhttps://www.nanode.co/account/%s" % (result[0][0], result[0][0])
     x = reddit.redditor(username).message('Nano Tipper Z: Account Creation', response + help_text)
     # message.reply(response)
@@ -342,56 +348,53 @@ def handle_send_nano(message, parsed_text, comment_or_message):
             mydb.commit()
             return 'You have insufficient funds (%s Nano)'%(results[0]/10**30)
 
-    # if there was only the command and the amount, we need to find the recipient.
-    # if it was a comment, the recipient is the parent author
-    # if it was a message, the program will respond with an error
-    if len(parsed_text) == 2:
-        if comment_or_message == 'comment':
-            recipient = str(message.parent().author)
-        else:
+    # if the command was from a PM, extract the recipient username or address
+    # otherwise it was a comment, and extract the parent author
+    if comment_or_message == 'message':
+        if len(parsed_text) == 2:
             sql = "UPDATE history SET notes = %s WHERE id = %s"
             val = ("no recipient specified", entry_id)
             mycursor.execute(sql, val)
             mydb.commit()
             return "You must specify an amount and a user."
-
-    # remove the /u/ if a redditor was specified
-    if recipient[:3].lower() == '/u/':
-        recipient = recipient[3:]
-
-    # or the u/
-    if recipient[:2].lower() == 'u/':
-        recipient = recipient[2:]
-    print(recipient)
-    # recipient -- first check if it is a valid address. Otherwise, check if it's a redditor
-    if (recipient[:5].lower() == "nano_") or (recipient[:4].lower() == "xrb_"):
-        # check valid address
-        success = validate_address(recipient)
-        if success['valid'] == '1':
-            user_or_address = 'address'
-        # if not, check if it is a redditor disguised as an address (e.g. nano_is_awesome, nano_tipper_z)
+        # remove the /u/ or u/
+        if recipient[:3].lower() == '/u/':
+            recipient = recipient[3:]
+        elif recipient[:2].lower() == 'u/':
+            recipient = recipient[2:]
+        # recipient -- first check if it is a valid address. Otherwise, check if it's a redditor
+        if (recipient[:5].lower() == "nano_") or (recipient[:4].lower() == "xrb_"):
+            # check valid address
+            success = validate_address(recipient)
+            if success['valid'] == '1':
+                user_or_address = 'address'
+            # if not, check if it is a redditor disguised as an address (e.g. nano_is_awesome, nano_tipper_z)
+            else:
+                try:
+                    dummy = getattr(reddit.redditor(recipient), 'is_suspended', False)
+                    user_or_address = 'user'
+                except:
+                    # not a valid address or a redditor
+                    sql = "UPDATE history SET notes = %s WHERE id = %s"
+                    val = ('invalid address or address-like redditor does not exist', entry_id)
+                    mycursor.execute(sql, val)
+                    mydb.commit()
+                    return '%s is neither a valid address nor a redditor' % recipient
         else:
+            # a username was specified
             try:
                 dummy = getattr(reddit.redditor(recipient), 'is_suspended', False)
                 user_or_address = 'user'
             except:
-                # not a valid address or a redditor
                 sql = "UPDATE history SET notes = %s WHERE id = %s"
-                val = ('invalid address or address-like redditor does not exist', entry_id)
+                val = ('redditor does not exist', entry_id)
                 mycursor.execute(sql, val)
                 mydb.commit()
-                return '%s is neither a valid address nor a redditor' % recipient
+                return "Could not find redditor %s. Make sure you aren't writing or copy/pasting markdown." % recipient
     else:
-        # a username was specified
-        try:
-            dummy = getattr(reddit.redditor(recipient), 'is_suspended', False)
-            user_or_address = 'user'
-        except:
-            sql = "UPDATE history SET notes = %s WHERE id = %s"
-            val = ('redditor does not exist', entry_id)
-            mycursor.execute(sql, val)
-            mydb.commit()
-            return "Could not find redditor %s. Make sure you aren't writing or copy/pasting markdown." % recipient
+        recipient = str(message.parent().author)
+        user_or_address = 'user'
+
 
     # at this point:
     # 'amount' is a valid positive number in raw and above the program minimum
@@ -853,7 +856,10 @@ for action_item in stream_comments_messages():
             print('Comment: ', action_item[1].author, ' - ', action_item[1].body[:20])
             print('*****************************************************')
             if allowed_request(action_item[1].author, 30, 5):
-                handle_comment(action_item[1])
+                if tip_bot_on:
+                    handle_comment(action_item[1])
+                else:
+                    action_item[1].reply('Nano Tipper Z is currently offline. Check /r/nano_tipper_z')
             else:
                 print('Too many requests for %s' % action_item[1].author)
 
@@ -867,7 +873,10 @@ for action_item in stream_comments_messages():
             print('*****************************************************')
             print('Comment: ', action_item[1].author, ' - ', action_item[1].body[:20])
             print('*****************************************************')
-            handle_message(action_item[1])
+            if tip_bot_on:
+                handle_message(action_item[1])
+            else:
+                action_item[1].reply('Nano Tipper Z is currently offline. Check /r/nano_tipper_z')
 
 
 
