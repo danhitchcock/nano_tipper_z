@@ -35,7 +35,7 @@ Once you have funds in your account, you can tip other redditors, or send to nan
 
 Nano Tipper Z is intended for tipping on reddit posts and replies.
 
-    !nano_tip <amount> <(optional) username/address>
+    !nano_tip <amount>
 
 Watch for spaces. !nano_tip must be the first thing in your message, and it cannot be a part of a reply.
 
@@ -45,28 +45,10 @@ Send 0.1 Nano to the parent-comment author:
 
     !nano_tip 0.1
 
-Send 0.1 Nano to /u/zily88:
-
-    !nano_tip 0.1 /u/zily88
-    -or-
-    !nano_tip 0.1 zily88
-
-Send 0.1 Nano to an address:
-
-    !nano_tip 0.1 xrb_1ssr4sbop5wnkbkpk7y7ekewie7tygtjgdukm9jq7d1m3j6ocfskwyx77awd
-    -or-
-    !nano_tip 0.1 nano_1ssr4sbop5wnkbkpk7y7ekewie7tygtjgdukm9jq7d1m3j6ocfskwyx77awd
-    
-Send all your Nano to an address (for withdrawing)
-
-    !nano_tip all xrb_1ssr4sbop5wnkbkpk7y7ekewie7tygtjgdukm9jq7d1m3j6ocfskwyx77awd
-    -or-
-    !nano_tip all nano_1ssr4sbop5wnkbkpk7y7ekewie7tygtjgdukm9jq7d1m3j6ocfskwyx77awd
-
 
 ## Private Messages
 
-Nano Tipper Z also works by PM. Send a message to /u/nano_tipper_z for a variety of actions. Include the command in the body of the text.
+Nano Tipper Z also works by PM. Send a message to /u/nano_tipper_z for a variety of actions.
 
 To send 0.1 Nano to zily88, include this text in the message body:
 
