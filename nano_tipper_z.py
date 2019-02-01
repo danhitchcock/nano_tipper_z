@@ -241,6 +241,9 @@ def handle_send(message):
 
 # amount is converted to raw in this function!
 def handle_send_nano(message, parsed_text, comment_or_message):
+    # will return a list
+    # [message, status code, recipient_username, recipient_address, tip_amount]
+
     # set the account to active if it was a new one
     sql = "UPDATE accounts SET active = TRUE WHERE username = %s"
     val = (str(message.author),)
@@ -278,7 +281,7 @@ def handle_send_nano(message, parsed_text, comment_or_message):
         val = ('could not find tip amount', entry_id)
         mycursor.execute(sql, val)
         mydb.commit()
-        return 'Could not read your tip or send command, or find an amount. Be sure the amount and recipient are separated by a space.'
+        return 'Could not read your tip command.'
 
 
     # check that the tip is a number or 'all'
@@ -298,8 +301,7 @@ def handle_send_nano(message, parsed_text, comment_or_message):
             balance = check_balance(address)
             amount = balance[0]
         else:
-            return 'You do not have a tip bot account yet. To create one, send me a PM containing the' \
-                   " text 'create' in the message body, or get a tip from a fellow redditor!"
+            return 'You do not have a tip bot account yet. PM me "create".'
     else:
         try:
             amount = nano_to_raw(float(parsed_text[1]))
@@ -315,7 +317,7 @@ def handle_send_nano(message, parsed_text, comment_or_message):
         val = ('amount below program limit', entry_id)
         mycursor.execute(sql, val)
         mydb.commit()
-        return 'You must send amounts of Nano above the program minimum of %s Nano.' % program_minimum
+        return 'Program minimum is %s Nano.' % program_minimum
 
     # check if author has an account, and if they have enough funds
     sql = "SELECT address, private_key FROM accounts WHERE username=%s"
@@ -328,8 +330,7 @@ def handle_send_nano(message, parsed_text, comment_or_message):
         mycursor.execute(sql, val)
         mydb.commit()
 
-        return 'You do not have a tip bot account yet. To create one, send me a PM containing the'\
-               " text 'create' in the message body, or get a tip from a fellow redditor!"
+        return 'You do not have a tip bot account yet. PM me "create".'
     else:
         address = result[0][0]
         private_key = result[0][1]
@@ -339,9 +340,7 @@ def handle_send_nano(message, parsed_text, comment_or_message):
             val = ('insufficient funds', entry_id)
             mycursor.execute(sql, val)
             mydb.commit()
-            return 'You have insufficient funds. Your account has %s Nano pocketed (+%s Nano unpocketed) and you are '\
-                          'trying to send %s. If you have unpocketed funds, create a new message containing the text'\
-                          ' "receive" to pocket your incoming money.'%(results[0]/10**30, results[1]/10**30, amount/10**30)
+            return 'You have insufficient funds (%s Nano)'%(results[0]/10**30)
 
     # if there was only the command and the amount, we need to find the recipient.
     # if it was a comment, the recipient is the parent author
@@ -650,6 +649,10 @@ def handle_comment(message):
     else:
         parsed_text = str(message.body).lower().replace('\\', '').split('\n')[0].split(' ')
     response = handle_send_nano(message, parsed_text, 'comment')
+
+    # apply the subreddit rules to our response message
+    # if it is a friendly subreddit, just reply with the response + comment_footer
+    # if it is not friendly, we need to notify the sender as well as the recipient if they have not elected silence
     message.reply(response + comment_footer)
 
 
@@ -824,10 +827,14 @@ def allowed_request(username, seconds=30, num_requests=5):
 
 
 # main loop
+print('Starting up!')
 for action_item in stream_comments_messages():
     # every 86400 seconds (once a day) scan for 30 day old tips to inactive accounts
-    # get transactions to those accounts which are 30 days or older
-    # reverse them
+    # pull inactive accounts
+    # for each account
+    #    pull transactions
+    #       for each transaction
+    #           if transaction older than 30 days, reverse it.
 
     # our 'stream_comments_messages()' generator will give us either messages or comments by checking the tag on the message name
     # (t1 = comment, t4 = message)
