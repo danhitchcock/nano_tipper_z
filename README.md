@@ -105,3 +105,23 @@ Users are allowed 5 requests every 30 seconds. If you do more than that, the bot
 
 ## I found a bug or I have a concern. Question Mark?
 Send /u/zily88 a PM on reddit, or post on https://reddit.com/r/nano_tipper_z
+
+# Error Codes
+If a reddit tip resonse is deeply nested in a subreddit, it's better to keep a short message with an error code.
+* 0 - Could not read the tip command
+* 1 - Could not read the tip amount
+* 2 - Sender does not have an account
+* 3 - Tip amount is below program minimum
+* 4 - Insufficient funds
+* 5 - User or address not specified
+* 6 - Address is invalid or recipient redditor does not exist
+* 7 - Recipient redditor does not exist
+* 8 - Tip amount is below recipients specified tip minimum
+
+and FYI there are success codes, but you won't see these
+
+* 9 - Success! Sent to a redditor who requested silence
+* 10 - Success! Sent to redditor
+* 11 - Success! Sent to registered nano address
+* 12 - Success! Sent to unregistered nano address
+* 13 - Success! Sent to a newly created reddit account

@@ -35,11 +35,11 @@ help_text = """
 Welcome to Nano Tipper Z Bot v0.1. Nano Tipper Z is a Reddit tip bot which handles on-chain tips! 
 [Visit us on GitHub](https://github.com/danhitchcock/nano_tipper_z) for more information on its use. 
 
-To tip on a comment or post on a subreddit, make a comment starting with:\n
-    '!nano_tip <amount>'\n
-This will tip the comment's author the specified amount of Nano. If you want to tip a specific redditor, use the PM commands.\n\n
+To tip 0.1 Nano on a comment or post on a subreddit, make a comment starting with:\n
+    !nano_tip 0.1\n
+You can tip any amount above the program minimum of 0.0001 Nano.\n\n
     
-For PM commands, create a new message with any of the following commands in the message body:\n
+For PM commands, create a new message with any of the following commands(be sure to remove the quotes, '<' and '>'):\n
     'create' - Create a new account if one does not exist
     'send <amount or all> <user/address>' - Send Nano to a reddit user or an address
     'receive' - Receive all pending transactions (if autoreceive is set to 'no')
@@ -242,13 +242,15 @@ def handle_new_address(message):
 def handle_send(message):
     parsed_text = str(message.body).lower().replace('\\', '').split('\n')[0].split(' ')
     response = handle_send_nano(message, parsed_text, 'message')
+    print(response)
+    response=response[0]
     message.reply(response + comment_footer)
 
 
 # amount is converted to raw in this function!
 def handle_send_nano(message, parsed_text, comment_or_message):
     # will return a list
-    # [message, status code, recipient_username, recipient_address, tip_amount]
+    # [message, status_code, tip_amount, recipient_username, recipient_address, hash]
 
     # set the account to active if it was a new one
     sql = "UPDATE accounts SET active = TRUE WHERE username = %s"
@@ -287,7 +289,8 @@ def handle_send_nano(message, parsed_text, comment_or_message):
         val = ('could not find tip amount', entry_id)
         mycursor.execute(sql, val)
         mydb.commit()
-        return 'Could not read your tip command.'
+        response ='Could not read your tip command.'
+        return [response, 0, None, None, None, None]
 
 
     # check that the tip is a number or 'all'
@@ -296,7 +299,8 @@ def handle_send_nano(message, parsed_text, comment_or_message):
         val = ('could not parse amount', entry_id)
         mycursor.execute(sql, val)
         mydb.commit()
-        return "Could not read your tip or send amount. Is '%s' a number?" % parsed_text[1]
+        response = "Could not read your tip or send amount. Is '%s' a number?" % parsed_text[1]
+        return [response, 1, None, None, None, None]
     elif parsed_text[1].lower() == 'all':
         sql = "SELECT address FROM accounts WHERE username = %s"
         val = (username,)
@@ -307,7 +311,8 @@ def handle_send_nano(message, parsed_text, comment_or_message):
             balance = check_balance(address)
             amount = balance[0]
         else:
-            return 'You do not have a tip bot account yet. PM me "create".'
+            response = 'You do not have a tip bot account yet. PM me "create".'
+            return [response, 2, None, None, None, None]
     else:
         try:
             amount = nano_to_raw(float(parsed_text[1]))
@@ -316,14 +321,16 @@ def handle_send_nano(message, parsed_text, comment_or_message):
             val = ('could not parse amount', entry_id)
             mycursor.execute(sql, val)
             mydb.commit()
-            return "Could not read your tip or send amount. Is '%s' a number?" % parsed_text[1]
+            response = "Could not read your tip or send amount. Is '%s' a number?" % parsed_text[1]
+            return [response, 1, None, None, None, None]
 
     if amount < nano_to_raw(program_minimum):
         sql = "UPDATE history SET notes = %s WHERE id = %s"
         val = ('amount below program limit', entry_id)
         mycursor.execute(sql, val)
         mydb.commit()
-        return 'Program minimum is %s Nano.' % program_minimum
+        response = 'Program minimum is %s Nano.' % program_minimum
+        return [response, 3, amount / 10**30, None, None, None]
 
     # check if author has an account, and if they have enough funds
     sql = "SELECT address, private_key FROM accounts WHERE username=%s"
@@ -335,8 +342,8 @@ def handle_send_nano(message, parsed_text, comment_or_message):
         val = ('sender does not have an account', entry_id)
         mycursor.execute(sql, val)
         mydb.commit()
-
-        return 'You do not have a tip bot account yet. PM me "create".'
+        response = 'You do not have a tip bot account yet. PM me "create".'
+        return [response, 2, amount / 10 ** 30, None, None, None]
     else:
         address = result[0][0]
         private_key = result[0][1]
@@ -346,7 +353,8 @@ def handle_send_nano(message, parsed_text, comment_or_message):
             val = ('insufficient funds', entry_id)
             mycursor.execute(sql, val)
             mydb.commit()
-            return 'You have insufficient funds (%s Nano)'%(results[0]/10**30)
+            response = 'You have insufficient funds (%s Nano)'%(results[0]/10**30)
+            return [response, 2, amount / 10 ** 30, None, None, None]
 
     # if the command was from a PM, extract the recipient username or address
     # otherwise it was a comment, and extract the parent author
@@ -356,7 +364,8 @@ def handle_send_nano(message, parsed_text, comment_or_message):
             val = ("no recipient specified", entry_id)
             mycursor.execute(sql, val)
             mydb.commit()
-            return "You must specify an amount and a user."
+            response = "You must specify an amount and a user."
+            return [response, 5, amount / 10 ** 30, None, None, None]
         # remove the /u/ or u/
         if recipient[:3].lower() == '/u/':
             recipient = recipient[3:]
@@ -379,7 +388,9 @@ def handle_send_nano(message, parsed_text, comment_or_message):
                     val = ('invalid address or address-like redditor does not exist', entry_id)
                     mycursor.execute(sql, val)
                     mydb.commit()
-                    return '%s is neither a valid address nor a redditor' % recipient
+
+                    response = '%s is neither a valid address nor a redditor' % recipient
+                    return [response, 6, amount / 10 ** 30, None, None, None]
         else:
             # a username was specified
             try:
@@ -390,7 +401,8 @@ def handle_send_nano(message, parsed_text, comment_or_message):
                 val = ('redditor does not exist', entry_id)
                 mycursor.execute(sql, val)
                 mydb.commit()
-                return "Could not find redditor %s. Make sure you aren't writing or copy/pasting markdown." % recipient
+                response = "Could not find redditor %s. Make sure you aren't writing or copy/pasting markdown." % recipient
+                return [response, 7, amount / 10 ** 30, None, None, None]
     else:
         recipient = str(message.parent().author)
         user_or_address = 'user'
@@ -434,8 +446,10 @@ def handle_send_nano(message, parsed_text, comment_or_message):
             val = ("below user minimum", entry_id)
             mycursor.execute(sql, val)
             mydb.commit()
-            return "Sorry, the user has set a tip minimum of %s. " \
+            response = "Sorry, the user has set a tip minimum of %s. " \
                    "Your tip of %s is below this amount." % (user_minimum/10**30, amount/10**30)
+            return [response, 8, amount / 10 ** 30, recipient_username, recipient_address, None]
+
 
         if user_or_address == 'user':
             notes = "sent to registered redditor"
@@ -475,15 +489,18 @@ def handle_send_nano(message, parsed_text, comment_or_message):
 
         if user_or_address == 'user':
             if silence:
-                return "Sent ```%s Nano``` to %s -- [Transaction on Nanode](https://www.nanode.co/block/%s)" % (
+                response = "Sent ```%s Nano``` to %s -- [Transaction on Nanode](https://www.nanode.co/block/%s)" % (
                        amount / 10 ** 30, recipient_username, sent['hash'])
+                return [response, 9, amount / 10 ** 30, recipient_username, recipient_address, sent['hash']]
             else:
-                return "Sent ```%s Nano``` to /u/%s -- [Transaction on Nanode](https://www.nanode.co/block/%s)" % (
+                response = "Sent ```%s Nano``` to /u/%s -- [Transaction on Nanode](https://www.nanode.co/block/%s)" % (
                        amount / 10 ** 30, recipient_username, sent['hash'])
+                return [response, 10, amount / 10 ** 30, recipient_username, recipient_address, sent['hash']]
         else:
-            return "Sent ```%s Nano``` to [%s](https://www.nanode.co/account/%s) -- " \
+            response = "Sent ```%s Nano``` to [%s](https://www.nanode.co/account/%s) -- " \
                    "[Transaction on Nanode](https://www.nanode.co/block/%s)" % (
                    amount / 10 ** 30, recipient_address, recipient_address, sent['hash'])
+            return [response, 11, amount / 10 ** 30, recipient_username, recipient_address, sent['hash']]
 
     elif recipient_address:
         # or if we have an address but no account, just send
@@ -499,7 +516,8 @@ def handle_send_nano(message, parsed_text, comment_or_message):
         val = (sent['hash'], entry_id)
         mycursor.execute(sql, val)
         mydb.commit()
-        return "Sent ```%s Nano``` to [%s](https://www.nanode.co/account/%s). -- [Transaction on Nanode](https://www.nanode.co/block/%s)" % (amount/ 10 ** 30, recipient_address, recipient_address, sent['hash'])
+        response =  "Sent ```%s Nano``` to [%s](https://www.nanode.co/account/%s). -- [Transaction on Nanode](https://www.nanode.co/block/%s)" % (amount/ 10 ** 30, recipient_address, recipient_address, sent['hash'])
+        return [response, 12, amount / 10 ** 30, recipient_username, recipient_address, sent['hash']]
     else:
         # create a new account for redditor
         recipient_address = add_new_account(recipient_username)
@@ -528,8 +546,9 @@ def handle_send_nano(message, parsed_text, comment_or_message):
         mycursor.execute(sql, val)
         mydb.commit()
         print("Sending New Account Address: ", address, private_key, amount, recipient_address, recipient_username)
-        return "Creating a new account for /u/%s and "\
+        response = "Creating a new account for /u/%s and "\
                       "sending ```%s Nano```. [Transaction on Nanode](https://www.nanode.co/block/%s)" % (recipient_username, amount / 10 **30, sent['hash'])
+        return [response, 13, amount / 10 ** 30, recipient_username, recipient_address, sent['hash']]
 
 
 def handle_receive(message):
@@ -644,19 +663,32 @@ def handle_help(message):
     response = help_text
     message.reply(response)
 
-
+# handles tip commands on subreddits
 def handle_comment(message):
     # remove an annoying extra space that might be in the front
+
+    # for prop in dir(message):
+    #     print(prop)
     if message.body[0] == ' ':
         parsed_text = str(message.body[1:]).lower().replace('\\', '').split('\n')[0].split(' ')
     else:
         parsed_text = str(message.body).lower().replace('\\', '').split('\n')[0].split(' ')
     response = handle_send_nano(message, parsed_text, 'comment')
+    print(response)
 
     # apply the subreddit rules to our response message
     # if it is a friendly subreddit, just reply with the response + comment_footer
     # if it is not friendly, we need to notify the sender as well as the recipient if they have not elected silence
-    message.reply(response + comment_footer)
+    # handle top level comment
+    if message.link_id == message.parent_id:
+        message.reply(response[0] + comment_footer)
+    elif response[1]<=8:
+        message.reply('^(Tip not sent. Error code )^[%s](https://github.com/danhitchcock/nano_tipper_z)' % response[1])
+    elif (response[1] == 9) or (response[1] == 13) or (response[1] == 10):
+        message.reply('^[Sent](https://www.nanode.co/block/%s) ^%s ^Nano ^to ^%s'%(response[5], response[2], response[3]))
+    elif (response[1] == 11) or (response[1] == 12):
+        message.reply(
+            '^[Sent](https://www.nanode.co/block/%s) ^(%s Nano to %s)' % (response[5], response[2], response[4]))
 
 
 def handle_auto_receive(message):
