@@ -22,6 +22,7 @@ mycursor = mydb.cursor()
 tip_bot_on = True
 program_minimum = 0.0001
 recipient_minimum = 0.0001
+program_maximum = 10
 toggle_receive = True
 comment_footer = """\n\n
 [*^(Get Free Nano!)*](https://nano-faucet.org/)*^( | )*
@@ -240,19 +241,34 @@ def handle_new_address(message):
 
 
 def handle_send(message):
+    """
+    Extracts send command information from a PM command
+    :param message:
+    :return:
+    """
     parsed_text = str(message.body).lower().replace('\\', '').split('\n')[0].split(' ')
     response = handle_send_nano(message, parsed_text, 'message')
     print(response)
-    response=response[0]
+    response = response[0]
     message.reply(response + comment_footer)
 
 
-# amount is converted to raw in this function!
 def handle_send_nano(message, parsed_text, comment_or_message):
-    # will return a list
+    """
+    parses tip amount and users from a reddit !nano_tip or PM Send command and performs the transaction. Returns a list
+    with status information
+    :param message: reddit comment or message object
+    :param parsed_text: list
+    :param comment_or_message: str
+    :return: list
+    """
+    # the parsed list is the first line comment body in lowercase with slashes removed and split at spaces
+    # i.e. parsed_text = str(message.body).lower().replace('\\', '').split('\n')[0].split(' ')
+    # for example -- ['!nano_tip', '0.1', 'zily88']
+    # handle_send_nano will return a list
     # [message, status_code, tip_amount, recipient_username, recipient_address, hash]
 
-    # set the account to active if it was a new one
+    # set the account to activate it if it was a new one
     sql = "UPDATE accounts SET active = TRUE WHERE username = %s"
     val = (str(message.author),)
     mycursor.execute(sql, val)
@@ -267,6 +283,7 @@ def handle_send_nano(message, parsed_text, comment_or_message):
     recipient_address = ''  # the recipient nano address
     message_time = datetime.utcfromtimestamp(message.created_utc) # time the reddit message was created
 
+    # update our history database with a record. we'll modify this later if it's succesful
     entry_id = add_history_record(
         username=username,
         action='send',
@@ -277,7 +294,7 @@ def handle_send_nano(message, parsed_text, comment_or_message):
         )
 
     # check if the message body was parsed into 2 or 3 words. If it wasn't, update the history db
-    # with a failure and return the message. If the length is 2 (meaning recipient is parent author) we will
+    # with a failure and return the message. If the length is 2 (meaning recipient is parent message author) we will
     # check that after tip amounts to limit API requests
     if len(parsed_text) >= 3:
         recipient = parsed_text[2]
@@ -292,8 +309,8 @@ def handle_send_nano(message, parsed_text, comment_or_message):
         response ='Could not read your tip command.'
         return [response, 0, None, None, None, None]
 
-
     # check that the tip is a number or 'all'
+    # if the amount is 'all', we need to lookup the users account balance
     if parsed_text[1].lower() == 'nan' or ('inf' in parsed_text[1].lower()):
         sql = "UPDATE history SET notes = %s WHERE id = %s"
         val = ('could not parse amount', entry_id)
@@ -406,7 +423,6 @@ def handle_send_nano(message, parsed_text, comment_or_message):
     else:
         recipient = str(message.parent().author)
         user_or_address = 'user'
-
 
     # at this point:
     # 'amount' is a valid positive number in raw and above the program minimum
@@ -552,6 +568,11 @@ def handle_send_nano(message, parsed_text, comment_or_message):
 
 
 def handle_receive(message):
+    """
+
+    :param message:
+    :return:
+    """
     message_time = datetime.utcfromtimestamp(message.created_utc)
     username = str(message.author)
     # find any accounts associated with the redditor
@@ -665,6 +686,11 @@ def handle_help(message):
 
 # handles tip commands on subreddits
 def handle_comment(message):
+    """
+    Prepares a reddit comment starting with !nano_tip to send nano if everything goes well
+    :param message:
+    :return:
+    """
     # remove an annoying extra space that might be in the front
 
     # for prop in dir(message):
@@ -674,21 +700,36 @@ def handle_comment(message):
     else:
         parsed_text = str(message.body).lower().replace('\\', '').split('\n')[0].split(' ')
     response = handle_send_nano(message, parsed_text, 'comment')
-    print(response)
+
 
     # apply the subreddit rules to our response message
+    # potential statuses:
+    #   friendly
+    #   hostile
+    #   minimal
     # if it is a friendly subreddit, just reply with the response + comment_footer
     # if it is not friendly, we need to notify the sender as well as the recipient if they have not elected silence
     # handle top level comment
-    if message.link_id == message.parent_id:
+    subreddit_status = 'friendly'
+    if (message.link_id == message.parent_id) and (subreddit_status == 'friendly'):
         message.reply(response[0] + comment_footer)
-    elif response[1]<=8:
-        message.reply('^(Tip not sent. Error code )^[%s](https://github.com/danhitchcock/nano_tipper_z)' % response[1])
-    elif (response[1] == 9) or (response[1] == 13) or (response[1] == 10):
-        message.reply('^[Sent](https://www.nanode.co/block/%s) ^%s ^Nano ^to ^%s'%(response[5], response[2], response[3]))
-    elif (response[1] == 11) or (response[1] == 12):
-        message.reply(
-            '^[Sent](https://www.nanode.co/block/%s) ^(%s Nano to %s)' % (response[5], response[2], response[4]))
+    elif (subreddit_status == 'friendly') or (subreddit_status == 'minimal'):
+        if response[1] <= 8:
+            message.reply('^(Tip not sent. Error code )^[%s](https://github.com/danhitchcock/nano_tipper_z#error-codes)'
+                          % response[1])
+        elif (response[1] == 9) or (response[1] == 13) or (response[1] == 10):
+            message.reply('^[Sent](https://www.nanode.co/block/%s) ^%s ^Nano ^to ^%s'
+                          % (response[5], response[2], response[3]))
+        elif (response[1] == 11) or (response[1] == 12):
+            # this actually shouldn't ever happen
+            message.reply(
+                '^[Sent](https://www.nanode.co/block/%s) ^(%s Nano to %s)' % (response[5], response[2], response[4]))
+    elif subreddit_status == 'hostile':
+        # it's a hostile place, no posts allowed. Will need to PM users
+        pass
+    elif subreddit_status == 'custom':
+        # not sure what to do with this yet.
+        pass
 
 
 def handle_auto_receive(message):
@@ -704,7 +745,8 @@ def handle_auto_receive(message):
     parsed_text = message.body.replace('\\', '').split('\n')[0].split(' ')
 
     if len(parsed_text) < 2:
-        response = "I couldn't parse your command. I was expecting 'auto_receive <yes/no>'. Be sure to check your spacing."
+        response = "I couldn't parse your command. I was expecting 'auto_receive <yes/no>'. " \
+                   "Be sure to check your spacing."
         message.reply(response)
         return None
 
@@ -850,7 +892,6 @@ def allowed_request(username, seconds=30, num_requests=5):
     :param num_requests: int (number of allowed requests)
     :return:
     """
-    #return True
     sql = 'SELECT sql_time FROM history WHERE username=%s'
     val = (str(username), )
     mycursor.execute(sql, val)
@@ -871,18 +912,19 @@ for action_item in stream_comments_messages():
     #       for each transaction
     #           if transaction older than 30 days, reverse it.
 
-    # our 'stream_comments_messages()' generator will give us either messages or comments by checking the tag on the message name
+    # our 'stream_comments_messages()' generator will give us either messages or
+    # comments by checking the tag on the message name
     # (t1 = comment, t4 = message)
     # The bot handles these differently
     if action_item is None:
         pass
-        #print('No news.')
     elif action_item[0] == 'comment':
-        if action_item[1].body[0]==' ':
+        if action_item[1].body[0] == ' ':
+            # remove any leading spaces. for convenience
             parsed_text = str(action_item[1].body[1:]).lower().replace('\\', '').split('\n')[0].split(' ')
         else:
             parsed_text = str(action_item[1].body).lower().replace('\\', '').split('\n')[0].split(' ')
-        # print('Parsed comment: ', parsed_text)
+
         if parsed_text[0] == r'!nano_tip':
             print('*****************************************************')
             print('Comment: ', action_item[1].author, ' - ', action_item[1].body[:20])
@@ -891,7 +933,7 @@ for action_item in stream_comments_messages():
                 if tip_bot_on:
                     handle_comment(action_item[1])
                 else:
-                    action_item[1].reply('Nano Tipper Z is currently offline. Check /r/nano_tipper_z')
+                    action_item[1].reply('[^(Nano Tipper Z is currently disabled)](https://www.reddit.com/r/nano_tipper_z/comments/a859ee/nano_tipper_z_status_or_what_it_should_be/)')
             else:
                 print('Too many requests for %s' % action_item[1].author)
 
@@ -908,7 +950,7 @@ for action_item in stream_comments_messages():
             if tip_bot_on:
                 handle_message(action_item[1])
             else:
-                action_item[1].reply('Nano Tipper Z is currently offline. Check /r/nano_tipper_z')
+                action_item[1].reply('[^(Nano Tipper Z is currently disabled)](https://www.reddit.com/r/nano_tipper_z/comments/a859ee/nano_tipper_z_status_or_what_it_should_be/)')
 
 
 
