@@ -107,7 +107,7 @@ Users are allowed 5 requests every 30 seconds. If you do more than that, the bot
 Send /u/zily88 a PM on reddit, or post on https://reddit.com/r/nano_tipper_z
 
 # Error Codes
-If a reddit tip resonse is deeply nested in a subreddit, it's better to keep a short message with an error code.
+If a reddit tip is a reply to a reply, it's better to keep a short message with an error code.
 * 0 - Could not read the tip command
 * 1 - Could not read the tip amount
 * 2 - Sender does not have an account
