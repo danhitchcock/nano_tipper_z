@@ -60,7 +60,7 @@ If you have any questions or bug fixes, please contact /u/zily88.\n""" + comment
 # set of current message. I compare the old set with the new set.
 def stream_comments_messages():
     previous_comments = {comment for comment in subreddit.comments()}
-    previous_messages = {message for message in reddit.inbox.unread()}
+    previous_messages = {message for message in reddit.inbox.all(limit=25)}
     print('Received first stream!')
     global toggle_receive
     while True:
@@ -74,7 +74,7 @@ def stream_comments_messages():
         previous_comments = updated_comments
 
         # check for new messages
-        updated_messages = {message for message in reddit.inbox.unread()}
+        updated_messages = {message for message in reddit.inbox.all(limit=25)}
         new_messages = updated_messages - previous_messages
         previous_messages = updated_messages
 
@@ -82,15 +82,17 @@ def stream_comments_messages():
         # also, check the message type. this will prevent posts from being seen as messages
         if len(new_comments) >= 1:
             for new_comment in new_comments:
+                #print(new_comment.name)
                 # if new_comment starts with 't1_'
                 if new_comment.name[:3] == 't1_':
                     yield ('comment', new_comment)
         if len(new_messages) >= 1:
             for new_message in new_messages:
-                # if message starts with 't4_'
                 if new_message.name[:3] == 't4_':
                     yield ('message', new_message)
-
+                elif (new_message.subject == "comment reply" or new_message.subject == "username mention") and new_message.name[:3] == 't1_':
+                    # print('****username mention + comment reply')
+                    yield ('username mention', new_message)
         else:
             yield None
 
@@ -248,7 +250,6 @@ def handle_send(message):
     """
     parsed_text = str(message.body).lower().replace('\\', '').split('\n')[0].split(' ')
     response = handle_send_nano(message, parsed_text, 'message')
-    print(response)
     response = response[0]
     message.reply(response + comment_footer)
 
@@ -491,7 +492,7 @@ def handle_send_nano(message, parsed_text, comment_or_message):
         mycursor.execute(sql, val)
         myresult = mycursor.fetchall()
         silence = myresult[0][0]
-        print(silence)
+
         if comment_or_message == "message" and (not silence):
             x = reddit.\
                 redditor(recipient_username).\
@@ -701,7 +702,6 @@ def handle_comment(message):
         parsed_text = str(message.body).lower().replace('\\', '').split('\n')[0].split(' ')
     response = handle_send_nano(message, parsed_text, 'comment')
 
-
     # apply the subreddit rules to our response message
     # potential statuses:
     #   friendly
@@ -710,7 +710,15 @@ def handle_comment(message):
     # if it is a friendly subreddit, just reply with the response + comment_footer
     # if it is not friendly, we need to notify the sender as well as the recipient if they have not elected silence
     # handle top level comment
-    subreddit_status = 'friendly'
+    sql = 'SELECT status FROM subreddits WHERE subreddit=%s'
+    val = (str(message.subreddit).lower(), )
+    mycursor.execute(sql, val)
+    results = mycursor.fetchall()
+    if len(results) == 0:
+        subreddit_status = 'hostile'
+    else:
+        subreddit_status = results[0][0]
+
     if (message.link_id == message.parent_id) and (subreddit_status == 'friendly'):
         message.reply(response[0] + comment_footer)
     elif (subreddit_status == 'friendly') or (subreddit_status == 'minimal'):
@@ -726,7 +734,17 @@ def handle_comment(message):
                 '^[Sent](https://www.nanode.co/block/%s) ^(%s Nano to %s)' % (response[5], response[2], response[4]))
     elif subreddit_status == 'hostile':
         # it's a hostile place, no posts allowed. Will need to PM users
-        pass
+        if response[1] <= 8:
+            reddit.redditor(str(message.author)).message('Your Nano tip did not go through', response[0] + comment_footer)
+        else:
+            # if it was a new account, a PM was already sent to the recipient
+            reddit.redditor(str(message.author)).message('Successful tip!', response[0] + comment_footer)
+            if response[1] == 10:
+                x = reddit.redditor(response[3]). \
+                    message('You just received a new Nano tip!',
+                            'Somebody just tipped you ```%s Nano``` at your address %s. [Transaction on Nanode](https://www.nanode.co/block/%s)\n\n'
+                            'To turn off these notifications, reply with "silence yes"' % (
+                                response[2], response[4], response[5]) + comment_footer)
     elif subreddit_status == 'custom':
         # not sure what to do with this yet.
         pass
@@ -932,6 +950,7 @@ for action_item in stream_comments_messages():
             if allowed_request(action_item[1].author, 30, 5):
                 if tip_bot_on:
                     handle_comment(action_item[1])
+                    pass
                 else:
                     action_item[1].reply('[^(Nano Tipper Z is currently disabled)](https://www.reddit.com/r/nano_tipper_z/comments/a859ee/nano_tipper_z_status_or_what_it_should_be/)')
             else:
@@ -939,18 +958,39 @@ for action_item in stream_comments_messages():
 
     elif action_item[0] == 'message':
         if action_item[1].author == 'nano_tipper_z':
-            pass
+            print('ignoring nano_tipper_z message')
         elif not allowed_request(action_item[1].author, 30, 5):
             print('Too many requests for %s' % action_item[1].author)
         else:
-            print(time.strftime('%Y-%m-%d %H:%M:%S'))
-            print('*****************************************************')
-            print('Comment: ', action_item[1].author, ' - ', action_item[1].body[:20])
-            print('*****************************************************')
             if tip_bot_on:
-                handle_message(action_item[1])
+                #parse out the text
+                if action_item[1].name[:3] == 't4_':
+                    print(time.strftime('%Y-%m-%d %H:%M:%S'))
+                    print('*****************************************************')
+                    print('Comment: ', action_item[1].author, ' - ', action_item[1].body[:20])
+                    print('*****************************************************')
+                    handle_message(action_item[1])
+                else:
+                    action_item[1].reply('[^(Nano Tipper Z is currently disabled)](https://www.reddit.com/r/nano_tipper_z/comments/a859ee/nano_tipper_z_status_or_what_it_should_be/)')
+
+    elif action_item[0] == 'username mention':
+        if action_item[1].body[0] == ' ':
+            # remove any leading spaces. for convenience
+            parsed_text = str(action_item[1].body[1:]).lower().replace('\\', '').split('\n')[0].split(' ')
+        else:
+            parsed_text = str(action_item[1].body).lower().replace('\\', '').split('\n')[0].split(' ')
+        if parsed_text[0] == r'/u/nano_tipper_z' or parsed_text[0] == r'u/nano_tipper_z':
+            print('*****************************************************')
+            print('Username Mention: ', action_item[1].author, ' - ', action_item[1].body[:20])
+            print('*****************************************************')
+            if allowed_request(action_item[1].author, 30, 5):
+                if tip_bot_on:
+                    # handle_comment(action_item[1])
+                    pass
+                else:
+                    action_item[1].reply('[^(Nano Tipper Z is currently disabled)](https://www.reddit.com/r/nano_tipper_z/comments/a859ee/nano_tipper_z_status_or_what_it_should_be/)')
             else:
-                action_item[1].reply('[^(Nano Tipper Z is currently disabled)](https://www.reddit.com/r/nano_tipper_z/comments/a859ee/nano_tipper_z_status_or_what_it_should_be/)')
+                print('Too many requests for %s' % action_item[1].author)
 
 
 

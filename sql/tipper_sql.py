@@ -56,7 +56,8 @@ def init_subreddits():
     mycursor.execute("CREATE TABLE subreddits ("
                         "subreddit VARCHAR(255) PRIMARY KEY, "
                         "reply_to_comments BOOL, "
-                        "footer VARCHAR(255)"
+                        "footer VARCHAR(255), "
+                        "status VARCHAR(255) "
                      ")"
                      )
     mydb.commit()
@@ -84,6 +85,16 @@ def accounts():
     for result in myresult:
         print(result)
 
+def subreddits():
+    mycursor.execute('SHOW COLUMNS FROM subreddits')
+    myresult = mycursor.fetchall()
+    for result in myresult:
+        print(result)
+
+    mycursor.execute("SELECT * FROM subreddits")
+    myresult = mycursor.fetchall()
+    for result in myresult:
+        print(result)
 
 def list_columns():
     mycursor.execute('SHOW COLUMNS FROM history')
@@ -122,8 +133,29 @@ def delete_user(username):
     mycursor.execute(sql, val)
     mydb.commit()
 
+
+def add_subreddit(subreddit, reply_to_comments, footer, status):
+    sql = "INSERT INTO subreddits (subreddit, reply_to_comments, footer, status) VALUES (%s, %s, %s, %s)"
+    val = (subreddit, reply_to_comments, footer, status, )
+    mycursor.execute(sql, val)
+    mydb.commit()
+
 history()
 accounts()
+subreddits()
+
+
+
+# sql = "UPDATE subreddits SET status = 'friendly' WHERE subreddit = 'nano_tipper_z'"
+# mycursor.execute(sql)
+# mydb.commit()
+# subreddits()
+# add_subreddit('nanocurrency', True, None, 'friendly')
+# add_subreddit('cryptocurrency247', True, None, 'friendly')
+# add_subreddit('nanotrade', True, None, 'friendly')
+# add_subreddit('nano_tipper_z', True, None, 'friendly')
+
+
 #delete_user('nano_tipper_z_test2')
 
 #history()
