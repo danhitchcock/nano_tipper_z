@@ -8,8 +8,9 @@ This allows for a few unique features for the tipbot:
 * Every account is a full featured (albeit not secure) wallet--you will soon be able to change your rep!
 * You can request your private keys or a new address! (Still on the fence, but *soon*)
 
+
 In addition to those, there are other great features
-* Set a tip minimum to prevent spam or annoying cheapskates
+* Set a tip minimum to prevent spam from annoying cheapskates
 * Silence - Turn off tip notifications. You will still receive tips, but won't be tagged or messaged by the bot.
 * Set your account to 'auto-receive' transactions (default on)
  
