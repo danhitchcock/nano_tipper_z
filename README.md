@@ -99,7 +99,7 @@ obligation to return them. Why did I write this? Because the tip bot is not a li
 # FAQ
 ## Why does the message have to start with !nano_tip?
 This is to prevent uninentional tips! If the program simply scanned the entire comment, a user might accidently quote someone else's 
-tip command in a response.
+tip command in a response. In the future I might change this, but for now it's the best way to ensure the program behaves as expected.
 
 ## Are my funds safe?
 **NO! Unless you and you alone control your private keys, your funds are never safe!** Please don't keep more than a few Nanos on the tipbot at any time! While I'm not going to steal your Nanos, this program is in early beta testing and weird things could happen, including lost Nanos! **Use at your own risk!** (sorry for all the exclamation marks)
@@ -116,19 +116,19 @@ Send /u/zily88 a PM on reddit, or post on https://reddit.com/r/nano_tipper_z
 # Error Codes
 If a reddit tip is a reply to a reply, it's better to keep a short message with an error code.
 * 0 - Could not read the tip command
-* 1 - Could not read the tip amount
-* 2 - Sender does not have an account
-* 3 - Tip amount is below program minimum
-* 4 - Insufficient funds
-* 5 - User or address not specified
-* 6 - Address is invalid or recipient redditor does not exist
-* 7 - Recipient redditor does not exist
-* 8 - Tip amount is below recipients specified tip minimum
+* 1 - Could not read the tip amount -- use either a number or the word 'all'
+* 2 - Sender does not have an account -- Create an account by typing 'create' or by receiving a tip from another redditor
+* 3 - Tip amount is below program minimum -- This is to prevent spamming other redditors.
+* 4 - Insufficient funds -- The amount of Nano in your account is lower than your tip amount. If you are using 'auto_receive' for your transactions, your account is scanned every 12 seconds.
+* 5 - User or address not specified -- If you are sending via PM, you must specify the recipient. Make sure there aren't extra spaces.
+* 6 - Address is invalid or recipient redditor does not exist -- You have a typo somewhere
+* 7 - Recipient redditor does not exist -- The redditor you specified doesn't have a reddit account.
+* 8 - Tip amount is below recipients specified tip minimum -- The recipient doesn't want to receive tips below a certain amount
 
 and FYI there are success codes, but you won't see these
 
-* 9 - Success! Sent to a redditor who requested silence
-* 10 - Success! Sent to redditor
-* 11 - Success! Sent to registered nano address
+* 9 - Success! Sent to a redditor who requested silence -- This redditor will *not* receive a notification of their tip.
+* 10 - Success! Sent to redditor -- Redditor will receive a notification on their tip
+* 11 - Success! Sent to registered nano address -- If redditor has requested silence, they won't get a notification.
 * 12 - Success! Sent to unregistered nano address
 * 13 - Success! Sent to a newly created reddit account
