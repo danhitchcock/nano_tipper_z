@@ -86,8 +86,13 @@ There are many other PM commands:
 # Terms of Service
 * Don't keep a lot of Nano in your Nano Tip Bot account
 * This program is not-for-profit
-* You accept the risks of using this Tip Bot--I won't steal your Nanos, but they might be lost at any point, and I'm under no obligation to replace them. Don't put in more than you're willing to lose.
-* If your account is inactive for more than 3 years, and no meaningful attempt has been made to reach me, I'm under no obligation to return them. Why did I write this? Because the tip bot is not a lifelong custodian service -- I don't want people reaching out to me after 20 years for their .032 Nanos the left on the tip bot. Really this is for for if I have to deactivate the bot. I don't want to have to keep the database with me the rest of my life. After your three years, if the bot is still running, your Nanos will almost certainly be available to you.
+* You accept the risks of using this Tip Bot--I won't steal your Nanos, but they might be lost at any point, and I'm 
+under no obligation to replace them. Don't put in more than you're willing to lose.
+* If your account is inactive for more than 3 years, and no meaningful attempt has been made to reach me, I'm under no 
+obligation to return them. Why did I write this? Because the tip bot is not a lifelong custodian service -- I don't want
+ people reaching out to me after 20 years for their .032 Nanos the left on the tip. I don't want to have to keep the 
+ database with me the rest of my life. After your three years, if the bot is still running, your Nanos will almost 
+ certainly be available to you.
 * Don't submit more than 5 requests every 30 seconds
 * I can change the Terms of Service at any time.
 
