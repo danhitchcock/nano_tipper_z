@@ -144,8 +144,6 @@ history()
 accounts()
 subreddits()
 
-
-
 # sql = "UPDATE subreddits SET status = 'friendly' WHERE subreddit = 'nano_tipper_z'"
 # mycursor.execute(sql)
 # mydb.commit()
@@ -153,10 +151,10 @@ subreddits()
 # add_subreddit('nanocurrency', True, None, 'friendly')
 # add_subreddit('cryptocurrency247', True, None, 'friendly')
 # add_subreddit('nanotrade', True, None, 'friendly')
-# add_subreddit('nano_tipper_z', True, None, 'friendly')
+# add_subreddit('do_not_post_here', True, None, 'hostile')
 
 
-#delete_user('nano_tipper_z_test2')
+
 
 #history()
 #print("************************************************************")
