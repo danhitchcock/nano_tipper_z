@@ -33,9 +33,9 @@ recipient_minimum = 0.0001
 program_maximum = 10
 toggle_receive = True
 comment_footer = """\n\n
-[*^(Get Free Nano!)*](https://nano-faucet.org/)*^( | )*
-[*^(Nano_Tipper_Z)*](https://github.com/danhitchcock/nano_tipper_z)*^( | )*
 [*^(Nano)*](https://nano.org)*^( | )*
+[*^(Nano_Tipper_Z)*](https://github.com/danhitchcock/nano_tipper_z)*^( | )*
+[*^(Get Free Nano!)*](https://nano-faucet.org/)*^( | )*
 [*^(Spend Nano)*](https://usenano.org/)*^( | )*
 [*^(Nano Projects)*](https://nanocenter.org)*^( | This program is in early beta testing, 
 funds are not safe.)*"""
@@ -48,7 +48,7 @@ To tip 0.1 Nano on a comment or post on a subreddit, make a comment starting wit
     !nano_tip 0.1\n
 You can tip any amount above the program minimum of 0.0001 Nano.\n\n
     
-For PM commands, create a new message with any of the following commands(be sure to remove the quotes, '<' and '>'):\n
+For PM commands, create a new message with any of the following commands (be sure to remove the quotes, '<'s and '>'s):\n
     'create' - Create a new account if one does not exist
     'send <amount or all> <user/address>' - Send Nano to a reddit user or an address
     'receive' - Receive all pending transactions (if autoreceive is set to 'no')
@@ -56,10 +56,12 @@ For PM commands, create a new message with any of the following commands(be sure
     'minimum <amount>' - (default 0.0001) Sets a minimum amount for receiving tips
     'auto_receive <yes/no>' - (default 'yes') Automatically pockets transactions. Checks every 12 seconds
     'silence <yes/no>' - (default 'no') Prevents the bot from sending you tip notifications or tagging in posts 
-    'history' - (disabled) Grabs the last 20 records of your account history
+    'history <optional: number of records>' - Retrieves tipbot commands. Default 10, maximum is 50.
     'private_key' - (disabled) Retrieve your account private key
     'new_address' - (disabled) If you feel this address was compromised, create a new account and key
     'help' - Get this help message\n
+If you wanted to send 0.01 Nano to zily88, reply:\n
+    send 0.01 zily88\n
 If you have any questions or bug fixes, please contact /u/zily88.\n""" + comment_footer
 
 # generator to stream comments and messages to the main loop at the bottom, and contains the auto_receive functionality.
@@ -72,8 +74,9 @@ def stream_comments_messages():
     print('Received first stream!')
     global toggle_receive
     while True:
-        if toggle_receive:
+        if toggle_receive and tip_bot_on:
             auto_receive()
+
         toggle_receive = not toggle_receive
         sleep(6)
 
@@ -233,7 +236,7 @@ def handle_send_nano(message, parsed_text, comment_or_message):
     recipient_address = ''  # the recipient nano address
     message_time = datetime.utcfromtimestamp(message.created_utc) # time the reddit message was created
 
-    # update our history database with a record. we'll modify this later if it's succesful
+    # update our history database with a record. we'll modify this later depending on the outcome of the tip
     entry_id = add_history_record(
         username=username,
         action='send',
@@ -548,10 +551,10 @@ def handle_comment(message):
     # otherwise, if the subreddit is friendly (and reply is not top level) or subreddit is minimal
     elif (subreddit_status == 'friendly') or (subreddit_status == 'minimal'):
         if response[1] <= 8:
-            message.reply('^(Tip not sent. Error code )^[%s](https://github.com/danhitchcock/nano_tipper_z#error-codes)'
+            message.reply('^(Tip not sent. Error code )^[%s](https://github.com/danhitchcock/nano_tipper_z#error-codes) ^- [^(Nano Tipper Z)](https://github.com/danhitchcock/nano_tipper_z)'
                           % response[1])
         elif (response[1] == 9) or (response[1] == 13) or (response[1] == 10):
-            message.reply('^[Sent](https://www.nanode.co/block/%s) ^%s ^Nano ^to ^%s'
+            message.reply('^[Sent](https://www.nanode.co/block/%s) ^%s ^Nano ^to ^%s ^- [^(Nano Tipper Z)](https://github.com/danhitchcock/nano_tipper_z)'
                           % (response[5], response[2], response[3]))
         elif (response[1] == 11) or (response[1] == 12):
             # this actually shouldn't ever happen
@@ -626,12 +629,12 @@ def handle_balance(message):
     val = (username, )
     mycursor.execute(sql, val)
     result = mycursor.fetchall()
-    if len(result)>0:
+    if len(result) > 0:
         results = check_balance(result[0][0])
 
-        response = "At address %s, you currently have %s Nano available, and %s Nano unpocketed. If you have any unpocketed, create a new " \
-                   "message containing the word 'receive'\n\nhttps://www.nanode.co/account/%s" % (result[0][0], results[0]/10**30, results[1]/10**30, result[0][0])
-        reddit.redditor(username).message('Nano Tipper Z account balance', response + comment_footer)
+        response = "At address %s:\n\nAvailable: %s Nano\n\nUnpocketed: %s Nano\n\nIf you have any unpocketed Nano, create a new " \
+                   "message containing the word 'receive'.\n\nhttps://www.nanode.co/account/%s" % (result[0][0], results[0]/10**30, results[1]/10**30, result[0][0])
+        reddit.redditor(username).message('Nano Tipper Z Account Balance', response + comment_footer)
         return None
 
     reddit.redditor(username).message('Nano Tipper Z: No account registered.', 'You do not have an open account yet' + comment_footer)
@@ -679,6 +682,79 @@ def handle_help(message):
         )
     response = help_text
     message.reply(response)
+
+
+def handle_history(message):
+    message_time = datetime.utcfromtimestamp(message.created_utc)  # time the reddit message was created
+    username = str(message.author)
+    parsed_text = message.body.replace('\\', '').split('\n')[0].split(' ')
+    num_records = 10
+    # print(len(parsed_text))
+    # if there are more than 2 words, one of the words is a number for the number of records
+    if len(parsed_text) >= 2:
+        if parsed_text[1].lower() == 'nan' or ('inf' in parsed_text[1].lower()):
+            response = "'%s' didn't look like a number to me. If it is blank, there might be extra spaces in the command."
+            message.reply(response)
+            return None
+        try:
+            num_records = int(parsed_text[1])
+        except:
+            response = "'%s' didn't look like a number to me. If it is blank, there might be extra spaces in the command."
+            message.reply(response)
+            return None
+
+    # check that it's greater than 50
+    if num_records > 50:
+        num_records = 50
+
+    # check if the user is in the database
+    sql = "SELECT address FROM accounts WHERE username=%s"
+    val = (username, )
+    mycursor.execute(sql, val)
+    result = mycursor.fetchall()
+    if len(result) > 0:
+        #open_or_receive(result[0][0], result[0][1])
+        #balance = check_balance(result[0][0])
+        add_history_record(
+            username=username,
+            action='history',
+            amount=num_records,
+            address=result[0][0],
+            comment_or_message='message',
+            reddit_time=message_time.strftime('%Y-%m-%d %H:%M:%S'),
+            comment_text=str(message.body)[:255]
+        )
+        #print(num_records)
+        response = 'Here are your last %s historical records:\n\n' % num_records
+        sql = "SELECT reddit_time, action, amount, comment_id, notes FROM history WHERE username=%s ORDER BY id DESC limit %s"
+        val = (username, num_records)
+        mycursor.execute(sql, val)
+        results = mycursor.fetchall()
+        for result in results:
+            try:
+                amount = result[2]
+                if (result[1] == 'send') and amount:
+                    amount = int(result[2]) / 10 ** 30
+                    response += '%s: %s | %s | %s | %s\n\n' % (result[0], result[1], amount, result[3], result[4])
+                elif (result[1] == 'minimum') and amount:
+                    amount = int(result[2])/10**30
+                    response += '%s: %s | %s | %s | %s\n\n' % (result[0], result[1], amount, result[3], result[4])
+                else:
+                    response += '%s: %s | %s | %s | %s\n\n' % (result[0], result[1], amount, result[3], result[4])
+            except:
+                response += "Unknown: Nothing is wrong, I just didn't parse this record properly.\n\n"
+
+        message.reply(response)
+    else:
+        add_history_record(
+            username=username,
+            action='history',
+            reddit_time=message_time.strftime('%Y-%m-%d %H:%M:%S'),
+            amount=num_records,
+            comment_text=str(message.body)[:255]
+        )
+        response = "You do not currently have an account open. To create one, respond with the text 'create' in the message body."
+        message.reply(response)
 
 
 def handle_minimum(message):
@@ -896,6 +972,10 @@ def handle_message(message):
         print("send via PM")
         handle_send(message)
 
+    elif parsed_text[0].lower() == 'history':
+        print("history")
+        handle_history(message)
+
     elif parsed_text[0].lower() == 'silence':
         print("silencing")
         handle_silence(message)
@@ -997,7 +1077,7 @@ for action_item in stream_comments_messages():
                 if action_item[1].name[:3] == 't4_':
                     print(time.strftime('%Y-%m-%d %H:%M:%S'))
                     print('*****************************************************')
-                    print('Comment: ', action_item[1].author, ' - ', action_item[1].body[:20])
+                    print('Message: ', action_item[1].author, ' - ', action_item[1].body[:20])
                     print('*****************************************************')
                     handle_message(action_item[1])
                 else:

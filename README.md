@@ -69,7 +69,7 @@ To send all your Nano to xrb_1ssr4sbop5wnkbkpk7y7ekewie7tygtjgdukm9jq7d1m3j6ocfs
 
     send all xrb_1ssr4sbop5wnkbkpk7y7ekewie7tygtjgdukm9jq7d1m3j6ocfskwyx77awd
 
-There are many other PM commands:
+For PM commands, create a new message with any of the following commands (be sure to remove the quotes, '<'s and '>'s):
 
     'create' - Create a new account if one does not exist
     'send <amount or all> <user/address>' - Send Nano to a reddit user or an address
@@ -78,10 +78,14 @@ There are many other PM commands:
     'minimum <amount>' - (default 0.0001) Sets a minimum amount for receiving tips
     'auto_receive <yes/no>' - (default 'yes') Automatically pockets transactions. Checks every 12 seconds
     'silence <yes/no>' - (default 'no') Prevents the bot from sending you tip notifications or tagging in posts 
-    'history' - (disabled) Grabs the last 20 records of your account history
+    'history <optional: number of records>' - Retrieves tipbot commands. Default 10, maximum is 50.
     'private_key' - (disabled) Retrieve your account private key
     'new_address' - (disabled) If you feel this address was compromised, create a new account and key
     'help' - Get this help message
+    
+For example, if you wanted to send 0.01 Nano to zily88, reply:
+
+    send 0.01 zily88
 
 # Terms of Service
 * Don't keep a lot of Nano in your Nano Tip Bot account
@@ -104,11 +108,21 @@ tip command in a response. In the future I might change this, but for now it's t
 ## Are my funds safe?
 **NO! Unless you and you alone control your private keys, your funds are never safe!** Please don't keep more than a few Nanos on the tipbot at any time! While I'm not going to steal your Nanos, this program is in early beta testing and weird things could happen, including lost Nanos! **Use at your own risk!** (sorry for all the exclamation marks)
 
+## I sent a tip to the wrong address. Can I get it back?
+If the address isn't affiliated with a Redditor, **No.** I only have private keys for redditors, not for addresses. If you send Nano to Binance for example, I cannot retrieve it.
+
 ## I sent a tip to the wrong redditor. Can I get it back?
-You basically gave a stranger a dollar, and I have no control over that. Yes, I control the private keys, but I really don't want to start manually making unauthorized transactions on people's accounts. If the stranger doesn't activate their account, you will get your tip back in 30 days. If they *do* activate their account, it's theirs. You can try asking them for it back.
+You basically gave a stranger a dollar, and I have no control over that. Yes, I control the private keys, but I really don't want to start manually making unauthorized transactions on people's accounts. If the stranger is a redditor and doesn't activate their account, you will get your tip back in 30 days. If they *do* activate their account, it's theirs. You can try asking them for it back.
+
+
+
+
 
 ## Have you implemented any spam prevention for your bot?
 Users are allowed 5 requests every 30 seconds. If you do more than that, the bot ignores you until 30 seconds have passed.
+
+## I tried to send a tip, but received no response. Did it go through?
+Most likely, the bot was temporarily disconnected. If a command happens while the bot is offline, the command won't ever be seen. If no response has been heard after a few minutes, send a message to the bot with the text 'history'. If you get a response and the tip isn't there, that means it wasn't seen. If you don't get a response, the bot is probably still offline. Try again in a few minutes.
 
 ## I found a bug or I have a concern. Question Mark?
 Send /u/zily88 a PM on reddit, or post on https://reddit.com/r/nano_tipper_z
