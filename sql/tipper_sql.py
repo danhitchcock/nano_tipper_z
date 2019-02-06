@@ -63,12 +63,12 @@ def init_subreddits():
     mydb.commit()
 
 
-def history():
+def history(num_records):
     mycursor.execute('SHOW COLUMNS FROM history')
     myresult = mycursor.fetchall()
     for result in myresult:
         print(result)
-    mycursor.execute("SELECT * FROM history")
+    mycursor.execute("SELECT * FROM history ORDER BY id DESC limit %s" % num_records)
     myresult = mycursor.fetchall()
     for result in myresult:
         print(result)
@@ -139,10 +139,14 @@ def add_subreddit(subreddit, reply_to_comments, footer, status):
     val = (subreddit, reply_to_comments, footer, status, )
     mycursor.execute(sql, val)
     mydb.commit()
-
-history()
 accounts()
-subreddits()
+#subreddits()
+history(20)
+
+
+
+
+
 
 # sql = "UPDATE subreddits SET status = 'friendly' WHERE subreddit = 'nano_tipper_z'"
 # mycursor.execute(sql)
