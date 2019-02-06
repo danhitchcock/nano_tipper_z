@@ -78,7 +78,7 @@ For PM commands, create a new message with any of the following commands (be sur
     'minimum <amount>' - (default 0.0001) Sets a minimum amount for receiving tips
     'auto_receive <yes/no>' - (default 'yes') Automatically pockets transactions. Checks every 12 seconds
     'silence <yes/no>' - (default 'no') Prevents the bot from sending you tip notifications or tagging in posts 
-    'history <optional: number of records>' - Retrieves tipbot commands. Default 10, maximum is 50.
+    'history <optional: number of records>' - Retrieves your last tipbot action records. Default 10, maximum is 50.
     'private_key' - (disabled) Retrieve your account private key
     'new_address' - (disabled) If you feel this address was compromised, create a new account and key
     'help' - Get this help message
