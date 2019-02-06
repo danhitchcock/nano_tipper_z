@@ -92,8 +92,8 @@ For example, if you wanted to send 0.01 Nano to zily88, reply:
 * This program is not-for-profit
 * You accept the risks of using this Tip Bot--I won't steal your Nanos, but they might be lost at any point, and I'm 
 under no obligation to replace them. Don't put in more than you're willing to lose.
-* If your account is inactive for more than 3 years, and no meaningful attempt has been made to reach me, I'm under no 
-obligation to return them. Why did I write this? Because the tip bot is not a lifelong custodian service -- I don't want
+* If your account is inactive for more than 3 years, and no meaningful attempt has been made to reach me, the Nanos in your
+account will be forfeited and I am under no obligation to return them. Why did I write this? Because the tip bot is not a lifelong custodian service -- I don't want
  people reaching out to me after 20 years for their .032 Nanos the left on the tip. I don't want to have to keep the 
  database with me the rest of my life. After your three years, if the bot is still running, your Nanos will almost 
  certainly be available to you.
