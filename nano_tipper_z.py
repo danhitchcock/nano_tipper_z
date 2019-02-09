@@ -433,7 +433,9 @@ def handle_send_nano(message, parsed_text, comment_or_message):
         mycursor.execute(sql, val)
         mydb.commit()
         print("Sending Nano: ", address, private_key, amount, recipient_address, recipient_username)
+        t0 = time.time()
         sent = send(address, private_key, amount, recipient_address)
+        print(time.time()-t0)
         sql = "UPDATE history SET hash = %s WHERE id = %s"
         val = (sent['hash'], entry_id)
         mycursor.execute(sql, val)
