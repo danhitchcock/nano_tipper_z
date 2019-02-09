@@ -36,6 +36,17 @@ def init_history():
     mydb.commit()
 
 
+def init_messages():
+    mycursor.execute("CREATE TABLE messages ("
+                        "id INT AUTO_INCREMENT PRIMARY KEY, "
+                        "username VARCHAR(255), "
+                        "subject VARCHAR(255), "
+                        "message VARCHAR(5000) "
+                     ")"
+                     )
+    mydb.commit()
+
+
 def init_accounts():
     mycursor.execute("CREATE TABLE accounts ("
                         "username VARCHAR(255) PRIMARY KEY, "
@@ -73,6 +84,17 @@ def history(num_records):
     for result in myresult:
         print(result)
 
+def messages():
+    mycursor.execute('SHOW COLUMNS FROM messages')
+    myresult = mycursor.fetchall()
+    for result in myresult:
+        print(result)
+
+    mycursor.execute("SELECT * FROM messages")
+    myresult = mycursor.fetchall()
+    for result in myresult:
+        print(result)
+
 
 def accounts():
     mycursor.execute('SHOW COLUMNS FROM accounts')
@@ -85,6 +107,7 @@ def accounts():
     for result in myresult:
         print(result)
 
+
 def subreddits():
     mycursor.execute('SHOW COLUMNS FROM subreddits')
     myresult = mycursor.fetchall()
@@ -95,6 +118,7 @@ def subreddits():
     myresult = mycursor.fetchall()
     for result in myresult:
         print(result)
+
 
 def list_columns():
     mycursor.execute('SHOW COLUMNS FROM history')
@@ -139,9 +163,11 @@ def add_subreddit(subreddit, reply_to_comments, footer, status):
     val = (subreddit, reply_to_comments, footer, status, )
     mycursor.execute(sql, val)
     mydb.commit()
-accounts()
+#accounts()
 #subreddits()
-history(20)
+#history(30)
+#messages()
+#delete_user('nano_tipper_z_test2')
 
 
 
@@ -160,7 +186,8 @@ history(20)
 
 
 
-#history()
+history(30)
+messages()
 #print("************************************************************")
 #accounts()
 
