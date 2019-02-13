@@ -1047,10 +1047,9 @@ def handle_message(message):
             comment_text=str(message.body)[:255],
             comment_or_message='message',
         )
-
+        return None
     message_recipient = str(message.author)
     message_text = response
-
     sql = "INSERT INTO messages (username, subject, message) VALUES (%s, %s, %s)"
     val = (message_recipient, subject, message_text)
     mycursor.execute(sql, val)
