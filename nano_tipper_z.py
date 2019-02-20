@@ -43,8 +43,7 @@ comment_footer = """\n\n
 
 help_text = """
 Help from Nano Tipper! This bot was handles tips via the Nano cryptocurrency.
-[Visit us on GitHub](https://github.com/danhitchcock/nano_tipper_z) for more information on its use,
-or /r/nano_tipper for even more information, including its status. Be sure to read the [Terms of Service](https://github.com/danhitchcock/nano_tipper_z#terms-of-service)\n\n
+[Visit us on GitHub](https://github.com/danhitchcock/nano_tipper_z), the [Wiki]( or /r/nano_tipper for more information on its use and its including its status. Be sure to read the [Terms of Service](https://github.com/danhitchcock/nano_tipper_z#terms-of-service)\n\n
 
 Nano Tipper works in two ways -- either publicly tip a user on a subreddit, or send a PM to /u/nano_tipper with a PM command below.\n\n
 To tip 0.1 Nano on a comment or post on a [tracked subreddit](https://www.reddit.com/r/nano_tipper/comments/astwp6/nano_tipper_status/), make a comment starting with:\n
@@ -722,22 +721,22 @@ def handle_create(message):
                    "To withdraw your Nano to your own wallet, reply: ```send <amount> <address>```.\n\n"\
                    'Or to send to another redditor: ```send <amount> <redditor username>```.\n\n'\
                    'Or tip on a reddit post/comment: ```!nano_tip <amount>```.\n\n'\
-                   'View your account on Nanode: https://www.nanode.co/account/%s\n\nHere are some additional resources and usage notes:\n***' % (address, address)
+                   'View your account on Nanode: https://www.nanode.co/account/%s\n\nVisit the [Wiki](https://www.reddit.com/r/nano_tipper/wiki/index) for more information on usage!\n***' % (address, address)
         message_recipient = 'nano_tipper'
         subject = 'send'
-        message_text = 'send 0.001 %s'%username
+        message_text = 'send 0.001 %s' % username
         sql = "INSERT INTO messages (username, subject, message) VALUES (%s, %s, %s)"
         val = (message_recipient, subject, message_text)
         mycursor.execute(sql, val)
         reddit.redditor(message_recipient).message(subject, message_text)
         mydb.commit()
     else:
-        response = "It looks like you already have an account made, and it is now **active**. Your Nano address is %s." \
+        response = "It looks like you already have an account made, and in any case is now **active**. Your Nano address is %s." \
                    "\n\nhttps://www.nanode.co/account/%s" % (result[0][0], result[0][0])
 
     #x = reddit.redditor(username).message('Nano Tipper Z: Account Creation', response + help_text)
     # message.reply(response)
-    return response + help_text
+    return response + comment_footer
 
 
 def handle_help(message):

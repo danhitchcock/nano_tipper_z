@@ -34,14 +34,14 @@ def perform_curl(data=None, URL=None):
 """
 def send_w(origin, key, amount, destination, rep=None, work=None):
     hash = account_info(origin)['frontier']
-    print(hash)
+    #print(hash)
     work = work_generate(hash)['work']
-    print(work)
-    print(origin, key, amount, destination, work)
+    #print(work)
+    #print(origin, key, amount, destination, work)
     generated_send_block = send_block(origin, key, amount, destination, work=work)
-    print(generated_send_block)
+    #print(generated_send_block)
     results = process_block(generated_send_block)
-    print(results)
+    #print(results)
     return results
 
 

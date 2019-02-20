@@ -36,7 +36,6 @@ To send 0.1 Nano to zily88, include this text in the message body:
     -or-
     send 0.1 zily88
 
-
 To send 0.1 Nano to xrb\_1ssr4sbop5wnkbkpk7y7ekewie7tygtjgdukm9jq7d1m3j6ocfskwyx77awd, include this text in the message body:
 
     send 0.1 xrb_1ssr4sbop5wnkbkpk7y7ekewie7tygtjgdukm9jq7d1m3j6ocfskwyx77awd
@@ -60,27 +59,17 @@ There are many other commands.
     'help' - Get this help message\n
 
 ### Here's a few other great links:
-
-
 [Nano Tipper Subreddit](https://reddit.com/r/nano_tipper) -- Post any questions about Nano Tipper
-
 
 [Nano Tipper GitHub](https://github.com/danhitchcock/nano_tipper_z) -- This software is open source!
 
-
 [Nano Tipper Wiki](https://www.reddit.com/r/nano_tipper/wiki) -- The Subreddit Wiki
-
 
 [Nano Currency](https://nano.org) -- The Official Nano website
 
-
 [Nano Links](https://nanolinks.info) -- has numerous useful links to get to using Nano!
 
-
-
 [Nano Subreddit](https://www.reddit.com/r/nanocurrency) -- The official Nano Subreddit
-
-
 
 # Terms of Service
 * Don't keep a lot of Nano in your Nano Tip Bot account
@@ -97,7 +86,7 @@ account will be forfeited and I am under no obligation to return them. Why did I
 
 # FAQ
 ## Why does the message have to start with !nano_tip?
-This is to prevent uninentional tips! If the program simply scanned the entire comment, a user might accidently quote someone else's 
+This is to prevent unintentional tips! If the program simply scanned the entire comment, a user might accidently quote someone else's 
 tip command in a response. In the future I might change this, but for now it's the best way to ensure the program behaves as expected.
 
 ## Are my funds safe?
@@ -109,10 +98,6 @@ If the address isn't affiliated with a Redditor, **No.** I only have private key
 ## I sent a tip to the wrong redditor. Can I get it back?
 You basically gave a stranger a dollar, and I have no control over that. Yes, I control the private keys, but I really don't want to start manually making unauthorized transactions on people's accounts. If the stranger is a redditor and doesn't activate their account, you will get your tip back in 30 days. If they *do* activate their account, it's theirs. You can try asking them for it back.
 
-
-
-
-
 ## Have you implemented any spam prevention for your bot?
 Users are allowed 5 requests every 30 seconds. If you do more than that, the bot ignores you until 30 seconds have passed.
 
@@ -120,7 +105,7 @@ Users are allowed 5 requests every 30 seconds. If you do more than that, the bot
 Probably not. It's most likely the bot was temporarily disconnected. If a command is issued while the bot is offline, the command will not be seen. If no response is received from the bot after a few minutes, send a message to the bot with the text 'history'. If you get a response and the tip isn't in your history, that means it wasn't seen. If you don't get a response, the bot is probably still offline. Try again in a few minutes.
 
 ## I found a bug or I have a concern. Question Mark?
-Send /u/zily88 a PM on reddit, or post on https://reddit.com/r/nano_tipper_z
+Send /u/zily88 a PM on reddit, or post on https://reddit.com/r/nano_tipper
 
 # Error Codes
 If a reddit tip is a reply to a reply, it's better to keep a short message with an error code.
