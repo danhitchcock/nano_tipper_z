@@ -1,59 +1,34 @@
-# Nano Tipper Z
+# Nano Tipper
 
+ is a reddit tipping service to easily give Nano to your favorite redditors! [Nano](https://nano.org) is a fast and feeless cryptocurrency that can be traded at numerous exchanges. Before using Nano Tipper, please take a look at the [Terms of Service](https://github.com/danhitchcock/nano_tipper_z#terms-of-service)
 
-**Nano Tipper Z** is a reddit tipping service to easily give Nano to your favorite redditors!
-[Nano currency](http://www.nano.org) is one of a kind -- feeless and nearly instant transactions. 
-This allows for a few unique features for the tipbot:
-* Every transaction is on chain! View the hashes on the block explorer http://www.nanode.co
-* Every account is a full featured (albeit not secure) wallet--you will soon be able to change your rep!
-* You can request your private keys or a new address! (Still on the fence, but *soon*)
+### To get started with Nano Tipper, either:
 
+A) **Create an account** by [sending a message](https://reddit.com/message/compose/?to=nano_tipper&subject=command&message=create) to /u/nano_tipper_z with 'create' in the message body. You will receive a Nano address, to which you can add Nano\*. You will receive a 0.001 Nano tip for registering! Also, try any of the faucets at [Nano Links](https://nanolinks.info/#faucets-free-nano) (\**Nano Tipper is in early beta! Only send small amounts of Nano*.)
 
-In addition to those, there are other great features
-* Set a tip minimum to prevent spam from annoying cheapskates
-* Silence - Turn off tip notifications. You will still receive tips, but won't be tagged or messaged by the bot.
-* Set your account to 'auto-receive' transactions (default on)
- 
-Features to be added:
-* 30 day return if an account remains unactivated -- activation is easy! Just perform *any* command
-* Custom footers and response behavior for subreddits
-* Tipping a currency equivalent in Nano -- USD/EUR/YEN and a few others
+\-or-
 
-**THIS TIP BOT IS NOT:**
-* a stable secure wallet
-* a custodian service
-* a great place to keep your Nano
+B) **Receive a Nano tip** from a fellow redditor, and you will automatically have an account made! be sure to activate it afterwards by [sending a message](https://reddit.com/message/compose/?to=nano_tipper&subject=command&message=create) to /u/nano_tipper.
 
-Feel free to test any functionality at https://reddit.com/r/nano_tipper_z
+Once you have funds in your account, you can tip other redditors, or send to nano address via PM to /u/nano_tipper.
 
-To get started, either:
+# Comment Replies:
 
-A) **Create an account** by sending a message to /u/nano_tipper_z with 'create' in the message body. You will receive a Nano address, to which you can add Nano\*. Try http://nano-faucet.org to receive some free Nano! (\**this project is in early beta! Only send small amounts of Nano*.)
+Nano Tipper is intended for tipping on reddit posts and replies. On any [tracked subreddit](https://www.reddit.com/r/nano_tipper/comments/astwp6/nano_tipper_status/), try:
 
--or-
+    !ntip 0.01
 
-B) **Receive a Nano tip** from a fellow redditor, and you will automatically have an account made!
+This will tip a redditor 0.01 Nano. !ntip must be the first thing in your message, and it cannot be a part of a reply.
 
-Once you have funds in your account, you can tip other redditors, or send to nano address via PM to /u/nano_tipper_z.
-# Usage
-## Comment Replies:
+Or from anywhere on reddit, you can tip a commenter by::
 
-Nano Tipper Z is intended for tipping on reddit posts and replies.
+    /u/nano_tipper 0.01
 
-    !nano_tip <amount>
+This may not show a public response, but both you and the recipient will be informed by the bot via PM.
 
-Watch for spaces. !nano_tip must be the first thing in your message, and it cannot be a part of a reply.
+# Private Messages
 
-Examples:
-
-Send 0.1 Nano to the parent-comment author:
-
-    !nano_tip 0.1
-
-
-## Private Messages
-
-Nano Tipper Z also works by PM. Send a message to /u/nano_tipper_z for a variety of actions.
+Nano Tipper also works by PM. [Send a message](https://reddit.com/message/compose/?to=nano_tipper&subject=command&message=type_command_here) to /u/nano_tipper_z for a variety of actions.
 
 To send 0.1 Nano to zily88, include this text in the message body:
 
@@ -61,15 +36,16 @@ To send 0.1 Nano to zily88, include this text in the message body:
     -or-
     send 0.1 zily88
 
-To send 0.1 Nano to xrb_1ssr4sbop5wnkbkpk7y7ekewie7tygtjgdukm9jq7d1m3j6ocfskwyx77awd, include this text in the message body:
+
+To send 0.1 Nano to xrb\_1ssr4sbop5wnkbkpk7y7ekewie7tygtjgdukm9jq7d1m3j6ocfskwyx77awd, include this text in the message body:
 
     send 0.1 xrb_1ssr4sbop5wnkbkpk7y7ekewie7tygtjgdukm9jq7d1m3j6ocfskwyx77awd
 
-To send all your Nano to xrb_1ssr4sbop5wnkbkpk7y7ekewie7tygtjgdukm9jq7d1m3j6ocfskwyx77awd:
+or send all your balance:
 
     send all xrb_1ssr4sbop5wnkbkpk7y7ekewie7tygtjgdukm9jq7d1m3j6ocfskwyx77awd
 
-For PM commands, create a new message with any of the following commands (be sure to remove the quotes, '<'s and '>'s):
+There are many other commands.
 
     'create' - Create a new account if one does not exist
     'send <amount or all> <user/address>' - Send Nano to a reddit user or an address
@@ -78,14 +54,33 @@ For PM commands, create a new message with any of the following commands (be sur
     'minimum <amount>' - (default 0.0001) Sets a minimum amount for receiving tips
     'auto_receive <yes/no>' - (default 'yes') Automatically pockets transactions. Checks every 12 seconds
     'silence <yes/no>' - (default 'no') Prevents the bot from sending you tip notifications or tagging in posts 
-    'history <optional: number of records>' - Retrieves your last tipbot action records. Default 10, maximum is 50.
+    'history' - (disabled) Grabs the last 20 records of your account history
     'private_key' - (disabled) Retrieve your account private key
     'new_address' - (disabled) If you feel this address was compromised, create a new account and key
-    'help' - Get this help message
-    
-For example, if you wanted to send 0.01 Nano to zily88, reply:
+    'help' - Get this help message\n
 
-    send 0.01 zily88
+### Here's a few other great links:
+
+
+[Nano Tipper Subreddit](https://reddit.com/r/nano_tipper) -- Post any questions about Nano Tipper
+
+
+[Nano Tipper GitHub](https://github.com/danhitchcock/nano_tipper_z) -- This software is open source!
+
+
+[Nano Tipper Wiki](https://www.reddit.com/r/nano_tipper/wiki) -- The Subreddit Wiki
+
+
+[Nano Currency](https://nano.org) -- The Official Nano website
+
+
+[Nano Links](https://nanolinks.info) -- has numerous useful links to get to using Nano!
+
+
+
+[Nano Subreddit](https://www.reddit.com/r/nanocurrency) -- The official Nano Subreddit
+
+
 
 # Terms of Service
 * Don't keep a lot of Nano in your Nano Tip Bot account

@@ -3,7 +3,16 @@ import json
 import qrcode
 from io import BytesIO
 import time
+import requests
 
+
+def perform_curl(data=None, URL=None, timeout=30):
+    if URL is None:
+        URL = 'http://127.0.0.1:7076'
+    r = requests.post(URL, headers={"Content-Type": "application/json"}, data=json.dumps(data))
+    return json.loads(r.text)
+
+"""
 def perform_curl(data=None, URL=None):
     if URL is None:
         URL = '127.0.0.1:7076'
@@ -22,9 +31,42 @@ def perform_curl(data=None, URL=None):
     results = json.loads(results)
     buf.close()
     return results
+"""
+def send_w(origin, key, amount, destination, rep=None, work=None):
+    hash = account_info(origin)['frontier']
+    print(hash)
+    work = work_generate(hash)['work']
+    print(work)
+    print(origin, key, amount, destination, work)
+    generated_send_block = send_block(origin, key, amount, destination, work=work)
+    print(generated_send_block)
+    results = process_block(generated_send_block)
+    print(results)
+    return results
 
 
-def send_block(origin, key, amount, destination, rep=None):
+
+def account_info(account):
+    data = {
+        'action': 'account_info',
+        'account': account
+    }
+    results = perform_curl(data)
+    print(results)
+    return results
+
+
+def work_generate(hash):
+    data = {
+        "action": "work_generate",
+        "hash": hash
+    }
+    results = perform_curl(data)
+    print(results)
+    return results
+
+
+def send_block(origin, key, amount, destination, rep=None, work=None):
     balance = check_balance(origin)[0]
     balance = int(balance - amount)
     previous = get_previous_hash(origin)
@@ -40,6 +82,9 @@ def send_block(origin, key, amount, destination, rep=None):
         "representative": rep,
         "key": key
     }
+    if work:
+        data["work"] = work
+
     results = perform_curl(data)
     return results
 

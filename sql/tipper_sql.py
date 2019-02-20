@@ -167,7 +167,7 @@ def add_subreddit(subreddit, reply_to_comments, footer, status):
 #subreddits()
 #history(30)
 #messages()
-#delete_user('nano_tipper_z_test2')
+
 
 
 
@@ -177,7 +177,7 @@ def add_subreddit(subreddit, reply_to_comments, footer, status):
 # sql = "UPDATE subreddits SET status = 'friendly' WHERE subreddit = 'nano_tipper_z'"
 # mycursor.execute(sql)
 # mydb.commit()
-# subreddits()
+
 # add_subreddit('nanocurrency', True, None, 'friendly')
 # add_subreddit('cryptocurrency247', True, None, 'friendly')
 # add_subreddit('nanotrade', True, None, 'friendly')
@@ -186,12 +186,12 @@ def add_subreddit(subreddit, reply_to_comments, footer, status):
 
 
 
-history(30)
-messages()
+#history(30)
+#messages()
 #print("************************************************************")
 #accounts()
 
 #print(allowed_request('zily88', 30, 5))
+#delete_user('nano_tipper_z_test2')
 
-
-
+subreddits()
