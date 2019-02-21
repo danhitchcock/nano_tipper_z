@@ -4,7 +4,7 @@
 
 ### To get started with Nano Tipper, either:
 
-A) **Create an account** by [sending a message](https://reddit.com/message/compose/?to=nano_tipper&subject=command&message=create) to /u/nano_tipper_z with 'create' in the message body. You will receive a Nano address, to which you can add Nano\*. You will receive a 0.001 Nano tip for registering! Also, try any of the faucets at [Nano Links](https://nanolinks.info/#faucets-free-nano) (\**Nano Tipper is in early beta! Only send small amounts of Nano*.)
+A) **Create an account** by [sending a message](https://reddit.com/message/compose/?to=nano_tipper&subject=command&message=create) to /u/nano_tipper with 'create' in the message body. You will receive a Nano address, to which you can add Nano\*. You will receive a 0.001 Nano tip for registering! Also, try any of the faucets at [Nano Links](https://nanolinks.info/#faucets-free-nano) (\**Nano Tipper is in early beta! Only send small amounts of Nano*.)
 
 \-or-
 

@@ -22,7 +22,7 @@ results = mycursor.fetchall()
 subreddits=''
 for result in results:
     subreddits += '%s+' % result[0]
-subreddits += 'nano_tipper+nano_tipper_test'
+subreddits += 'nano_tipper_test'
 subreddits = subreddits[:-1]
 
 
@@ -501,17 +501,17 @@ def handle_send_nano(message, parsed_text, comment_or_message):
         subject = 'Congrats on receiving your first Nano Tip!'
         message_text = 'Welcome to Nano Tipper, a reddit Bot which allows you to tip and send the Nano Currency! You have just received a Nano tip in the amount of ```%s Nano``` at your address '\
                     '%s. By using this service, you agree to the [Terms of Service](https://github.com/danhitchcock/nano_tipper_z#terms-of-service).'\
-                    ' Please activate your account by replying to this message or any tips which are 30 days old will be returned to the sender.\n\n'\
-                    'Nano Tipper can be used in two ways. The most common is to tip other redditors publicly by replying to a comment, as so:\n'\
-                    '```!ntip 0.01``` -- this will tip the comment author 0.01 Nano. This command will only work on [tracked subreddit](https://www.reddit.com/r/nano_tipper/comments/astwp6/nano_tipper_status/)'\
-                    'To tip on any subreddit, tag the bot as so:\n```/u/nano_tipper 0.01```\n'\
+                    ' Please activate your account by replying to this message or any tips which are 30 days old will be returned to the sender.\n\n***\n\n'\
+                    'Nano Tipper can be used in two ways. The most common is to tip other redditors publicly by replying to a comment, as so:\n\n'\
+                    '```!ntip 0.01```\n\n -- this will tip the comment author 0.01 Nano. This command will only work on [tracked subreddits](https://www.reddit.com/r/nano_tipper/comments/astwp6/nano_tipper_status/)'\
+                    '. To tip on any subreddit, tag the bot as so:\n\n```/u/nano_tipper 0.01```\n\n'\
                     'Nano Tipper also can be used via PM commands.\n\n'\
                     'To Check your account balance, reply ```balance```\n\n'\
                     'To withdraw your Nano to your own wallet, reply: ```send <amount> <address>```.\n\n'\
                     'Or to send to another redditor: ```send <amount> <redditor username>```.\n\n'\
                     'Or set your minimum tip amount to prevent spam: ```minimum <amount>```.\n\n'\
                     'Or tip on a reddit post/comment: ```!nano_tip <amount>```.\n\n'\
-                    'View your account on Nanode: https://www.nanode.co/account/%s\n\nHere are some additional resources and usage notes:\n***'% (
+                    'View your account on Nanode: https://www.nanode.co/account/%s\n\n'% (
                     amount/ 10 ** 30, recipient_address, recipient_address) + comment_footer
 
         sql = "INSERT INTO messages (username, subject, message) VALUES (%s, %s, %s)"
@@ -582,9 +582,14 @@ def handle_comment(message):
         if response[1] <= 8:
             message.reply('^(Tip not sent. Error code )^[%s](https://github.com/danhitchcock/nano_tipper_z#error-codes) ^- [^(Nano Tipper)](https://github.com/danhitchcock/nano_tipper_z)'
                           % response[1])
-        elif (response[1] == 9) or (response[1] == 13) or (response[1] == 10):
+        elif (response[1] == 9):
             message.reply('^[Sent](https://www.nanode.co/block/%s) ^%s ^Nano ^to ^%s ^- [^(Nano Tipper)](https://github.com/danhitchcock/nano_tipper_z)'
                           % (response[5], response[2], response[3]))
+        elif (response[1] == 10) or (response[1] == 13):
+            # user didn't request silence or it's a new account, so tag them
+            message.reply(
+                '^[Sent](https://www.nanode.co/block/%s) ^%s ^Nano ^to ^/u/%s ^- [^(Nano Tipper)](https://github.com/danhitchcock/nano_tipper_z)'
+                % (response[5], response[2], response[3]))
         elif (response[1] == 11) or (response[1] == 12):
             # this actually shouldn't ever happen
             message.reply(
@@ -611,6 +616,7 @@ def handle_comment(message):
             mydb.commit()
             reddit.redditor(str(message.author)).message('Successful tip!', response[0] + comment_footer)
             # status code 10 means the recipient has not requested silence, so send a message
+            print('tipping: ', response[1])
             if response[1] == 10:
                 message_recipient = response[3]
                 subject = 'You just received a new Nano tip!'
