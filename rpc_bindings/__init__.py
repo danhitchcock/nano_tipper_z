@@ -235,12 +235,14 @@ def get_pending(account, count=-1):
     #print(results)
     return results
 
-def get_pendings(accounts, count=-1):
+def get_pendings(accounts, count=-1, threshold=None):
     data = {
         "action": "accounts_pending",
         "accounts": accounts,
         "count": str(count)
     }
+    if threshold:
+        data['threshold'] = "%s" % (threshold)
     results = perform_curl(data)
     return results
 

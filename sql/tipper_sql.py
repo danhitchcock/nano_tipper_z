@@ -163,16 +163,20 @@ def add_subreddit(subreddit, reply_to_comments, footer, status):
     val = (subreddit, reply_to_comments, footer, status, )
     mycursor.execute(sql, val)
     mydb.commit()
+
+mycursor.execute('SHOW COLUMNS FROM history')
+myresult = mycursor.fetchall()
+for result in myresult:
+    print(result)
+mycursor.execute("SELECT * FROM history WHERE action = 'send'")
+myresult = mycursor.fetchall()
+print(len(myresult))
+
+
 #accounts()
 #subreddits()
 #history(30)
 #messages()
-
-
-
-
-
-
 
 # sql = "UPDATE subreddits SET status = 'friendly' WHERE subreddit = 'nano_tipper_z'"
 # mycursor.execute(sql)
@@ -186,7 +190,7 @@ def add_subreddit(subreddit, reply_to_comments, footer, status):
 
 
 
-#history(300)
+history(300)
 #messages()
 #print("************************************************************")
 #accounts()

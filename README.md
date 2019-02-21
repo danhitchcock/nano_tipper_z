@@ -20,7 +20,7 @@ Nano Tipper is intended for tipping on reddit posts and replies. On any [tracked
 
 This will tip a redditor 0.01 Nano. !ntip must be the first thing in your message, and it cannot be a part of a reply.
 
-Or from anywhere on reddit, you can tip a commenter by::
+Or from anywhere on reddit, you can tip a commenter by:
 
     /u/nano_tipper 0.01
 

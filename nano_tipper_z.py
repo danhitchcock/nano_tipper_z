@@ -30,11 +30,13 @@ subreddit = reddit.subreddit(subreddits)
 
 # a few globals
 tip_bot_on = True
-program_minimum = 0.0001
+program_minimum = 0.0001 # in nano
 recipient_minimum = 0.0001
 program_maximum = 10
 toggle_receive = True
+
 comment_footer = """\n\n
+***\n\n
 [*^(Nano)*](https://nano.org)*^( | )*
 [*^(Nano Tipper)*](https://github.com/danhitchcock/nano_tipper_z)*^( | )*
 [*^(Free Nano!)*](https://nanolinks.info/#faucets-free-nano)*^( | )*
@@ -43,7 +45,9 @@ comment_footer = """\n\n
 
 help_text = """
 Help from Nano Tipper! This bot was handles tips via the Nano cryptocurrency.
-[Visit us on GitHub](https://github.com/danhitchcock/nano_tipper_z), the [Wiki]( or /r/nano_tipper for more information on its use and its including its status. Be sure to read the [Terms of Service](https://github.com/danhitchcock/nano_tipper_z#terms-of-service)\n\n
+[Visit us on GitHub](https://github.com/danhitchcock/nano_tipper_z), the [Wiki](http://reddit.com/r/nano_tipper/wiki/) 
+or /r/nano_tipper for more information on its use and its status. Be sure to read the 
+[Terms of Service](https://github.com/danhitchcock/nano_tipper_z#terms-of-service)\n\n
 
 Nano Tipper works in two ways -- either publicly tip a user on a subreddit, or send a PM to /u/nano_tipper with a PM command below.\n\n
 To tip 0.1 Nano on a comment or post on a [tracked subreddit](https://www.reddit.com/r/nano_tipper/comments/astwp6/nano_tipper_status/), make a comment starting with:\n
@@ -68,7 +72,66 @@ For PM commands, create a new message with any of the following commands (be sur
     'help' - Get this help message\n
 If you wanted to send 0.01 Nano to zily88, reply:\n
     send 0.01 zily88\n
-If you have any questions or bug fixes, please contact /u/zily88.\n""" + comment_footer
+If you have any questions or bug fixes, please contact /u/zily88."""
+
+welcome_create = """
+Welcome to Nano Tipper, a reddit tip bot which allows you to tip and send the Nano Currency to your favorite redditors! 
+Your account is **active** and your Nano address is %s. By using this service, you agree 
+to the [Terms of Service](https://github.com/danhitchcock/nano_tipper_z#terms-of-service).\n\n
+
+You will be receiving a tip of 0.001 Nano as a welcome gift! To load more Nano, try any of the the free 
+[Nano Faucets](https://nanolinks.info/#faucets-free-nano), or deposit some (click on the Nanode link for a QR code), 
+or receive a tip from a fellow redditor!\n\n
+***\n\n
+Nano Tipper can be used in two ways. The most common is to tip other redditors publicly by replying to a comment on a 
+[tracked subreddit](https://www.reddit.com/r/nano_tipper/comments/astwp6/nano_tipper_status/). 
+To tip someone 0.01 Nano, reply to their message with:\n\n
+```!ntip 0.01```\n\n
+To tip a redditor on any subreddit, tag the bot instead of issuing a command:\n\n
+```/u/nano_tipper 0.01```\n\n
+***\n\n
+There are also PM commands by [messaging](https://reddit.com/message/compose/?to=nano_tipper&subject=command&message=type_command_here) /u/nano_tipper. Remove any quotes, <'s and >'s.\n\n
+```send <amount> <valid_nano_address>``` Withdraw your Nano to your own wallet.\n\n
+```send <amount> <redditor username>``` Send to another redditor.\n\n
+```minimum <amount>``` Prevent annoying spam by setting a receiving tip minimum.\n\n
+```balance``` Check your account balance.\n\n
+```help``` Receive an in-depth help message.\n\n
+
+View your account on Nanode: https://www.nanode.co/account/%s\n\n
+If you have any questions, please post at /r/nano_tipper
+"""
+
+welcome_tipped = """
+Welcome to Nano Tipper, a reddit tip bot which allows you to tip and send the Nano Currency to your favorite redditors! 
+You have just received a Nano tip in the amount of ```%s Nano``` at your address %s.\n\n
+By using this service, you agree to the [Terms of Service](https://github.com/danhitchcock/nano_tipper_z#terms-of-service). Please activate your account by 
+replying to this message or any tips which are 30 days old will be returned to the sender.\n\n
+To load more Nano, try any of the the free 
+[Nano Faucets](https://nanolinks.info/#faucets-free-nano), or deposit some (click on the Nanode link for a QR code).\n\n
+***\n\n
+Nano Tipper can be used in two ways. The most common is to tip other redditors publicly by replying to a comment on a 
+[tracked subreddit](https://www.reddit.com/r/nano_tipper/comments/astwp6/nano_tipper_status/). 
+To tip someone 0.01 Nano, reply to their message with:\n\n
+```!ntip 0.01```\n\n
+To tip a redditor on any subreddit, tag the bot instead of issuing a command:\n\n
+```/u/nano_tipper 0.01```\n\n
+***\n\n
+There are also PM commands by [messaging](https://reddit.com/message/compose/?to=nano_tipper&subject=command&message=type_command_here) /u/nano_tipper. Remove any quotes, <'s and >'s.\n\n
+```send <amount> <valid_nano_address>``` Withdraw your Nano to your own wallet.\n\n
+```send <amount> <redditor username>``` Send to another redditor.\n\n
+```minimum <amount>``` Prevent annoying spam by setting a receiving tip minimum.\n\n
+```balance``` Check your account balance.\n\n
+```help``` Receive an in-depth help message.\n\n
+
+View your account on Nanode: https://www.nanode.co/account/%s\n\n
+If you have any questions, please post at /r/nano_tipper
+"""
+
+new_tip = """
+Somebody just tipped you %s Nano at your address %s. Your new account balance will be %s received and %s unpocketed. 
+If autoreceive is on, this will be pocketed automatically. [Transaction on Nanode](https://www.nanode.co/block/%s)\n\n
+To turn off these notifications, reply with "silence yes".
+"""
 
 # generator to stream comments and messages to the main loop at the bottom, and contains the auto_receive functionality.
 # Maybe this wasn't necessary, but I never get to use generators.
@@ -450,9 +513,8 @@ def handle_send_nano(message, parsed_text, comment_or_message):
         if comment_or_message == "message" and (not silence):
             message_recipient = str(recipient_username)
             subject = 'You just received a new Nano tip!'
-            message_text = 'Somebody just tipped you %s Nano at your address %s. Your new account balance will be '\
-                        '%s received and %s unpocketed. If autoreceive is on, this will be pocketed automatically. [Transaction on Nanode](https://www.nanode.co/block/%s)\n\n'\
-                        'To turn off these notifications, reply with "silence yes"' % (
+
+            message_text = new_tip % (
                         amount / 10 ** 30, recipient_address, receiving_new_balance[0] / 10 ** 30,
                         (receiving_new_balance[1] / 10 ** 30 + amount / 10 ** 30), sent['hash']) + comment_footer
             reddit.redditor(message_recipient).message(subject, message_text)
@@ -499,20 +561,7 @@ def handle_send_nano(message, parsed_text, comment_or_message):
         recipient_address = add_new_account(recipient_username)
         message_recipient = str(recipient_username)
         subject = 'Congrats on receiving your first Nano Tip!'
-        message_text = 'Welcome to Nano Tipper, a reddit Bot which allows you to tip and send the Nano Currency! You have just received a Nano tip in the amount of ```%s Nano``` at your address '\
-                    '%s. By using this service, you agree to the [Terms of Service](https://github.com/danhitchcock/nano_tipper_z#terms-of-service).'\
-                    ' Please activate your account by replying to this message or any tips which are 30 days old will be returned to the sender.\n\n***\n\n'\
-                    'Nano Tipper can be used in two ways. The most common is to tip other redditors publicly by replying to a comment, as so:\n\n'\
-                    '```!ntip 0.01```\n\n -- this will tip the comment author 0.01 Nano. This command will only work on [tracked subreddits](https://www.reddit.com/r/nano_tipper/comments/astwp6/nano_tipper_status/)'\
-                    '. To tip on any subreddit, tag the bot as so:\n\n```/u/nano_tipper 0.01```\n\n'\
-                    'Nano Tipper also can be used via PM commands.\n\n'\
-                    'To Check your account balance, reply ```balance```\n\n'\
-                    'To withdraw your Nano to your own wallet, reply: ```send <amount> <address>```.\n\n'\
-                    'Or to send to another redditor: ```send <amount> <redditor username>```.\n\n'\
-                    'Or set your minimum tip amount to prevent spam: ```minimum <amount>```.\n\n'\
-                    'Or tip on a reddit post/comment: ```!nano_tip <amount>```.\n\n'\
-                    'View your account on Nanode: https://www.nanode.co/account/%s\n\n'% (
-                    amount/ 10 ** 30, recipient_address, recipient_address) + comment_footer
+        message_text = welcome_tipped % (amount/ 10 ** 30, recipient_address, recipient_address) + comment_footer
 
         sql = "INSERT INTO messages (username, subject, message) VALUES (%s, %s, %s)"
         val = (message_recipient, subject, message_text)
@@ -696,10 +745,10 @@ def handle_balance(message):
         response = "At address %s:\n\nAvailable: %s Nano\n\nUnpocketed: %s Nano\n\nIf you have any unpocketed Nano, create a new " \
                    "message containing the word 'receive'.\n\nhttps://www.nanode.co/account/%s" % (result[0][0], results[0]/10**30, results[1]/10**30, result[0][0])
         #reddit.redditor(username).message('Nano Tipper Z Account Balance', response + comment_footer)
-        return response + comment_footer
+        return response
 
     #reddit.redditor(username).message('Nano Tipper Z: No account registered.', 'You do not have an open account yet' + comment_footer)
-    return 'You do not have an open account yet' + comment_footer
+    return 'You do not have an open account yet'
 
 
 def handle_create(message):
@@ -719,15 +768,7 @@ def handle_create(message):
     result = mycursor.fetchall()
     if len(result) is 0:
         address = add_new_account(username)
-        response = "Hi, welcome to Nano Tipper! Your account is **active** and your Nano address is %s. By using this service, you agree to the [Terms of Service](https://github.com/danhitchcock/nano_tipper_z#terms-of-service).\n\n"\
-                   "You will be receiving a tip of 0.001 Nano as a welcome gift! To load more Nano, try any of the the free [Nano Faucets](https://nanolinks.info/#faucets-free-nano), or deposit some " \
-                   "(click on Nanode for a QR code), " \
-                   "or receive a tip from a fellow redditor!\n\n" \
-                   "Try the commands below -- be sure to remove the < and >'s.\n\n" \
-                   "To withdraw your Nano to your own wallet, reply: ```send <amount> <address>```.\n\n"\
-                   'Or to send to another redditor: ```send <amount> <redditor username>```.\n\n'\
-                   'Or tip on a reddit post/comment: ```!nano_tip <amount>```.\n\n'\
-                   'View your account on Nanode: https://www.nanode.co/account/%s\n\nVisit the [Wiki](https://www.reddit.com/r/nano_tipper/wiki/index) for more information on usage!\n***' % (address, address)
+        response = welcome_create % (address, address)
         message_recipient = 'nano_tipper'
         subject = 'send'
         message_text = 'send 0.001 %s' % username
@@ -737,12 +778,12 @@ def handle_create(message):
         reddit.redditor(message_recipient).message(subject, message_text)
         mydb.commit()
     else:
-        response = "It looks like you already have an account made, and in any case is now **active**. Your Nano address is %s." \
+        response = "It looks like you already have an account. In any case is now **active**. Your Nano address is %s." \
                    "\n\nhttps://www.nanode.co/account/%s" % (result[0][0], result[0][0])
 
     #x = reddit.redditor(username).message('Nano Tipper Z: Account Creation', response + help_text)
     # message.reply(response)
-    return response + comment_footer
+    return response
 
 
 def handle_help(message):
@@ -1001,7 +1042,7 @@ def handle_send(message):
     parsed_text = str(message.body).lower().replace('\\', '').split('\n')[0].split(' ')
     response = handle_send_nano(message, parsed_text, 'message')
     response = response[0]
-    return response + comment_footer
+    return response
 
 
 def handle_message(message):
@@ -1070,6 +1111,13 @@ def handle_message(message):
         print("balance")
         subject = 'Nano Tipper - Account Balance'
         response = handle_balance(message)
+    elif parsed_text[0].lower() == 'test_welcome_tipped':
+        subject = 'Nano Tipper - Welcome By Tip'
+        response = welcome_tipped % (0.01, 'xrb_3jy9954gncxbhuieujc3pg5t1h36e7tyqfapw1y6zukn9y1g6dj5xr7r6pij', 'xrb_3jy9954gncxbhuieujc3pg5t1h36e7tyqfapw1y6zukn9y1g6dj5xr7r6pij')
+    elif parsed_text[0].lower() == 'test_welcome_create':
+        subject = 'Nano Tipper - Create'
+        response = welcome_create % ('xrb_3jy9954gncxbhuieujc3pg5t1h36e7tyqfapw1y6zukn9y1g6dj5xr7r6pij', 'xrb_3jy9954gncxbhuieujc3pg5t1h36e7tyqfapw1y6zukn9y1g6dj5xr7r6pij')
+        pass
     else:
         add_history_record(
             username=str(message.author),
@@ -1078,12 +1126,12 @@ def handle_message(message):
         )
         return None
     message_recipient = str(message.author)
-    message_text = response
+    message_text = response + comment_footer
     sql = "INSERT INTO messages (username, subject, message) VALUES (%s, %s, %s)"
     val = (message_recipient, subject, message_text)
     mycursor.execute(sql, val)
     mydb.commit()
-    reddit.redditor(message_recipient).message(subject, response)
+    reddit.redditor(message_recipient).message(subject, message_text)
 
 
 def handle_new_address(message):
@@ -1105,7 +1153,7 @@ def auto_receive():
     # for some reason, requesting 15 addresses takes a whole second
     addresses = [str(result[1]) for result in myresult]
     private_keys = [str(result[2]) for result in myresult]
-    pendings = get_pendings(addresses)
+    pendings = get_pendings(addresses, threshold=nano_to_raw(program_minimum))
     for address, private_key in zip(addresses, private_keys):
         try:
             if pendings['blocks'][address]:
