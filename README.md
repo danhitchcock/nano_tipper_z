@@ -28,7 +28,7 @@ This may not show a public response, but both you and the recipient will be info
 
 # Private Messages
 
-Nano Tipper also works by PM. [Send a message](https://reddit.com/message/compose/?to=nano_tipper&subject=command&message=type_command_here) to /u/nano_tipper_z for a variety of actions.
+Nano Tipper also works by PM. [Send a message](https://reddit.com/message/compose/?to=nano_tipper&subject=command&message=type_command_here) to /u/nano_tipper for a variety of actions.
 
 To send 0.1 Nano to zily88, include this text in the message body:
 
