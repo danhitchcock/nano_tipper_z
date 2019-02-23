@@ -7,7 +7,9 @@ import requests
 def perform_curl(data=None, URL=None, timeout=30):
     if URL is None:
         URL = 'http://127.0.0.1:7076'
-    r = requests.post(URL, headers={"Content-Type": "application/json"}, data=json.dumps(data))
+    r = requests.post(
+        URL, headers={"Content-Type": "application/json"}, data=json.dumps(data)
+    )
     return json.loads(r.text)
 
 
@@ -47,20 +49,14 @@ def send_w(origin, key, amount, destination, rep=None, work=None):
 
 
 def account_info(account):
-    data = {
-        'action': 'account_info',
-        'account': account
-    }
+    data = {'action': 'account_info', 'account': account}
     results = perform_curl(data)
     print(results)
     return results
 
 
 def work_generate(hash):
-    data = {
-        "action": "work_generate",
-        "hash": hash
-    }
+    data = {"action": "work_generate", "hash": hash}
     results = perform_curl(data)
     print(results)
     return results
@@ -80,7 +76,7 @@ def send_block(origin, key, amount, destination, rep=None, work=None):
         "balance": balance,
         "link": destination,
         "representative": rep,
-        "key": key
+        "key": key,
     }
     if work:
         data["work"] = work
@@ -115,7 +111,7 @@ def open_block(account, key, rep=None):
     sent_block = get_block_by_hash(sent_hash)
     sent_previous_hash = sent_block['previous']
     sent_previous_block = get_block_by_hash(sent_previous_hash)
-    amount = (int(sent_previous_block['balance']) - int(sent_block['balance']))
+    amount = int(sent_previous_block['balance']) - int(sent_block['balance'])
     data = {
         'action': 'block_create',
         'type': 'state',
@@ -143,7 +139,7 @@ def receive_block(account, key, sent_hash, rep=None):
     sent_block = get_block_by_hash(sent_hash)
     sent_previous_hash = sent_block['previous']
     sent_previous_block = get_block_by_hash(sent_previous_hash)
-    amount = (int(sent_previous_block['balance']) - int(sent_block['balance']))
+    amount = int(sent_previous_block['balance']) - int(sent_block['balance'])
     amount = check_balance(account)[0] + amount
     data = {
         'action': 'block_create',
@@ -189,10 +185,7 @@ def receive_all(account, key, rep=None):
 
 
 def check_balance(account, amount=None, URL=None):
-    data = {
-        "action": "account_balance",
-        "account": account
-    }
+    data = {"action": "account_balance", "account": account}
     results = perform_curl(data, URL)
     if amount is None:
         # print(results)
@@ -203,45 +196,30 @@ def check_balance(account, amount=None, URL=None):
 
 def generate_account():
     data = {"action": "key_create"}
-    return (perform_curl(data))
+    return perform_curl(data)
 
 
 def get_previous_hash(account):
-    data = {
-        "action": "account_history",
-        "account": account,
-        "count": "1"
-    }
+    data = {"action": "account_history", "account": account, "count": "1"}
     results = perform_curl(data)
     return results['history'][0]['hash']
 
 
 def get_block_by_hash(hash):
-    data = {
-        "action": "block",
-        "hash": hash
-    }
+    data = {"action": "block", "hash": hash}
     results = perform_curl(data)
     return json.loads(results['contents'])
 
 
 def get_pending(account, count=-1):
-    data = {
-        "action": "pending",
-        "account": account,
-        "count": str(count)
-    }
+    data = {"action": "pending", "account": account, "count": str(count)}
     results = perform_curl(data)
     # print(results)
     return results
 
 
 def get_pendings(accounts, count=-1, threshold=None):
-    data = {
-        "action": "accounts_pending",
-        "accounts": accounts,
-        "count": str(count)
-    }
+    data = {"action": "accounts_pending", "accounts": accounts, "count": str(count)}
     if threshold:
         data['threshold'] = "%s" % (threshold)
     results = perform_curl(data)
@@ -249,10 +227,7 @@ def get_pendings(accounts, count=-1, threshold=None):
 
 
 def validate_address(address):
-    data = {
-        "action": "validate_account_number",
-        "account": address
-    }
+    data = {"action": "validate_account_number", "account": address}
     return perform_curl(data)
 
 

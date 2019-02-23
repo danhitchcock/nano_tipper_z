@@ -6,9 +6,13 @@ import praw
 # access the sql library
 with open('sql_password.txt') as f:
     sql_password = f.read()
-mydb = mysql.connector.connect(user='root', password=sql_password,
-                               host='localhost',
-                               auth_plugin='mysql_native_password', database='nano_tipper_z')
+mydb = mysql.connector.connect(
+    user='root',
+    password=sql_password,
+    host='localhost',
+    auth_plugin='mysql_native_password',
+    database='nano_tipper_z',
+)
 mycursor = mydb.cursor()
 
 # initiate the bot and all friendly subreddits
