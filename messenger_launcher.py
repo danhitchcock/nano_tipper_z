@@ -1,5 +1,6 @@
 import subprocess
 from time import sleep
+
 filename = 'messenger.py'
 while True:
     p = subprocess.Popen('python ' + filename, shell=True).wait()
@@ -8,4 +9,3 @@ while True:
         continue
     else:
         break
-

@@ -1,8 +1,6 @@
-import pycurl
 import json
+
 import qrcode
-from io import BytesIO
-import time
 import requests
 
 
@@ -11,6 +9,7 @@ def perform_curl(data=None, URL=None, timeout=30):
         URL = 'http://127.0.0.1:7076'
     r = requests.post(URL, headers={"Content-Type": "application/json"}, data=json.dumps(data))
     return json.loads(r.text)
+
 
 """
 def perform_curl(data=None, URL=None):
@@ -32,18 +31,19 @@ def perform_curl(data=None, URL=None):
     buf.close()
     return results
 """
+
+
 def send_w(origin, key, amount, destination, rep=None, work=None):
     hash = account_info(origin)['frontier']
-    #print(hash)
+    # print(hash)
     work = work_generate(hash)['work']
-    #print(work)
-    #print(origin, key, amount, destination, work)
+    # print(work)
+    # print(origin, key, amount, destination, work)
     generated_send_block = send_block(origin, key, amount, destination, work=work)
-    #print(generated_send_block)
+    # print(generated_send_block)
     results = process_block(generated_send_block)
-    #print(results)
+    # print(results)
     return results
-
 
 
 def account_info(account):
@@ -178,7 +178,7 @@ def open_account(*argv):
 def receive_all(account, key, rep=None):
     hashes = []
     sent_hashes = get_pending(account)["blocks"]
-    #print("these are sent hashes. ", sent_hashes)
+    # print("these are sent hashes. ", sent_hashes)
     if len(sent_hashes) < 1:
         return "No Pending Transactions."
     else:
@@ -195,7 +195,7 @@ def check_balance(account, amount=None, URL=None):
     }
     results = perform_curl(data, URL)
     if amount is None:
-        #print(results)
+        # print(results)
         return [int(results['balance']), int(results['pending'])]
     else:
         return int(results['pending']) == amount
@@ -232,8 +232,9 @@ def get_pending(account, count=-1):
         "count": str(count)
     }
     results = perform_curl(data)
-    #print(results)
+    # print(results)
     return results
+
 
 def get_pendings(accounts, count=-1, threshold=None):
     data = {
@@ -247,11 +248,10 @@ def get_pendings(accounts, count=-1, threshold=None):
     return results
 
 
-
 def validate_address(address):
     data = {
-      "action": "validate_account_number",
-      "account": address
+        "action": "validate_account_number",
+        "account": address
     }
     return perform_curl(data)
 
@@ -276,17 +276,17 @@ def process_block(block):
 
 
 def nano_to_raw(amount):
-    return round(int(amount*10**30), -20)
+    return round(int(amount * 10 ** 30), -20)
 
 
 def raw_to_nano(amount):
-    return amount/10**30
+    return amount / 10 ** 30
 
 
 def open_or_receive(account, key):
     pass
-    #print(account, key)
-    #print('attempting to receive')
+    # print(account, key)
+    # print('attempting to receive')
     try:
         hash = open_account(account, key)
     except:
@@ -295,5 +295,3 @@ def open_or_receive(account, key):
         received = receive_all(account, key)
     except:
         pass
-
-
