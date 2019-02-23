@@ -6,7 +6,7 @@ import requests
 
 def perform_curl(data=None, URL=None, timeout=30):
     if URL is None:
-        URL = 'http://127.0.0.1:7076'
+        URL = "http://127.0.0.1:7076"
     r = requests.post(
         URL, headers={"Content-Type": "application/json"}, data=json.dumps(data)
     )
@@ -16,7 +16,7 @@ def perform_curl(data=None, URL=None, timeout=30):
 """
 def perform_curl(data=None, URL=None):
     if URL is None:
-        URL = '127.0.0.1:7076'
+        URL = "127.0.0.1:7076"
 
     c = pycurl.Curl()
     c.setopt(c.URL, URL)
@@ -36,9 +36,9 @@ def perform_curl(data=None, URL=None):
 
 
 def send_w(origin, key, amount, destination, rep=None, work=None):
-    hash = account_info(origin)['frontier']
+    hash = account_info(origin)["frontier"]
     # print(hash)
-    work = work_generate(hash)['work']
+    work = work_generate(hash)["work"]
     # print(work)
     # print(origin, key, amount, destination, work)
     generated_send_block = send_block(origin, key, amount, destination, work=work)
@@ -49,7 +49,7 @@ def send_w(origin, key, amount, destination, rep=None, work=None):
 
 
 def account_info(account):
-    data = {'action': 'account_info', 'account': account}
+    data = {"action": "account_info", "account": account}
     results = perform_curl(data)
     print(results)
     return results
@@ -109,18 +109,18 @@ def open_block(account, key, rep=None):
     sent_hash = get_pending(account, -1)["blocks"][0]
 
     sent_block = get_block_by_hash(sent_hash)
-    sent_previous_hash = sent_block['previous']
+    sent_previous_hash = sent_block["previous"]
     sent_previous_block = get_block_by_hash(sent_previous_hash)
-    amount = int(sent_previous_block['balance']) - int(sent_block['balance'])
+    amount = int(sent_previous_block["balance"]) - int(sent_block["balance"])
     data = {
-        'action': 'block_create',
-        'type': 'state',
-        'previous': '0',
-        'account': account,
-        'representative': rep,
-        'balance': amount,
-        'link': sent_hash,
-        'key': key,
+        "action": "block_create",
+        "type": "state",
+        "previous": "0",
+        "account": account,
+        "representative": rep,
+        "balance": amount,
+        "link": sent_hash,
+        "key": key,
     }
     results = perform_curl(data)
     return results
@@ -137,19 +137,19 @@ def receive_block(account, key, sent_hash, rep=None):
         rep = "xrb_374qyw8xwyie1hhws4cfo1fbrkis44dd6aputrujmrteeexcyag4ej84kkni"
     previous = get_previous_hash(account)
     sent_block = get_block_by_hash(sent_hash)
-    sent_previous_hash = sent_block['previous']
+    sent_previous_hash = sent_block["previous"]
     sent_previous_block = get_block_by_hash(sent_previous_hash)
-    amount = int(sent_previous_block['balance']) - int(sent_block['balance'])
+    amount = int(sent_previous_block["balance"]) - int(sent_block["balance"])
     amount = check_balance(account)[0] + amount
     data = {
-        'action': 'block_create',
-        'type': 'state',
-        'previous': previous,
-        'account': account,
-        'representative': rep,
-        'balance': amount,
-        'link': sent_hash,
-        'key': key,
+        "action": "block_create",
+        "type": "state",
+        "previous": previous,
+        "account": account,
+        "representative": rep,
+        "balance": amount,
+        "link": sent_hash,
+        "key": key,
     }
     results = perform_curl(data)
     return results
@@ -189,9 +189,9 @@ def check_balance(account, amount=None, URL=None):
     results = perform_curl(data, URL)
     if amount is None:
         # print(results)
-        return [int(results['balance']), int(results['pending'])]
+        return [int(results["balance"]), int(results["pending"])]
     else:
-        return int(results['pending']) == amount
+        return int(results["pending"]) == amount
 
 
 def generate_account():
@@ -202,13 +202,13 @@ def generate_account():
 def get_previous_hash(account):
     data = {"action": "account_history", "account": account, "count": "1"}
     results = perform_curl(data)
-    return results['history'][0]['hash']
+    return results["history"][0]["hash"]
 
 
 def get_block_by_hash(hash):
     data = {"action": "block", "hash": hash}
     results = perform_curl(data)
-    return json.loads(results['contents'])
+    return json.loads(results["contents"])
 
 
 def get_pending(account, count=-1):
@@ -221,7 +221,7 @@ def get_pending(account, count=-1):
 def get_pendings(accounts, count=-1, threshold=None):
     data = {"action": "accounts_pending", "accounts": accounts, "count": str(count)}
     if threshold:
-        data['threshold'] = "%s" % (threshold)
+        data["threshold"] = "%s" % (threshold)
     results = perform_curl(data)
     return results
 
@@ -232,7 +232,7 @@ def validate_address(address):
 
 
 def generate_qr(account, amount=0, fill_color="black", back_color="white"):
-    account_amount = 'xrb:%s?amount=%s' % (account, amount)
+    account_amount = "xrb:%s?amount=%s" % (account, amount)
     qr = qrcode.QRCode(
         version=1,
         error_correction=qrcode.constants.ERROR_CORRECT_L,
@@ -246,7 +246,7 @@ def generate_qr(account, amount=0, fill_color="black", back_color="white"):
 
 def process_block(block):
     data = {"action": "process"}
-    data["block"] = block['block']
+    data["block"] = block["block"]
     return perform_curl(data)
 
 
@@ -261,7 +261,7 @@ def raw_to_nano(amount):
 def open_or_receive(account, key):
     pass
     # print(account, key)
-    # print('attempting to receive')
+    # print("attempting to receive")
     try:
         hash = open_account(account, key)
     except:

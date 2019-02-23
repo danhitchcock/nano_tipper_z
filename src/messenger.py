@@ -4,19 +4,19 @@ import mysql.connector
 import praw
 
 # access the sql library
-with open('sql_password.txt') as f:
+with open("sql_password.txt") as f:
     sql_password = f.read()
 mydb = mysql.connector.connect(
-    user='root',
+    user="root",
     password=sql_password,
-    host='localhost',
-    auth_plugin='mysql_native_password',
-    database='nano_tipper_z',
+    host="localhost",
+    auth_plugin="mysql_native_password",
+    database="nano_tipper_z",
 )
 mycursor = mydb.cursor()
 
 # initiate the bot and all friendly subreddits
-reddit = praw.Reddit('bot1')
+reddit = praw.Reddit("bot1")
 
 while True:
     sql = "SELECT * FROM messages"

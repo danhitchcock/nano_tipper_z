@@ -3,15 +3,15 @@ from datetime import datetime
 
 import mysql.connector
 
-with open('../sql_password.txt') as f:
+with open("../sql_password.txt") as f:
     sql_password = f.read()
 
 mydb = mysql.connector.connect(
-    user='root',
+    user="root",
     password=sql_password,
-    host='localhost',
-    auth_plugin='mysql_native_password',
-    database='nano_tipper_z',
+    host="localhost",
+    auth_plugin="mysql_native_password",
+    database="nano_tipper_z",
 )
 mycursor = mydb.cursor()
 
@@ -85,7 +85,7 @@ def init_subreddits():
 
 
 def history(num_records):
-    mycursor.execute('SHOW COLUMNS FROM history')
+    mycursor.execute("SHOW COLUMNS FROM history")
     myresult = mycursor.fetchall()
     for result in myresult:
         print(result)
@@ -96,7 +96,7 @@ def history(num_records):
 
 
 def messages():
-    mycursor.execute('SHOW COLUMNS FROM messages')
+    mycursor.execute("SHOW COLUMNS FROM messages")
     myresult = mycursor.fetchall()
     for result in myresult:
         print(result)
@@ -108,7 +108,7 @@ def messages():
 
 
 def accounts():
-    mycursor.execute('SHOW COLUMNS FROM accounts')
+    mycursor.execute("SHOW COLUMNS FROM accounts")
     myresult = mycursor.fetchall()
     for result in myresult:
         print(result)
@@ -120,7 +120,7 @@ def accounts():
 
 
 def subreddits():
-    mycursor.execute('SHOW COLUMNS FROM subreddits')
+    mycursor.execute("SHOW COLUMNS FROM subreddits")
     myresult = mycursor.fetchall()
     for result in myresult:
         print(result)
@@ -132,12 +132,12 @@ def subreddits():
 
 
 def list_columns():
-    mycursor.execute('SHOW COLUMNS FROM history')
+    mycursor.execute("SHOW COLUMNS FROM history")
     myresult = mycursor.fetchall()
     for result in myresult:
         print(result)
     print("*****")
-    mycursor.execute('SHOW COLUMNS FROM accounts')
+    mycursor.execute("SHOW COLUMNS FROM accounts")
     myresult = mycursor.fetchall()
     for result in myresult:
         print(result)
@@ -150,7 +150,7 @@ def allowed_request(username, seconds=30, num_requests=5):
     :param num_requests: int (number of allowed requests)
     :return:
     """
-    sql = 'SELECT sql_time FROM history WHERE username=%s'
+    sql = "SELECT sql_time FROM history WHERE username=%s"
     val = (username,)
     mycursor.execute(sql, val)
     myresults = mycursor.fetchall()
@@ -165,7 +165,7 @@ def allowed_request(username, seconds=30, num_requests=5):
 
 
 def delete_user(username):
-    sql = 'DELETE FROM accounts WHERE username = %s'
+    sql = "DELETE FROM accounts WHERE username = %s"
     val = (username,)
     mycursor.execute(sql, val)
     mydb.commit()
@@ -178,7 +178,7 @@ def add_subreddit(subreddit, reply_to_comments, footer, status):
     mydb.commit()
 
 
-mycursor.execute('SHOW COLUMNS FROM history')
+mycursor.execute("SHOW COLUMNS FROM history")
 myresult = mycursor.fetchall()
 for result in myresult:
     print(result)
