@@ -34,16 +34,37 @@ def perform_curl(data=None, URL=None):
 """
 def send_w(origin, key, amount, destination, rep=None, work=None):
     hash = account_info(origin)['frontier']
-    #print(hash)
-    work = work_generate(hash)['work']
-    #print(work)
-    #print(origin, key, amount, destination, work)
+    work = work_generate(hash, False)['work']
     generated_send_block = send_block(origin, key, amount, destination, work=work)
-    #print(generated_send_block)
     results = process_block(generated_send_block)
-    #print(results)
     return results
 
+
+def work_generate(hash, dpow=False):
+    """
+    Generates PoW for a hash. If dpow is set to false, does it on the local node.
+    If dpow is set to true, will attempt to use remote dpow server. If there is no response in one second,
+    the function will recursively call itself with dpow=false and do it locally.
+    :param hash:
+    :param dpow:
+    :return:
+    """
+    if dpow:
+        # API call
+        try:
+            # Some dummy variables. api token will be in a separate text file
+            results = requests.post(dpow_url + hash + api_token, timeout=2)
+            print('successful dPoW!')
+        except requests.exceptions.Timeout:
+            return work_generate(hash)
+        return results
+    else:
+        data = {
+            "action": "work_generate",
+            "hash": hash
+        }
+    results = perform_curl(data)
+    return results
 
 
 def account_info(account):
@@ -56,14 +77,7 @@ def account_info(account):
     return results
 
 
-def work_generate(hash):
-    data = {
-        "action": "work_generate",
-        "hash": hash
-    }
-    results = perform_curl(data)
-    print(results)
-    return results
+
 
 
 def send_block(origin, key, amount, destination, rep=None, work=None):
@@ -235,6 +249,7 @@ def get_pending(account, count=-1):
     #print(results)
     return results
 
+
 def get_pendings(accounts, count=-1, threshold=None):
     data = {
         "action": "accounts_pending",
@@ -245,7 +260,6 @@ def get_pendings(accounts, count=-1, threshold=None):
         data['threshold'] = "%s" % (threshold)
     results = perform_curl(data)
     return results
-
 
 
 def validate_address(address):
@@ -297,3 +311,32 @@ def open_or_receive(account, key):
         pass
 
 
+def open_or_receive_blocks(account, key, blocks, rep=None):
+    if rep is None:
+        rep = "xrb_374qyw8xwyie1hhws4cfo1fbrkis44dd6aputrujmrteeexcyag4ej84kkni"
+
+    # if there is a previous block, receive the blocks
+    try:
+        previous = get_previous_hash(account)
+    except:
+        previous = 0
+
+    for sent_hash in blocks:
+        sent_block = get_block_by_hash(sent_hash)
+        sent_previous_hash = sent_block['previous']
+        sent_previous_block = get_block_by_hash(sent_previous_hash)
+        amount = (int(sent_previous_block['balance']) - int(sent_block['balance']))
+        amount = check_balance(account)[0] + amount
+        data = {
+            'action': 'block_create',
+            'type': 'state',
+            'previous': previous,
+            'account': account,
+            'representative': rep,
+            'balance': amount,
+            'link': sent_hash,
+            'key': key
+        }
+        process_block(perform_curl(data))
+        if previous == 0:
+            previous = get_previous_hash(account)

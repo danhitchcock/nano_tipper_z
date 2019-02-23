@@ -6,7 +6,7 @@ with open('../sql_password.txt') as f:
 
 mydb = mysql.connector.connect(user='root', password=sql_password,
                               host='localhost',
-                              auth_plugin='mysql_native_password',database='nano_tipper_z')
+                              auth_plugin='mysql_native_password', database='nano_tipper_z')
 mycursor = mydb.cursor()
 
 
@@ -164,6 +164,13 @@ def add_subreddit(subreddit, reply_to_comments, footer, status):
     mycursor.execute(sql, val)
     mydb.commit()
 
+def modify_subreddit(subreddit, status):
+    sql = "UPDATE subreddits SET status = %s WHERE subreddit = %s"
+    val = (status, subreddit)
+    mycursor.execute(sql, val)
+    mydb.commit()
+
+"""
 mycursor.execute('SHOW COLUMNS FROM history')
 myresult = mycursor.fetchall()
 for result in myresult:
@@ -171,10 +178,10 @@ for result in myresult:
 mycursor.execute("SELECT * FROM history WHERE action = 'send'")
 myresult = mycursor.fetchall()
 print(len(myresult))
-
+"""
 
 #accounts()
-#subreddits()
+
 #history(30)
 #messages()
 
@@ -182,20 +189,11 @@ print(len(myresult))
 # mycursor.execute(sql)
 # mydb.commit()
 
-# add_subreddit('nanocurrency', True, None, 'friendly')
-# add_subreddit('cryptocurrency247', True, None, 'friendly')
-# add_subreddit('nanotrade', True, None, 'friendly')
-# add_subreddit('nano_tipper', True, None, 'friendly')
+#add_subreddit('nano_tipper_test', True, None, 'friendly')
+#modify_subreddit('nano_tipper_z_test', 'friendly')
 
-
-
-
-history(300)
+#history(100)
 #messages()
 #print("************************************************************")
-#accounts()
-
-#print(allowed_request('zily88', 30, 5))
-#delete_user('nano_tipper_z_test2')
-
+accounts()
 #subreddits()

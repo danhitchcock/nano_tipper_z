@@ -4,7 +4,7 @@
 
 ### To get started with Nano Tipper, either:
 
-A) **Create an account** by [sending a message](https://reddit.com/message/compose/?to=nano_tipper&subject=command&message=create) to /u/nano_tipper with 'create' in the message body. You will receive a Nano address, to which you can add Nano\*. You will receive a 0.001 Nano tip for registering! Also, try any of the faucets at [Nano Links](https://nanolinks.info/#faucets-free-nano) (\**Nano Tipper is in early beta! Only send small amounts of Nano*.)
+A) **Create an account** by [sending a message](https://reddit.com/message/compose/?to=nano_tipper&subject=command&message=create) to /u/nano_tipper with 'create' or 'register' in the message body. You will receive a Nano address, to which you can add Nano\*. You will receive a 0.001 Nano tip for registering! Also, try any of the faucets at [Nano Links](https://nanolinks.info/#faucets-free-nano) (\**Nano Tipper is in early beta! Only send small amounts of Nano*.)
 
 \-or-
 
@@ -33,7 +33,8 @@ Nano Tipper also works by PM. [Send a message](https://reddit.com/message/compos
 To send 0.1 Nano to zily88, include this text in the message body:
 
     send 0.1 /u/zily88
-    -or-
+-or-
+
     send 0.1 zily88
 
 To send 0.1 Nano to xrb\_1ssr4sbop5wnkbkpk7y7ekewie7tygtjgdukm9jq7d1m3j6ocfskwyx77awd, include this text in the message body:
@@ -74,20 +75,14 @@ There are many other commands.
 # Terms of Service
 * Don't keep a lot of Nano in your Nano Tip Bot account
 * This program is not-for-profit
-* You accept the risks of using this Tip Bot--I won't steal your Nanos, but they might be lost at any point, and I'm 
-under no obligation to replace them. Don't put in more than you're willing to lose.
-* If your account is inactive for more than 3 years, and no meaningful attempt has been made to reach me, the Nanos in your
-account will be forfeited and I am under no obligation to return them. Why did I write this? Because the tip bot is not a lifelong custodian service -- I don't want
- people reaching out to me after 20 years for their .032 Nanos the left on the tip bot. I don't want to have to keep the 
- database with me the rest of my life. After your three years, if the bot is still running, your Nanos will almost 
- certainly be available to you.
-* Don't submit more than 5 requests every 30 seconds
+* You accept the risks of using this Tip Bot--I won't steal your Nanos, but they might be lost at any point, and I'm under no obligation to replace them. Don't put in more than you're willing to lose.
+* If your account is inactive for more than 3 years, and no meaningful attempt has been made to reach me, the Nanos in your account will be forfeited and I am under no obligation to return them. Why did I write this? Because the tip bot is not a lifelong custodian service -- I don't want people reaching out to me after 20 years for their .032 Nanos the left on the tip bot. I don't want to have to keep the  database with me the rest of my life. After your three years, if the bot is still running, your Nanos will almost certainly be available to you.
+* Don't submit more than 5 requests every 30 seconds. The bot will ignore any commands you issue until 30 seconds have passed.
 * I can change the Terms of Service at any time.
 
 # FAQ
 ## Why does the message have to start with !nano_tip?
-This is to prevent unintentional tips! If the program simply scanned the entire comment, a user might accidently quote someone else's 
-tip command in a response. In the future I might change this, but for now it's the best way to ensure the program behaves as expected.
+This is to prevent unintentional tips! If the program simply scanned the entire comment, a user might accidently quote someone else's tip command in a response. In the future I might change this, but for now it's the best way to ensure the program behaves as expected.
 
 ## Are my funds safe?
 **NO! Unless you and you alone control your private keys, your funds are never safe!** Please don't keep more than a few Nanos on the tipbot at any time! While I'm not going to steal your Nanos, this program is in early beta testing and weird things could happen, including lost Nanos! **Use at your own risk!** (sorry for all the exclamation marks)
@@ -96,7 +91,7 @@ tip command in a response. In the future I might change this, but for now it's t
 If the address isn't affiliated with a Redditor, **No.** I only have private keys for redditors, not for addresses. If you send Nano to Binance for example, I cannot retrieve it.
 
 ## I sent a tip to the wrong redditor. Can I get it back?
-You basically gave a stranger a dollar, and I have no control over that. Yes, I control the private keys, but I really don't want to start manually making unauthorized transactions on people's accounts. If the stranger is a redditor and doesn't activate their account, you will get your tip back in 30 days. If they *do* activate their account, it's theirs. You can try asking them for it back.
+You basically gave a stranger a dollar, and I have no control over that. Yes, I technically control the private keys, but I really don't want to start manually making unauthorized transactions on people's accounts. If the stranger is a redditor and doesn't activate their account, you will get your tip back in 30 days. If they *do* activate their account, it's theirs. You can try asking them for it back.
 
 ## Have you implemented any spam prevention for your bot?
 Users are allowed 5 requests every 30 seconds. If you do more than that, the bot ignores you until 30 seconds have passed.

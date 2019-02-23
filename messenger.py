@@ -11,7 +11,6 @@ mydb = mysql.connector.connect(user='root', password=sql_password,
                               auth_plugin='mysql_native_password', database='nano_tipper_z')
 mycursor = mydb.cursor()
 
-# initiate the bot and all friendly subreddits
 reddit = praw.Reddit('bot1')
 
 while True:
@@ -20,11 +19,13 @@ while True:
     results = mycursor.fetchall()
     mydb.commit()
     for result in results:
-        print(result)
+        print(type(result[1]), type(result[2]), type(result[3]))
+        print(result[1], result[2], repr(result[3]))
+        # send the message
+        reddit.redditor(str(result[1])).message(str(result[2]), str(result[3]))
         sql = "DELETE FROM messages WHERE id = %s"
         val = (result[0], )
         mycursor.execute(sql, val)
-        # pretend to be a message being sent
-        sleep(2)
         mydb.commit()
+
     sleep(6)
