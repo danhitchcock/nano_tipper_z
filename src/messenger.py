@@ -4,7 +4,7 @@ import mysql.connector
 import praw
 
 # access the sql library
-with open("sql_password.txt") as f:
+with open("../sql_password.txt") as f:
     sql_password = f.read()
 mydb = mysql.connector.connect(
     user="root",

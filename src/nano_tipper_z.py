@@ -16,7 +16,7 @@ from src.rpc_bindings import (
 from src.rpc_bindings import send_w as send
 
 # access the sql library
-with open("sql_password.txt") as f:
+with open("../sql_password.txt") as f:
     sql_password = f.read()
 mydb = mysql.connector.connect(
     user="root",
