@@ -25,4 +25,4 @@ repos:
     rev: 18.9b0
     hooks:
       - id: black
-        args: [--py36, src]
+        args: [--py36, src, sql]
