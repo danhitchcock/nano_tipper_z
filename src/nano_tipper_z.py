@@ -1241,10 +1241,10 @@ def handle_private_key(message):
             result[0][0],
             result[0][1],
         )
-        x = reddit.redditor(username).message("New Private Key", response)
+        x = reddit.redditor(author).message("New Private Key", response)
         return None
     else:
-        x = reddit.redditor(username).message(
+        x = reddit.redditor(author).message(
             "No account found.",
             "You do not currently have an account open."
             "To create one, respond with the text 'create' in the message body.",
