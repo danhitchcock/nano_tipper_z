@@ -49,6 +49,7 @@ There are many other commands.
 
     'create' - Create a new account if one does not exist
     'send <amount or all> <user/address>' - Send Nano to a reddit user or an address
+    'withdraw <amount or all> <user/address>' - Same as send
     'receive' - Receive all pending transactions (if autoreceive is set to 'no')
     'balance' or 'address' - Retrieve your account balance. Includes both pocketed and unpocketed transactions
     'minimum <amount>' - (default 0.0001) Sets a minimum amount for receiving tips

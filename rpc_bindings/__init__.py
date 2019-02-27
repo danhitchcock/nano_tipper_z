@@ -5,6 +5,8 @@ from io import BytesIO
 import time
 import requests
 
+with open('./dpow_token') as f:
+    dpow_token = f.read()
 
 def perform_curl(data=None, URL=None, timeout=30):
     if URL is None:
@@ -34,7 +36,7 @@ def perform_curl(data=None, URL=None):
 """
 def send_w(origin, key, amount, destination, rep=None, work=None):
     hash = account_info(origin)['frontier']
-    work = work_generate(hash, False)['work']
+    work = work_generate(hash, True)['work']
     generated_send_block = send_block(origin, key, amount, destination, work=work)
     results = process_block(generated_send_block)
     return results
@@ -47,13 +49,18 @@ def work_generate(hash, dpow=False):
     the function will recursively call itself with dpow=false and do it locally.
     :param hash:
     :param dpow:
-    :return:
+    :return: dict with 'work' as a key
     """
     if dpow:
         # API call
         try:
             # Some dummy variables. api token will be in a separate text file
-            results = requests.post(dpow_url + hash + api_token, timeout=2)
+            data = {
+                "key": dpow_token,
+                "hash": hash
+            }
+            results = requests.post('http://178.62.11.37:5000/work', json.dumps(data), timeout=10)
+            results = json.loads(results.text)
             print('successful dPoW!')
         except requests.exceptions.Timeout:
             return work_generate(hash)
@@ -64,6 +71,7 @@ def work_generate(hash, dpow=False):
             "hash": hash
         }
     results = perform_curl(data)
+    print('local PoW')
     return results
 
 
@@ -73,10 +81,8 @@ def account_info(account):
         'account': account
     }
     results = perform_curl(data)
-    print(results)
+
     return results
-
-
 
 
 
@@ -110,7 +116,7 @@ def send_all(origin, key, destination):
     return None
 
 
-def open_block(account, key, rep=None):
+def open_block(account, key, rep=None, work=None):
     """
     :param account: str account to open
     :param key: str account private key
@@ -140,6 +146,8 @@ def open_block(account, key, rep=None):
         'link': sent_hash,
         'key': key,
     }
+    if work:
+        data['work'] = work
     results = perform_curl(data)
     return results
 
@@ -250,6 +258,14 @@ def get_pending(account, count=-1):
     return results
 
 
+def account_key(account):
+    data = {
+        "action": "account_key",
+        "account": account,
+    }
+    results = perform_curl(data)
+    return results
+
 def get_pendings(accounts, count=-1, threshold=None):
     data = {
         "action": "accounts_pending",
@@ -312,19 +328,30 @@ def open_or_receive(account, key):
 
 
 def open_or_receive_blocks(account, key, blocks, rep=None):
+
+    work = None
     if rep is None:
         rep = "xrb_374qyw8xwyie1hhws4cfo1fbrkis44dd6aputrujmrteeexcyag4ej84kkni"
 
     # if there is a previous block, receive the blocks
     try:
         previous = get_previous_hash(account)
-    except:
+    except Exception as e:
+        print("It's an open block. ", e)
+        # otherwise, this is an open block.
         previous = 0
 
     for sent_hash in blocks:
         sent_block = get_block_by_hash(sent_hash)
         sent_previous_hash = sent_block['previous']
         sent_previous_block = get_block_by_hash(sent_previous_hash)
+        # if it's an open block, get work from the dpow server
+        if previous == 0:
+            account_public_key = account_key(account)['key']
+            print('Opening.')
+            work = work_generate(account_public_key, True)['work']
+            # print(account, account_public_key, work)
+
         amount = (int(sent_previous_block['balance']) - int(sent_block['balance']))
         amount = check_balance(account)[0] + amount
         data = {
@@ -337,6 +364,8 @@ def open_or_receive_blocks(account, key, blocks, rep=None):
             'link': sent_hash,
             'key': key
         }
-        process_block(perform_curl(data))
-        if previous == 0:
-            previous = get_previous_hash(account)
+        # if it's an open block, add in our 'open' work
+        if work:
+            data['work'] = work
+        previous = process_block(perform_curl(data))['hash']
+        work = None

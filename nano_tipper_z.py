@@ -506,7 +506,7 @@ def handle_send_nano(message, parsed_text, comment_or_message):
         print("Sending Nano: ", address, private_key, amount, recipient_address, recipient_username)
         t0 = time.time()
         sent = send(address, private_key, amount, recipient_address)
-        print(time.time()-t0)
+        # print(time.time()-t0)
         sql = "UPDATE history SET hash = %s WHERE id = %s"
         val = (sent['hash'], entry_id)
         mycursor.execute(sql, val)
@@ -638,7 +638,7 @@ def handle_comment(message):
         elif (response[1] == 10) or (response[1] == 13):
             # user didn't request silence or it's a new account, so tag them
             message.reply(
-                '^[Sent](https://nanocrawler.cc/explorer/block/%s) ^%s ^Nano ^to ^/u/%s ^- [^(Nano Tipper)](https://github.com/danhitchcock/nano_tipper_z)'
+                '^[Sent](https://nanocrawler.cc/explorer/block/%s) ^%s ^Nano ^to ^(/u/%s) ^- [^(Nano Tipper)](https://github.com/danhitchcock/nano_tipper_z)'
                 % (response[5], response[2], response[3]))
         elif (response[1] == 11) or (response[1] == 12):
             # this actually shouldn't ever happen
@@ -1060,7 +1060,7 @@ def handle_message(message):
         subject = 'Nano Tipper - New Address'
         # handle_new_address(message)
 
-    elif parsed_text[0].lower() == 'send':
+    elif (parsed_text[0].lower() == 'send') or (parsed_text[0].lower() == 'withdraw'):
         subject = 'Nano Tipper - Send'
         print("send via PM")
         response = handle_send(message)
@@ -1160,9 +1160,40 @@ def message_in_database(message):
     return False
 
 
+def check_inactive_transactions():
+    t0 = time.time()
+    print('running inactive script')
+    mycursor.execute("SELECT username FROM accounts WHERE active IS NOT TRUE")
+    myresults = mycursor.fetchall()
+    # for every account check transactions
+    total = 0
+    amount = 0
+    for result in myresults:
+        # print(result[0])
+        # print("SELECT * FROM history WHERE action = 'send' AND recipient_username = '%s'" % result[0])
+        sql = "SELECT * FROM history WHERE action = 'send' AND recipient_username = %s AND `sql_time` <= SUBDATE( CURRENT_DATE, INTERVAL 25 DAY)"
+        val = (result[0], )
+        mycursor.execute(sql, val)
+        reversed_txns = mycursor.fetchall()
+        for txn in reversed_txns:
+            total += 1
+            print(txn[4], txn[1], result[0], int(txn[9])/10**30)
+            amount += int(txn[9])/10**30
+        # print(result)
+    print(total, amount, time.time()-t0)
+
+    pass
+
 # main loop
 print('Starting up!')
+t0 = time.time()
+check_inactive_transactions()
+
 for action_item in stream_comments_messages():
+    if time.time()-t0 > 86400:
+        t0 = time.time()
+        check_inactive_transactions()
+
     # every 86400 seconds (once a day) scan for 30 day old tips to inactive accounts
     # pull inactive accounts
     # for each account
@@ -1174,7 +1205,7 @@ for action_item in stream_comments_messages():
     # comments by checking the tag on the message name
     # (t1 = comment, t4 = message)
     # The bot handles these differently
-    if (action_item is None):
+    if action_item is None:
         pass
     elif message_in_database(action_item[1]):
         print("Previous message was found in stream...")
@@ -1188,8 +1219,8 @@ for action_item in stream_comments_messages():
 
         if (parsed_text[0] == r'!nano_tip') or (parsed_text[0] == r'!ntip'):
             print('*****************************************************')
-            print('Comment: ', action_item[1].author, ' - ', action_item[1].body[:20])
-            print('*****************************************************')
+            print(time.strftime('%Y-%m-%d %H:%M:%S'), 'Comment: ', action_item[1].author, ' - ', action_item[1].body[:20])
+
             if allowed_request(action_item[1].author, 30, 5) and not message_in_database(action_item[1]):
                 if tip_bot_on:
                     handle_comment(action_item[1])
@@ -1199,29 +1230,29 @@ for action_item in stream_comments_messages():
                     # action_item[1].reply('[^(Nano Tipper is currently disabled)](https://www.reddit.com/r/nano_tipper/comments/astwp6/nano_tipper_status/)')
             else:
                 print('Too many requests for %s' % action_item[1].author)
+            print('*****************************************************')
 
     elif action_item[0] == 'message':
         if action_item[1].author == 'nano_tipper':
-            print('*', action_item[1].body[:11], '*')
             if (action_item[1].name[:3] == 't4_') and (action_item[1].body[:11] == 'send 0.001 ') and not message_in_database(action_item[1]):
-                print(time.strftime('%Y-%m-%d %H:%M:%S'))
                 print('*****************************************************')
-                print('Faucet Tip: ', action_item[1].author, ' - ', action_item[1].body[:20])
-                print('*****************************************************')
+                print(time.strftime('%Y-%m-%d %H:%M:%S'), 'Faucet Tip: ', action_item[1].author, ' - ', action_item[1].body[:20])
                 handle_message(action_item[1])
+                print('*****************************************************')
             else:
                 print('ignoring nano_tipper message')
+
         elif not allowed_request(action_item[1].author, 30, 5):
             print('Too many requests for %s' % action_item[1].author)
         else:
             if tip_bot_on:
                 #parse out the text
                 if action_item[1].name[:3] == 't4_' and not message_in_database(action_item[1]):
-                    print(time.strftime('%Y-%m-%d %H:%M:%S'))
+
                     print('*****************************************************')
-                    print('Message: ', action_item[1].author, ' - ', action_item[1].body[:20])
-                    print('*****************************************************')
+                    print(time.strftime('%Y-%m-%d %H:%M:%S'), 'Message: ', action_item[1].author, ' - ', action_item[1].body[:20])
                     handle_message(action_item[1])
+                    print('*****************************************************')
             else:
                 action_item[1].reply('[^(Nano Tipper is currently disabled)](https://www.reddit.com/r/nano_tipper/comments/astwp6/nano_tipper_status/)')
 
@@ -1233,8 +1264,7 @@ for action_item in stream_comments_messages():
             parsed_text = str(action_item[1].body).lower().replace('\\', '').split('\n')[0].split(' ')
         if parsed_text[0] == r'/u/nano_tipper' or parsed_text[0] == r'u/nano_tipper':
             print('*****************************************************')
-            print('Username Mention: ', action_item[1].author, ' - ', action_item[1].body[:20])
-            print('*****************************************************')
+            print(time.strftime('%Y-%m-%d %H:%M:%S'), 'Username Mention: ', action_item[1].author, ' - ', action_item[1].body[:20])
             if allowed_request(action_item[1].author, 30, 5) and not message_in_database(action_item[1]):
                 if tip_bot_on:
                     handle_comment(action_item[1])
@@ -1245,6 +1275,7 @@ for action_item in stream_comments_messages():
                     # action_item[1].reply('[^(Nano Tipper is currently disabled)](https://www.reddit.com/r/nano_tipper/comments/astwp6/nano_tipper_status/)')
             else:
                 print('Too many requests for %s' % action_item[1].author)
+            print('*****************************************************')
 
 
 

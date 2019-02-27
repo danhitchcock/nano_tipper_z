@@ -19,8 +19,7 @@ while True:
     results = mycursor.fetchall()
     mydb.commit()
     for result in results:
-        print(type(result[1]), type(result[2]), type(result[3]))
-        print(result[1], result[2], repr(result[3]))
+        print(time.strftime('%Y-%m-%d %H:%M:%S'), result[1], result[2], repr(result[3]))
         # send the message
         reddit.redditor(str(result[1])).message(str(result[2]), str(result[3]))
         sql = "DELETE FROM messages WHERE id = %s"

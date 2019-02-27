@@ -74,14 +74,17 @@ def init_subreddits():
     mydb.commit()
 
 
-def history(num_records):
+def history(num_records, username=None):
     mycursor.execute('SHOW COLUMNS FROM history')
     myresult = mycursor.fetchall()
     for result in myresult:
         print(result)
-    mycursor.execute("SELECT * FROM history ORDER BY id DESC limit %s" % num_records)
+    if username:
+        mycursor.execute("SELECT * FROM history WHERE username = '%s' ORDER BY id DESC limit %s" % (username, num_records))
+    else:
+        mycursor.execute("SELECT * FROM history ORDER BY id DESC limit %s" % num_records)
     myresult = mycursor.fetchall()
-    for result in myresult:
+    for result in reversed(myresult):
         print(result)
 
 def messages():
@@ -180,7 +183,7 @@ myresult = mycursor.fetchall()
 print(len(myresult))
 """
 
-#accounts()
+accounts()
 
 #history(30)
 #messages()
@@ -191,9 +194,9 @@ print(len(myresult))
 
 #add_subreddit('nano_tipper_test', True, None, 'friendly')
 #modify_subreddit('nano_tipper_z_test', 'friendly')
-
-#history(100)
+# delete_user('nano_tipper_z_test2')
+history(50, 'random_biologist')
 #messages()
 #print("************************************************************")
-accounts()
+#accounts()
 #subreddits()
