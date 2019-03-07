@@ -6,6 +6,7 @@ with open('python_version') as f:
 while True:
     p = subprocess.Popen([python_version, filename], shell=False).wait()
     if p != 0:
+        sleep(2)
         continue
     else:
         break
