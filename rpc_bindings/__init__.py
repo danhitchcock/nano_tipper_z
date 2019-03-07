@@ -5,7 +5,7 @@ import time
 import requests
 try:
     with open('./dpow_token') as f:
-        dpow_token = f.read()
+        dpow_token = f.read().replace('\n', '')
 except:
     pass
 
