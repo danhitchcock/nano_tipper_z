@@ -1,4 +1,3 @@
-import pycurl
 import json
 import qrcode
 from io import BytesIO
