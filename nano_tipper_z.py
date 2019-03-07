@@ -15,10 +15,6 @@ mydb = mysql.connector.connect(user='root', password=sql_password,
                               host='localhost',
                               auth_plugin='mysql_native_password', database='nano_tipper_z')
 
-mydb = mysql.connector.connect(user='root', password='tipbot',
-                              host='localhost',
-                              auth_plugin='mysql_native_password', database='nano_tipper_z')
-
 mycursor = mydb.cursor()
 
 # initiate the bot and all friendly subreddits
@@ -44,7 +40,7 @@ recipient_minimum = 0.0001
 program_maximum = 10
 excluded_reditors = ['nano', 'nanos', 'xrb', 'usd', 'eur', 'btc', 'yen']
 toggle_receive = True
-print(tip_bot_username)
+print(repr(tip_bot_username))
 
 
 comment_footer = """\n\n
