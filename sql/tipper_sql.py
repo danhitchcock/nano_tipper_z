@@ -30,7 +30,8 @@ def init_history():
                         "hash VARCHAR(255), "
                         "comment_id VARCHAR(255), "
                         "comment_text VARCHAR(255), "
-                        "notes VARCHAR(255)"
+                        "notes VARCHAR(255), "
+                        "return_status VARCHAR(255)"
                      ")"
                      )
     mydb.commit()
@@ -173,30 +174,33 @@ def modify_subreddit(subreddit, status):
     mycursor.execute(sql, val)
     mydb.commit()
 
-"""
-mycursor.execute('SHOW COLUMNS FROM history')
-myresult = mycursor.fetchall()
-for result in myresult:
-    print(result)
-mycursor.execute("SELECT * FROM history WHERE action = 'send'")
-myresult = mycursor.fetchall()
-print(len(myresult))
-"""
+def add_history_record(username=None, action=None, sql_time=None, address=None, comment_or_message=None,
+                       recipient_username=None, recipient_address=None, amount=None, hash=None, comment_id=None,
+                       notes=None, reddit_time=None, comment_text=None, return_status=None):
+    if sql_time is None:
+        sql_time = time.strftime('%Y-%m-%d %H:%M:%S')
+
+    sql = "INSERT INTO history (username, action, sql_time, address, comment_or_message, recipient_username, " \
+          "recipient_address, amount, hash, comment_id, notes, reddit_time, comment_text, return_status) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
+
+    val = (username, action, sql_time, address, comment_or_message, recipient_username, recipient_address, amount,
+           hash, comment_id, notes, reddit_time, comment_text, return_status)
+
+    mycursor.execute(sql, val)
+    mydb.commit()
+    return mycursor.lastrowid
+
+#sql = "UPDATE accounts SET active = FALSE WHERE username='nano_tipper_z_test2'"
+#mycursor.execute(sql)
+#mydb.commit()
+
+#add_history_record(username='zily88', action='send', sql_time = '2019-1-25 0:0:0', recipient_username='nano_tipper_z_test2', amount=100000000000000000000000000, hash='test', return_status='cleared')
+
+
+#accounts()
 
 accounts()
+history(100)
 
-#history(30)
-#messages()
 
-# sql = "UPDATE subreddits SET status = 'friendly' WHERE subreddit = 'nano_tipper_z'"
-# mycursor.execute(sql)
-# mydb.commit()
 
-#add_subreddit('nano_tipper_test', True, None, 'friendly')
-#modify_subreddit('nano_tipper_z_test', 'friendly')
-# delete_user('nano_tipper_z_test2')
-history(50, 'random_biologist')
-#messages()
-#print("************************************************************")
-#accounts()
-#subreddits()

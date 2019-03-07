@@ -16,7 +16,7 @@ mycursor = mydb.cursor()
 
 # initiate the bot and all friendly subreddits
 reddit = praw.Reddit('bot1')
-excluded_reditors = ['nano', 'nanos', 'xrb', 'usd', 'eur', 'btc', 'yen']
+
 mycursor.execute("SELECT subreddit FROM subreddits")
 results = mycursor.fetchall()
 subreddits=''
@@ -24,17 +24,20 @@ for result in results:
     subreddits += '%s+' % result[0]
 #subreddits += 'nano_tipper_test'
 subreddits = subreddits[:-1]
-print(subreddits)
-
-
+print('Initializng in: ', subreddits)
 subreddit = reddit.subreddit(subreddits)
 
 # a few globals
+tip_bot_username = 'nano_tipper'
+tip_commands = ('!nano_tip', '!ntip')
 tip_bot_on = True
 program_minimum = 0.0001  # in nano
 recipient_minimum = 0.0001
 program_maximum = 10
+excluded_reditors = ['nano', 'nanos', 'xrb', 'usd', 'eur', 'btc', 'yen']
 toggle_receive = True
+print(tip_bot_username)
+
 
 comment_footer = """\n\n
 ***\n\n
@@ -146,8 +149,8 @@ def stream_comments_messages():
     while True:
         if toggle_receive and tip_bot_on:
             auto_receive()
-
         toggle_receive = not toggle_receive
+
         sleep(6)
 
         updated_comments = {comment for comment in subreddit.comments()}
@@ -170,9 +173,10 @@ def stream_comments_messages():
                     yield ('comment', new_comment)
         if len(new_messages) >= 1:
             for new_message in new_messages:
+                # print(new_message, new_message.subject, new_message.body)
                 if new_message.name[:3] == 't4_':
                     yield ('message', new_message)
-                elif (new_message.subject == "comment reply" or new_message.subject == "username mention") and new_message.name[:3] == 't1_':
+                elif (new_message.subject == "comment reply" or new_message.subject == "username mention" or new_message.subject == "post reply") and new_message.name[:3] == 't1_':
                     # print('****username mention + comment reply')
                     yield ('username mention', new_message)
         else:
@@ -287,7 +291,7 @@ def handle_send_nano(message, parsed_text, comment_or_message):
     :param message: reddit comment or message object
     :param parsed_text: list
     :param comment_or_message: str
-    :return: list
+    :return: list [str, int, float, str, str, str]
     """
     # the parsed list is the first line comment body in lowercase with slashes removed and split at spaces
     # i.e. parsed_text = str(message.body).lower().replace('\\', '').split('\n')[0].split(' ')
@@ -507,7 +511,7 @@ def handle_send_nano(message, parsed_text, comment_or_message):
         t0 = time.time()
         sent = send(address, private_key, amount, recipient_address)
         # print(time.time()-t0)
-        sql = "UPDATE history SET hash = %s WHERE id = %s"
+        sql = "UPDATE history SET hash = %s, return_status = 'cleared' WHERE id = %s"
         val = (sent['hash'], entry_id)
         mycursor.execute(sql, val)
         mydb.commit()
@@ -551,7 +555,7 @@ def handle_send_nano(message, parsed_text, comment_or_message):
 
         print("Sending Unregistered Address: ", address, private_key, amount, recipient_address)
         sent = send(address, private_key, amount, recipient_address)
-        sql = "UPDATE history SET hash = %s WHERE id = %s"
+        sql = "UPDATE history SET hash = %s, return_status = 'cleared' WHERE id = %s"
         val = (sent['hash'], entry_id)
         mycursor.execute(sql, val)
         mydb.commit()
@@ -578,7 +582,7 @@ def handle_send_nano(message, parsed_text, comment_or_message):
         mycursor.execute(sql, val)
         mydb.commit()
         sent = send(address, private_key, amount, recipient_address)
-        sql = "UPDATE history SET hash = %s WHERE id = %s"
+        sql = "UPDATE history SET hash = %s, return_status = 'cleared' WHERE id = %s"
         val = (sent['hash'], entry_id)
         mycursor.execute(sql, val)
         mydb.commit()
@@ -589,20 +593,22 @@ def handle_send_nano(message, parsed_text, comment_or_message):
 
 
 # handles tip commands on subreddits
-def handle_comment(message):
+def handle_comment(message, parsed_text=None):
     """
     Prepares a reddit comment starting with !nano_tip to send nano if everything goes well
     :param message:
+    :param parsed_text
     :return:
     """
     # remove an annoying extra space that might be in the front
 
     # for prop in dir(message):
     #     print(prop)
-    if message.body[0] == ' ':
-        parsed_text = str(message.body[1:]).lower().replace('\\', '').split('\n')[0].split(' ')
-    else:
-        parsed_text = str(message.body).lower().replace('\\', '').split('\n')[0].split(' ')
+    if parsed_text is None:
+        if message.body[0] == ' ':
+            parsed_text = str(message.body[1:]).lower().replace('\\', '').split('\n')[0].split(' ')
+        else:
+            parsed_text = str(message.body).lower().replace('\\', '').split('\n')[0].split(' ')
     response = handle_send_nano(message, parsed_text, 'comment')
 
     # apply the subreddit rules to our response message
@@ -678,12 +684,13 @@ def handle_comment(message):
                 val = (message_recipient, subject, message_text)
                 mycursor.execute(sql, val)
                 mydb.commit()
-
+                """
                 x = reddit.redditor(response[3]). \
                     message('You just received a new Nano tip!',
                             'Somebody just tipped you ```%s Nano``` at your address %s. [Transaction on Nano Crawler](https://nanocrawler.cc/explorer/block/%s)\n\n'
                             'To turn off these notifications, reply with "silence yes"' % (
                                 response[2], response[4], response[5]) + comment_footer)
+                """
     elif subreddit_status == 'custom':
         # not sure what to do with this yet.
         pass
@@ -696,6 +703,7 @@ def handle_auto_receive(message):
     add_history_record(
         username=str(message.author),
         action='auto_receive',
+        comment_id=message.name,
         comment_or_message='message',
         reddit_time=message_time.strftime('%Y-%m-%d %H:%M:%S')
         )
@@ -733,6 +741,7 @@ def handle_balance(message):
         comment_or_message='message',
         reddit_time=message_time.strftime('%Y-%m-%d %H:%M:%S'),
         action='balance',
+        comment_id=message.name,
         comment_text=str(message.body)[:255]
     )
     sql = "SELECT address FROM accounts WHERE username=%s"
@@ -756,6 +765,7 @@ def handle_create(message):
         comment_or_message='message',
         reddit_time=message_time.strftime('%Y-%m-%d %H:%M:%S'),
         action='create',
+        comment_id=message.name,
         comment_text=str(message.body)[:255]
     )
 
@@ -778,7 +788,7 @@ def handle_create(message):
         # reddit.redditor(message_recipient).message(subject, message_text)
 
     else:
-        response = "It looks like you already have an account. In any case is now **active**. Your Nano address is %s." \
+        response = "It looks like you already have an account. In any case it is now **active**. Your Nano address is %s." \
                    "\n\nhttps://nanocrawler.cc/explorer/account/%s" % (result[0][0], result[0][0])
     return response
 
@@ -789,6 +799,7 @@ def handle_help(message):
         username=str(message.author),
         action='help',
         comment_or_message='message',
+        comment_id=message.name,
         reddit_time=message_time.strftime('%Y-%m-%d %H:%M:%S')
         )
     response = help_text
@@ -830,6 +841,7 @@ def handle_history(message):
             amount=num_records,
             address=result[0][0],
             comment_or_message='message',
+            comment_id=message.name,
             reddit_time=message_time.strftime('%Y-%m-%d %H:%M:%S'),
             comment_text=str(message.body)[:255]
         )
@@ -866,6 +878,7 @@ def handle_history(message):
             action='history',
             reddit_time=message_time.strftime('%Y-%m-%d %H:%M:%S'),
             amount=num_records,
+            comment_id=message.name,
             comment_text=str(message.body)[:255]
         )
         response = "You do not currently have an account open. To create one, respond with the text 'create' in the message body."
@@ -913,6 +926,7 @@ def handle_minimum(message):
             amount=nano_to_raw(amount),
             address=result[0][0],
             comment_or_message='message',
+            comment_id=message.name,
             reddit_time=message_time.strftime('%Y-%m-%d %H:%M:%S'),
             comment_text=str(message.body)[:255]
         )
@@ -928,6 +942,7 @@ def handle_minimum(message):
             action='minimum',
             reddit_time=message_time.strftime('%Y-%m-%d %H:%M:%S'),
             amount=nano_to_raw(amount),
+            comment_id=message.name,
             comment_text=str(message.body)[:255]
         )
         response = "You do not currently have an account open. To create one, respond with the text 'create' in the message body."
@@ -956,6 +971,7 @@ def handle_receive(message):
             action='receive',
             reddit_time=message_time.strftime('%Y-%m-%d %H:%M:%S'),
             address=address,
+            comment_id=message.name,
             comment_or_message='message'
         )
         response = "At address %s, you currently have %s Nano available, and %s Nano unpocketed. If you have any unpocketed, create a new " \
@@ -967,6 +983,7 @@ def handle_receive(message):
             username=username,
             action='receive',
             reddit_time=message_time.strftime('%Y-%m-%d %H:%M:%S'),
+            comment_id=message.name,
             comment_or_message='message'
         )
         response = "You do not currently have an account open. To create one, respond with the text 'create' in the message body."
@@ -980,6 +997,7 @@ def handle_silence(message):
         username=str(message.author),
         action='silence',
         comment_or_message='message',
+        comment_id=message.name,
         reddit_time=message_time.strftime('%Y-%m-%d %H:%M:%S')
         )
 
@@ -993,12 +1011,12 @@ def handle_silence(message):
         sql = "UPDATE accounts SET silence = TRUE WHERE username = %s "
         val = (username, )
         mycursor.execute(sql, val)
-        response = "silence set to 'yes'. You will no longer receive tip notifications or be tagged by the bot."
+        response = "Silence set to 'yes'. You will no longer receive tip notifications or be tagged by the bot."
     elif parsed_text[1] == 'no':
         sql = "UPDATE accounts SET silence = FALSE WHERE username = %s"
         val = (username, )
         mycursor.execute(sql, val)
-        response = "silence set to 'no'. You will receive tip notifications and be tagged by the bot in replies."
+        response = "Silence set to 'no'. You will receive tip notifications and be tagged by the bot in replies."
     else:
         response = "I did not see 'no' or 'yes' after 'silence'. If you did type that, check your spacing."
     mydb.commit()
@@ -1096,6 +1114,7 @@ def handle_message(message):
             username=str(message.author),
             comment_text=str(message.body)[:255],
             comment_or_message='message',
+            comment_id=message.name,
         )
         return None
     message_recipient = str(message.author)
@@ -1113,6 +1132,7 @@ def handle_new_address(message):
         username=str(message.author),
         comment_or_message='message',
         action='new_address',
+        comment_id=message.name,
         reddit_time=message_time.strftime('%Y-%m-%d %H:%M:%S'),
         comment_text=str(message.body)[:255]
     )
@@ -1120,13 +1140,17 @@ def handle_new_address(message):
 
 
 def auto_receive():
+    # print('running autoreceive')
     mycursor.execute("SELECT username, address, private_key FROM accounts WHERE auto_receive=TRUE")
     myresult = mycursor.fetchall()
 
     # for some reason, requesting 15 addresses takes a whole second
     addresses = [str(result[1]) for result in myresult]
     private_keys = [str(result[2]) for result in myresult]
-    pendings = get_pendings(addresses, threshold=nano_to_raw(program_minimum))
+    # pendings = get_pendings(addresses, threshold=nano_to_raw(program_minimum))
+    pendings = get_pendings(addresses)
+    # print(pendings)
+    # print('got pendings.')
     for address, private_key in zip(addresses, private_keys):
         try:
             if pendings['blocks'][address]:
@@ -1165,24 +1189,87 @@ def check_inactive_transactions():
     print('running inactive script')
     mycursor.execute("SELECT username FROM accounts WHERE active IS NOT TRUE")
     myresults = mycursor.fetchall()
-    # for every account check transactions
-    total = 0
-    amount = 0
-    for result in myresults:
-        # print(result[0])
-        # print("SELECT * FROM history WHERE action = 'send' AND recipient_username = '%s'" % result[0])
-        sql = "SELECT * FROM history WHERE action = 'send' AND recipient_username = %s AND `sql_time` <= SUBDATE( CURRENT_DATE, INTERVAL 25 DAY)"
-        val = (result[0], )
-        mycursor.execute(sql, val)
-        reversed_txns = mycursor.fetchall()
-        for txn in reversed_txns:
-            total += 1
-            print(txn[4], txn[1], result[0], int(txn[9])/10**30)
-            amount += int(txn[9])/10**30
-        # print(result)
-    print(total, amount, time.time()-t0)
+    inactivated_accounts = {item[0] for item in myresults}
 
-    pass
+    mycursor.execute("SELECT recipient_username FROM history WHERE action = 'send' AND hash IS NOT NULL AND `sql_time` <= SUBDATE( CURRENT_DATE, INTERVAL 31 DAY) AND (return_status = 'cleared' OR return_status = 'warned')")
+    results = mycursor.fetchall()
+    tipped_accounts = {item[0] for item in results}
+
+    tipped_inactivated_accounts = inactivated_accounts.intersection(tipped_accounts)
+    print('Accounts on warning: ', sorted(tipped_inactivated_accounts))
+    # scrolls through our inactive members and check if they have unclaimed tips
+    for result in tipped_inactivated_accounts:
+        # send warning messages on day 31
+        sql = "SELECT * FROM history WHERE action = 'send' AND hash IS NOT NULL AND recipient_username = %s AND `sql_time` <= SUBDATE( CURRENT_DATE, INTERVAL 31 DAY) AND return_status = 'cleared'"
+        val = (result, )
+        mycursor.execute(sql, val)
+        txns = mycursor.fetchall()
+        if len(txns) >= 1:
+            print('generating a message for %s' % result)
+
+            message_recipient = result
+            subject = 'Please Activate Your Nano Tipper Account'
+            message_text = "Somebody tipped you at least 30 days ago, but your account hasn't been activated yet.\n\nPlease activate your account by replying any command to this bot. If you do not, any tips 35 days or older will be returned.\n\n***\n\n"
+            message_text += help_text
+            sql = "INSERT INTO messages (username, subject, message) VALUES (%s, %s, %s)"
+            val = (message_recipient, subject, message_text)
+            mycursor.execute(sql, val)
+            mydb.commit()
+            for txn in txns:
+                sql = "UPDATE history SET return_status = 'warned' WHERE id = %s"
+                val = (txn[0], )
+                mycursor.execute(sql, val)
+                mydb.commit()
+            # print(message_recipient, subject, message_text)
+
+        # return transactions over 35 days old
+        sql = "SELECT * FROM history WHERE action = 'send' AND hash IS NOT NULL AND recipient_username = %s AND `sql_time` <= SUBDATE( CURRENT_DATE, INTERVAL 35 DAY) AND return_status = 'warned'"
+        val = (result, )
+        mycursor.execute(sql, val)
+        txns = mycursor.fetchall()
+        if len(txns) >= 1:
+            sql = "SELECT address, private_key FROM accounts WHERE username = %s"
+            val = (result,)
+            mycursor.execute(sql, val)
+            inactive_results = mycursor.fetchall()
+            address = inactive_results[0][0]
+            private_key = inactive_results[0][1]
+
+            for txn in txns:
+                # set the pre-update message to 'return failed'. This will be changed to 'returned' upon success
+                sql = "UPDATE history SET return_status = 'return failed' WHERE id = %s"
+                val = (txn[0], )
+                mycursor.execute(sql, val)
+                mydb.commit()
+
+                # get the transaction information and find out to whom we are returning the tip
+                sql = "SELECT address FROM accounts WHERE username = %s"
+                val = (txn[1], )
+                mycursor.execute(sql, val)
+                recipient_address = mycursor.fetchall()[0][0]
+                print('History record: ', txn[0], address, private_key, txn[9], recipient_address)
+
+                # send it back
+                hash = send(address, private_key, int(txn[9]), recipient_address)['hash']
+                print("Returning a transaction. ", hash)
+
+                # update database if everything goes through
+                sql = "UPDATE history SET return_status = 'returned' WHERE id = %s"
+                val = (txn[0], )
+                mycursor.execute(sql, val)
+                mydb.commit()
+
+                # send a message informing the tipper that the tip is being returned
+                message_recipient = txn[1]
+                subject = 'Returned your tip of %s to %s' % (int(txn[9])/10**30, result)
+                message_text = "Your tip to %s for %s Nano was returned since the user never activated their account." % (result, int(txn[9])/10**30)
+                sql = "INSERT INTO messages (username, subject, message) VALUES (%s, %s, %s)"
+                val = (message_recipient, subject, message_text)
+                mycursor.execute(sql, val)
+                mydb.commit()
+
+                add_history_record(hash=hash, amount=txn[9], notes='Returned transaction from history record %s'%txn[0])
+    print(time.time()-t0)
 
 # main loop
 print('Starting up!')
@@ -1190,17 +1277,6 @@ t0 = time.time()
 check_inactive_transactions()
 
 for action_item in stream_comments_messages():
-    if time.time()-t0 > 86400:
-        t0 = time.time()
-        check_inactive_transactions()
-
-    # every 86400 seconds (once a day) scan for 30 day old tips to inactive accounts
-    # pull inactive accounts
-    # for each account
-    #    pull transactions
-    #       for each transaction
-    #           if transaction older than 30 days, reverse it.
-
     # our 'stream_comments_messages()' generator will give us either messages or
     # comments by checking the tag on the message name
     # (t1 = comment, t4 = message)
@@ -1216,24 +1292,39 @@ for action_item in stream_comments_messages():
             parsed_text = str(action_item[1].body[1:]).lower().replace('\\', '').split('\n')[0].split(' ')
         else:
             parsed_text = str(action_item[1].body).lower().replace('\\', '').split('\n')[0].split(' ')
+        try:
+            if (parsed_text[0] in tip_commands):
+                print('*****************************************************')
+                print(time.strftime('%Y-%m-%d %H:%M:%S'), 'Comment, beginning: ', action_item[1].author, ' - ', action_item[1].body[:20])
 
-        if (parsed_text[0] == r'!nano_tip') or (parsed_text[0] == r'!ntip'):
-            print('*****************************************************')
-            print(time.strftime('%Y-%m-%d %H:%M:%S'), 'Comment: ', action_item[1].author, ' - ', action_item[1].body[:20])
-
-            if allowed_request(action_item[1].author, 30, 5) and not message_in_database(action_item[1]):
-                if tip_bot_on:
-                    handle_comment(action_item[1])
-                    pass
+                if allowed_request(action_item[1].author, 30, 5) and not message_in_database(action_item[1]):
+                    if tip_bot_on:
+                        handle_comment(action_item[1])
+                    else:
+                        reddit.redditor(str(action_item[1].author)).message('Nano Tipper Currently Disabled', '[^(Nano Tipper is currently disabled)](https://www.reddit.com/r/nano_tipper/comments/astwp6/nano_tipper_status/)')
                 else:
-                    reddit.redditor(str(action_item[1].author)).message('Nano Tipper Currently Disabled', '[^(Nano Tipper is currently disabled)](https://www.reddit.com/r/nano_tipper/comments/astwp6/nano_tipper_status/)')
-                    # action_item[1].reply('[^(Nano Tipper is currently disabled)](https://www.reddit.com/r/nano_tipper/comments/astwp6/nano_tipper_status/)')
-            else:
-                print('Too many requests for %s' % action_item[1].author)
-            print('*****************************************************')
+                    print('Too many requests for %s' % action_item[1].author)
+                print('*****************************************************')
+            elif (parsed_text[-2] in tip_commands):
+                print('*****************************************************')
+                print(time.strftime('%Y-%m-%d %H:%M:%S'), 'Comment, end: ', action_item[1].author, ' - ',
+                      action_item[1].body[:20])
+
+                if allowed_request(action_item[1].author, 30, 5) and not message_in_database(action_item[1]):
+                    if tip_bot_on:
+                        handle_comment(action_item[1], parsed_text=parsed_text[-2:])
+                    else:
+                        reddit.redditor(str(action_item[1].author)).message('Nano Tipper Currently Disabled',
+                                                                            '[^(Nano Tipper is currently disabled)](https://www.reddit.com/r/nano_tipper/comments/astwp6/nano_tipper_status/)')
+                else:
+                    print('Too many requests for %s' % action_item[1].author)
+                print('*****************************************************')
+        except IndexError:
+            pass
+
 
     elif action_item[0] == 'message':
-        if action_item[1].author == 'nano_tipper':
+        if action_item[1].author == tip_bot_username:
             if (action_item[1].name[:3] == 't4_') and (action_item[1].body[:11] == 'send 0.001 ') and not message_in_database(action_item[1]):
                 print('*****************************************************')
                 print(time.strftime('%Y-%m-%d %H:%M:%S'), 'Faucet Tip: ', action_item[1].author, ' - ', action_item[1].body[:20])
@@ -1257,25 +1348,47 @@ for action_item in stream_comments_messages():
                 action_item[1].reply('[^(Nano Tipper is currently disabled)](https://www.reddit.com/r/nano_tipper/comments/astwp6/nano_tipper_status/)')
 
     elif action_item[0] == 'username mention':
+        # print('Printing Username mention: ', parsed_text[0])
         if action_item[1].body[0] == ' ':
             # remove any leading spaces. for convenience
             parsed_text = str(action_item[1].body[1:]).lower().replace('\\', '').split('\n')[0].split(' ')
         else:
             parsed_text = str(action_item[1].body).lower().replace('\\', '').split('\n')[0].split(' ')
-        if parsed_text[0] == r'/u/nano_tipper' or parsed_text[0] == r'u/nano_tipper':
-            print('*****************************************************')
-            print(time.strftime('%Y-%m-%d %H:%M:%S'), 'Username Mention: ', action_item[1].author, ' - ', action_item[1].body[:20])
-            if allowed_request(action_item[1].author, 30, 5) and not message_in_database(action_item[1]):
-                if tip_bot_on:
-                    handle_comment(action_item[1])
-                    pass
-                else:
-                    reddit.redditor(str(action_item[1].author)).message('Nano Tipper Currently Disabled',
-                                                                        '[^(Nano Tipper is currently disabled)](https://www.reddit.com/r/nano_tipper/comments/astwp6/nano_tipper_status/)')
-                    # action_item[1].reply('[^(Nano Tipper is currently disabled)](https://www.reddit.com/r/nano_tipper/comments/astwp6/nano_tipper_status/)')
-            else:
-                print('Too many requests for %s' % action_item[1].author)
-            print('*****************************************************')
+        print(parsed_text[0])
 
+        try:
+            if (parsed_text[0] == '/u/%s'%tip_bot_username) or (parsed_text[0] == 'u/%s' % tip_bot_username):
+                print('*****************************************************')
+                print(time.strftime('%Y-%m-%d %H:%M:%S'), 'Username Mention: ', action_item[1].author, ' - ', action_item[1].body[:20])
+                if allowed_request(action_item[1].author, 30, 5) and not message_in_database(action_item[1]):
+                    if tip_bot_on:
+                        handle_comment(action_item[1])
+                        pass
+                    else:
+                        reddit.redditor(str(action_item[1].author)).message('Nano Tipper Currently Disabled',
+                                                                            '[^(Nano Tipper is currently disabled)](https://www.reddit.com/r/nano_tipper/comments/astwp6/nano_tipper_status/)')
+                else:
+                    print('Too many requests for %s' % action_item[1].author)
+                print('*****************************************************')
+            elif (parsed_text[-2] == '/u/%s'%tip_bot_username) or (parsed_text[-2] == 'u/%s' % tip_bot_username):
+                print('*****************************************************')
+                print(time.strftime('%Y-%m-%d %H:%M:%S'), 'Username Mention: ', action_item[1].author, ' - ',
+                      action_item[1].body[:20])
+                if allowed_request(action_item[1].author, 30, 5) and not message_in_database(action_item[1]):
+                    if tip_bot_on:
+                        handle_comment(action_item[1], parsed_text=parsed_text[-2:])
+                    else:
+                        reddit.redditor(str(action_item[1].author)).message('Nano Tipper Currently Disabled',
+                                                                            '[^(Nano Tipper is currently disabled)](https://www.reddit.com/r/nano_tipper/comments/astwp6/nano_tipper_status/)')
+                else:
+                    print('Too many requests for %s' % action_item[1].author)
+                print('*****************************************************')
+        except IndexError:
+            pass
+
+    # run the inactive script at the end of the loop
+    if time.time()-t0 > 3600:
+        t0 = time.time()
+        check_inactive_transactions()
 
 

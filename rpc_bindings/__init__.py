@@ -4,9 +4,11 @@ import qrcode
 from io import BytesIO
 import time
 import requests
-
-with open('./dpow_token') as f:
-    dpow_token = f.read()
+try:
+    with open('./dpow_token') as f:
+        dpow_token = f.read()
+except:
+    pass
 
 def perform_curl(data=None, URL=None, timeout=30):
     if URL is None:
@@ -369,3 +371,14 @@ def open_or_receive_blocks(account, key, blocks, rep=None):
             data['work'] = work
         previous = process_block(perform_curl(data))['hash']
         work = None
+
+
+data = {
+        "action": "account_history",
+        "account": 'xrb_1wnc4mmgizw95up3yshqt7uexmphuz5ezx3o3kb1n1jhh6swbg18o7nrc6zn',
+        "count": "10"
+    }
+
+# f = perform_curl(data)
+# for item in f['history']:
+#     print(item)
