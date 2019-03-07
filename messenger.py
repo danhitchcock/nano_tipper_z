@@ -4,7 +4,7 @@ from datetime import datetime
 from time import sleep
 import mysql.connector
 # access the sql library
-with open('sql_password.txt') as f:
+with open('sql_password') as f:
     sql_password = f.read()
 mydb = mysql.connector.connect(user='root', password=sql_password,
                               host='localhost',
