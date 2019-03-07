@@ -9,7 +9,7 @@ import mysql.connector
 
 # access the sql library
 with open('sql_password') as f:
-    sql_password = f.read()
+    sql_password = f.read().replace('\n', '')
 
 mydb = mysql.connector.connect(user='root', password=sql_password,
                               host='localhost',
@@ -36,7 +36,7 @@ subreddit = reddit.subreddit(subreddits)
 
 # a few globals
 with open('tip_bot_username') as f:
-    tip_bot_username = f.read()
+    tip_bot_username = f.read().replace('\n', '')
 tip_commands = ('!nano_tip', '!ntip')
 tip_bot_on = True
 program_minimum = 0.0001  # in nano
