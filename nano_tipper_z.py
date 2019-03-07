@@ -6,9 +6,11 @@ from rpc_bindings import open_account, generate_account, generate_qr, nano_to_ra
     check_balance, validate_address, open_or_receive, get_pendings, open_or_receive_blocks
 from rpc_bindings import send_w as send
 import mysql.connector
+
 # access the sql library
-with open('sql_password.txt') as f:
+with open('sql_password') as f:
     sql_password = f.read()
+
 mydb = mysql.connector.connect(user='root', password=sql_password,
                               host='localhost',
                               auth_plugin='mysql_native_password', database='nano_tipper_z')
@@ -22,13 +24,14 @@ results = mycursor.fetchall()
 subreddits=''
 for result in results:
     subreddits += '%s+' % result[0]
-#subreddits += 'nano_tipper_test'
+
 subreddits = subreddits[:-1]
 print('Initializng in: ', subreddits)
 subreddit = reddit.subreddit(subreddits)
 
 # a few globals
-tip_bot_username = 'nano_tipper'
+with open('tip_bot_username') as f:
+    tip_bot_username = f.read()
 tip_commands = ('!nano_tip', '!ntip')
 tip_bot_on = True
 program_minimum = 0.0001  # in nano
@@ -1278,7 +1281,6 @@ check_inactive_transactions()
 
 for action_item in stream_comments_messages():
     # our 'stream_comments_messages()' generator will give us either messages or
-    # comments by checking the tag on the message name
     # (t1 = comment, t4 = message)
     # The bot handles these differently
     if action_item is None:

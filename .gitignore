@@ -2,3 +2,5 @@ sql_password.txt
 praw.ini
 praw.in
 dpow_token
+sql_password
+tip_bot_username
