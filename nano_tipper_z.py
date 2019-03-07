@@ -14,6 +14,11 @@ with open('sql_password') as f:
 mydb = mysql.connector.connect(user='root', password=sql_password,
                               host='localhost',
                               auth_plugin='mysql_native_password', database='nano_tipper_z')
+
+mydb = mysql.connector.connect(user='root', password='tipbot',
+                              host='localhost',
+                              auth_plugin='mysql_native_password', database='nano_tipper_z')
+
 mycursor = mydb.cursor()
 
 # initiate the bot and all friendly subreddits
