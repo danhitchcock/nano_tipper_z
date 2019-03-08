@@ -1,17 +1,22 @@
 import mysql.connector
 import time
 from datetime import datetime
-with open('../sql_password.txt') as f:
-    sql_password = f.read()
+import configparser
+
+config = configparser.ConfigParser()
+config.read('../tipper.ini')
+print(config.sections())
+sql_password = config['SQL']['sql_password']
+database_name = config['SQL']['database_name']
 
 mydb = mysql.connector.connect(user='root', password=sql_password,
                               host='localhost',
-                              auth_plugin='mysql_native_password', database='nano_tipper_z')
+                              auth_plugin='mysql_native_password', database=database_name)
 mycursor = mydb.cursor()
 
 
 def init_db():
-    mycursor.execute("CREATE DATABASE nano_tipper_z")
+    mycursor.execute("CREATE DATABASE %s" % database_name)
     mydb.commit()
 
 
@@ -87,6 +92,7 @@ def history(num_records, username=None):
     myresult = mycursor.fetchall()
     for result in reversed(myresult):
         print(result)
+
 
 def messages():
     mycursor.execute('SHOW COLUMNS FROM messages')
@@ -168,6 +174,7 @@ def add_subreddit(subreddit, reply_to_comments, footer, status):
     mycursor.execute(sql, val)
     mydb.commit()
 
+
 def modify_subreddit(subreddit, status):
     sql = "UPDATE subreddits SET status = %s WHERE subreddit = %s"
     val = (status, subreddit)
@@ -190,17 +197,14 @@ def add_history_record(username=None, action=None, sql_time=None, address=None, 
     mydb.commit()
     return mycursor.lastrowid
 
+
+
 #sql = "UPDATE accounts SET active = FALSE WHERE username='nano_tipper_z_test2'"
 #mycursor.execute(sql)
 #mydb.commit()
 
 #add_history_record(username='zily88', action='send', sql_time = '2019-1-25 0:0:0', recipient_username='nano_tipper_z_test2', amount=100000000000000000000000000, hash='test', return_status='cleared')
 
-
-#accounts()
-
-accounts()
-history(100)
-
-
-
+# add_subreddit('nano_tipper_z', True, None, 'friendly')
+subreddits()
+history(10)

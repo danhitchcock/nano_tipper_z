@@ -6,15 +6,23 @@ from rpc_bindings import open_account, generate_account, generate_qr, nano_to_ra
     check_balance, validate_address, open_or_receive, get_pendings, open_or_receive_blocks
 from rpc_bindings import send_w as send
 import mysql.connector
+import configparser
 
 # access the sql library
-with open('sql_password') as f:
-    sql_password = f.read().replace('\n', '')
+config = configparser.ConfigParser()
+config.read('./tipper.ini')
+print(config.sections())
+sql_password = config['SQL']['sql_password']
+database_name = config['SQL']['database_name']
+tip_bot_on = config['BOT']['tip_bot_on']
+tip_bot_username = config['BOT']['tip_bot_username']
+program_minimum = float(config['BOT']['program_minimum'])
+recipient_minimum = float(config['BOT']['recipient_minimum'])
+tip_commands = config['BOT']['tip_commands'].split(',')
 
 mydb = mysql.connector.connect(user='root', password=sql_password,
                               host='localhost',
-                              auth_plugin='mysql_native_password', database='nano_tipper_z')
-
+                              auth_plugin='mysql_native_password', database=database_name)
 mycursor = mydb.cursor()
 
 # initiate the bot and all friendly subreddits
@@ -31,12 +39,6 @@ print('Initializng in: ', subreddits)
 subreddit = reddit.subreddit(subreddits)
 
 # a few globals
-with open('tip_bot_username') as f:
-    tip_bot_username = f.read().replace('\n', '')
-tip_commands = ('!nano_tip', '!ntip')
-tip_bot_on = True
-program_minimum = 0.0001  # in nano
-recipient_minimum = 0.0001
 program_maximum = 10
 excluded_reditors = ['nano', 'nanos', 'xrb', 'usd', 'eur', 'btc', 'yen']
 toggle_receive = True
@@ -781,7 +783,7 @@ def handle_create(message):
     if len(result) is 0:
         address = add_new_account(username)
         response = welcome_create % (address, address)
-        message_recipient = 'nano_tipper'
+        message_recipient = tip_bot_username
         subject = 'send'
         message_text = 'send 0.001 %s' % username
         sql = "INSERT INTO messages (username, subject, message) VALUES (%s, %s, %s)"

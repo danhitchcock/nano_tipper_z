@@ -1,40 +1,22 @@
 import json
 import qrcode
-from io import BytesIO
-import time
 import requests
-try:
-    with open('./dpow_token') as f:
-        dpow_token = f.read().replace('\n', '')
-except:
-    pass
+import configparser
+
+# access the sql library
+config = configparser.ConfigParser()
+config.read('./tipper.ini')
+print(config.sections())
+dpow_token = config['NODE']['dpow_token']
+default_url = config['NODE']['default_url']
 
 def perform_curl(data=None, URL=None, timeout=30):
     if URL is None:
-        URL = '[::1]:7076'
+        URL = default_url
     r = requests.post(URL, headers={"Content-Type": "application/json"}, data=json.dumps(data))
     return json.loads(r.text)
 
-"""
-def perform_curl(data=None, URL=None):
-    if URL is None:
-        URL = '127.0.0.1:7076'
 
-    c = pycurl.Curl()
-    c.setopt(c.URL, URL)
-    buf = BytesIO()
-    if data:
-        data = json.dumps(data)
-        c.setopt(pycurl.POSTFIELDS, data)
-
-    c.setopt(c.WRITEFUNCTION, buf.write)
-    c.perform()
-    results = buf.getvalue()
-    results = results.decode("utf-8")
-    results = json.loads(results)
-    buf.close()
-    return results
-"""
 def send_w(origin, key, amount, destination, rep=None, work=None):
     hash = account_info(origin)['frontier']
     work = work_generate(hash, True)['work']
