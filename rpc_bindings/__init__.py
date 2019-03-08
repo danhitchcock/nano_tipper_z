@@ -11,7 +11,7 @@ except:
 
 def perform_curl(data=None, URL=None, timeout=30):
     if URL is None:
-        URL = 'http://127.0.0.1:7076'
+        URL = '[::1]:7076'
     r = requests.post(URL, headers={"Content-Type": "application/json"}, data=json.dumps(data))
     return json.loads(r.text)
 
