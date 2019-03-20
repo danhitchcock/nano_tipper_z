@@ -206,5 +206,6 @@ def add_history_record(username=None, action=None, sql_time=None, address=None, 
 #add_history_record(username='zily88', action='send', sql_time = '2019-1-25 0:0:0', recipient_username='nano_tipper_z_test2', amount=100000000000000000000000000, hash='test', return_status='cleared')
 
 # add_subreddit('nano_tipper_z', True, None, 'friendly')
-subreddits()
+# subreddits()
 history(10)
+# delete_user('nano_tipper_z_test2')

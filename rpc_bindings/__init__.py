@@ -74,7 +74,7 @@ def send_block(origin, key, amount, destination, rep=None, work=None):
     balance = int(balance - amount)
     previous = get_previous_hash(origin)
     if rep is None:
-        rep = "xrb_374qyw8xwyie1hhws4cfo1fbrkis44dd6aputrujmrteeexcyag4ej84kkni"
+        rep = "xrb_1thingspmippfngcrtk1ofd3uwftffnu4qu9xkauo9zkiuep6iknzci3jxa6"
     data = {
         "action": "block_create",
         "type": "state",
@@ -107,7 +107,7 @@ def open_block(account, key, rep=None, work=None):
     :return: str block-string for json
     """
     if rep is None:
-        rep = "xrb_374qyw8xwyie1hhws4cfo1fbrkis44dd6aputrujmrteeexcyag4ej84kkni"
+        rep = "xrb_1thingspmippfngcrtk1ofd3uwftffnu4qu9xkauo9zkiuep6iknzci3jxa6"
     try:
         get_previous_hash(account)
         return "Previous block exists. Use receive."
@@ -143,7 +143,7 @@ def receive_block(account, key, sent_hash, rep=None):
     :return: str block-string for json
     """
     if rep is None:
-        rep = "xrb_374qyw8xwyie1hhws4cfo1fbrkis44dd6aputrujmrteeexcyag4ej84kkni"
+        rep = "xrb_1thingspmippfngcrtk1ofd3uwftffnu4qu9xkauo9zkiuep6iknzci3jxa6"
     previous = get_previous_hash(account)
     sent_block = get_block_by_hash(sent_hash)
     sent_previous_hash = sent_block['previous']
@@ -314,7 +314,7 @@ def open_or_receive_blocks(account, key, blocks, rep=None):
 
     work = None
     if rep is None:
-        rep = "xrb_374qyw8xwyie1hhws4cfo1fbrkis44dd6aputrujmrteeexcyag4ej84kkni"
+        rep = "xrb_1thingspmippfngcrtk1ofd3uwftffnu4qu9xkauo9zkiuep6iknzci3jxa6"
 
     # if there is a previous block, receive the blocks
     try:
