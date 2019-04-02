@@ -1,6 +1,5 @@
 import praw
 import time
-import sys
 from datetime import datetime
 from time import sleep
 from rpc_bindings import open_account, generate_account, generate_qr, nano_to_raw, receive_all, send_all, \

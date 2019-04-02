@@ -1,5 +1,4 @@
 import praw
-import sys
 from praw.exceptions import APIException
 import time
 

@@ -11,7 +11,7 @@ messenger_options = config['BOT']['messenger_options']
 filename = 'messenger.py'
 print(python_command + " " + filename + " " + messenger_options)
 while True:
-    p = subprocess.Popen(python_command + filename + " " + messenger_options, shell=True).wait()
+    p = subprocess.Popen(python_command + " " + filename + " " + messenger_options, shell=True).wait()
     if p != 0:
         sleep(2)
         continue
