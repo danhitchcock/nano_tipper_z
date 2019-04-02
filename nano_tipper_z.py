@@ -21,10 +21,6 @@ tip_bot_username = config['BOT']['tip_bot_username']
 program_minimum = float(config['BOT']['program_minimum'])
 recipient_minimum = float(config['BOT']['recipient_minimum'])
 tip_commands = config['BOT']['tip_commands'].split(',')
-logging = config['BOT']['logging']
-if logging == 'yes':
-    sys.stdout = open('./log/tipper_output', 'a+')
-    sys.stderr = open('./log/tipper_error', 'a+')
 
 mydb = mysql.connector.connect(user='root', password=sql_password,
                               host='localhost',
@@ -41,6 +37,7 @@ for result in results:
     subreddits += '%s+' % result[0]
 
 subreddits = subreddits[:-1]
+print('test2')
 print('Initializng in: ', subreddits)
 subreddit = reddit.subreddit(subreddits)
 

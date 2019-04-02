@@ -15,12 +15,6 @@ database_name = config['SQL']['database_name']
 tip_bot_on = config['BOT']['tip_bot_on']
 tip_bot_username = config['BOT']['tip_bot_username']
 program_minimum = float(config['BOT']['program_minimum'])
-logging = config['bot']['logging']
-logging = config['BOT']['logging']
-if logging == 'yes':
-    sys.stdout = open('./log/messenger_output', 'a+')
-    sys.stderr = open('./log/messenger_error', 'a+')
-
 
 mydb = mysql.connector.connect(user='root', password=sql_password,
                               host='localhost',
