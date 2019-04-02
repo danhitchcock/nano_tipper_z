@@ -199,13 +199,14 @@ def add_history_record(username=None, action=None, sql_time=None, address=None, 
 
 
 
-#sql = "UPDATE accounts SET active = FALSE WHERE username='nano_tipper_z_test2'"
-#mycursor.execute(sql)
-#mydb.commit()
+def backup_keys():
+    sql = "SELECT username, address, private_key FROM accounts"
+    mycursor.execute(sql)
+    results = mycursor.fetchall()
+    mydb.commit()
+    with open('../backup', 'w') as f:
+        for result in results:
+            f.write(result[0]+','+result[1]+','+result[2]+'\n')
 
-#add_history_record(username='zily88', action='send', sql_time = '2019-1-25 0:0:0', recipient_username='nano_tipper_z_test2', amount=100000000000000000000000000, hash='test', return_status='cleared')
-
-# add_subreddit('nano_tipper_z', True, None, 'friendly')
-# subreddits()
-history(10)
-# delete_user('nano_tipper_z_test2')
+if __name__=="__main__":
+    backup_keys()
