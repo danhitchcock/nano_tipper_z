@@ -2,23 +2,24 @@ import praw
 import sys
 from praw.exceptions import APIException
 import time
-from datetime import datetime
+
 from time import sleep
 import mysql.connector
 import configparser
 
 config = configparser.ConfigParser()
 config.read('./tipper.ini')
-config.sections()
+# config.sections()
 sql_password = config['SQL']['sql_password']
 database_name = config['SQL']['database_name']
 tip_bot_on = config['BOT']['tip_bot_on']
 tip_bot_username = config['BOT']['tip_bot_username']
 program_minimum = float(config['BOT']['program_minimum'])
 logging = config['bot']['logging']
-if logging:
-    sys.stdout = open('messenger_output')
-    sys.stderr = open('messenger_error')
+logging = config['BOT']['logging']
+if logging == 'yes':
+    sys.stdout = open('./log/messenger_output', 'a+')
+    sys.stderr = open('./log/messenger_error', 'a+')
 
 
 mydb = mysql.connector.connect(user='root', password=sql_password,

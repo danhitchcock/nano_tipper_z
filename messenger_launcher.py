@@ -4,7 +4,7 @@ import configparser
 
 config = configparser.ConfigParser()
 config.read('./tipper.ini')
-print(config.sections())
+# config.sections()
 python_command = config['BOT']['python_command']
 
 filename = 'messenger.py'
