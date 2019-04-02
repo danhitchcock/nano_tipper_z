@@ -1,5 +1,6 @@
 import praw
 import time
+import sys
 from datetime import datetime
 from time import sleep
 from rpc_bindings import open_account, generate_account, generate_qr, nano_to_raw, receive_all, send_all, \
@@ -19,6 +20,10 @@ tip_bot_username = config['BOT']['tip_bot_username']
 program_minimum = float(config['BOT']['program_minimum'])
 recipient_minimum = float(config['BOT']['recipient_minimum'])
 tip_commands = config['BOT']['tip_commands'].split(',')
+logging = config['bot']['logging']
+if logging:
+    sys.stdout = open('messenger_output')
+    sys.stderr = open('messenger_error')
 
 mydb = mysql.connector.connect(user='root', password=sql_password,
                               host='localhost',

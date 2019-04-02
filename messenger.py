@@ -1,4 +1,6 @@
 import praw
+import sys
+from praw.exceptions import APIException
 import time
 from datetime import datetime
 from time import sleep
@@ -13,6 +15,11 @@ database_name = config['SQL']['database_name']
 tip_bot_on = config['BOT']['tip_bot_on']
 tip_bot_username = config['BOT']['tip_bot_username']
 program_minimum = float(config['BOT']['program_minimum'])
+logging = config['bot']['logging']
+if logging:
+    sys.stdout = open('messenger_output')
+    sys.stderr = open('messenger_error')
+
 
 mydb = mysql.connector.connect(user='root', password=sql_password,
                               host='localhost',
@@ -29,7 +36,10 @@ while True:
     for result in results:
         print(time.strftime('%Y-%m-%d %H:%M:%S'), result[1], result[2], repr(result[3])[:50])
         # send the message
-        reddit.redditor(str(result[1])).message(str(result[2]), str(result[3]))
+        try:
+            reddit.redditor(str(result[1])).message(str(result[2]), str(result[3]))
+        except APIException:
+            pass
         sql = "DELETE FROM messages WHERE id = %s"
         val = (result[0], )
         mycursor.execute(sql, val)
