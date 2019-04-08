@@ -385,6 +385,22 @@ def handle_send_nano(message, parsed_text, comment_or_message):
         response = 'Program minimum is %s Nano.' % program_minimum
         return [response, 3, amount / 10**30, None, None, None]
 
+    # check to see if it is a friendly subreddit
+    if comment_or_message == 'comment':
+        sql = 'SELECT status FROM subreddits WHERE subreddit=%s'
+        val = (str(message.subreddit).lower(), )
+        mycursor.execute(sql, val)
+        results = mycursor.fetchall()
+        if len(results) == 0:
+            subreddit_status = 'hostile'
+        else:
+            subreddit_status = results[0][0]
+        if subreddit_status != 'friendly':
+            if amount < nano_to_raw(1):
+                response = 'To tip in unfamiliar subreddits, the tip amount must be 1 Nano or more. You attempted to tip %s Nano'%(amount/10**30)
+                return [response, 3, None, None, None, None]
+
+
     # check if author has an account, and if they have enough funds
     sql = "SELECT address, private_key FROM accounts WHERE username=%s"
     val = (username, )
