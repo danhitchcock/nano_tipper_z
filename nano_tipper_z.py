@@ -1348,22 +1348,25 @@ def check_inactive_transactions():
                 recipient_address = returned_results[0][0]
                 percentage = returned_results[0][1]
                 percentage = float(percentage) / 100
-                print(percentage)
                 # print('History record: ', txn[0], address, private_key, txn[9], recipient_address)
 
                 # send it back
                 donation_amount = int(txn[9])/10**30
                 donation_amount = donation_amount * percentage
                 donation_amount = nano_to_raw(donation_amount)
-                print(donation_amount)
-                return_amount = int(txn[9]) - donation_amount
-                print('Total, returned, donation')
-                print(int(txn[9]), return_amount, donation_amount)
 
-                hash = send(address, private_key, return_amount, recipient_address)['hash']
-                hash2 = send(address, private_key, donation_amount, 'xrb_3jy9954gncxbhuieujc3pg5t1h36e7tyqfapw1y6zukn9y1g6dj5xr7r6pij')['hash']
+                return_amount = int(txn[9]) - donation_amount
+
+                if (return_amount > 0) and (return_amount <= int(txn[9])):
+                    hash = send(address, private_key, return_amount, recipient_address)['hash']
+                    add_history_record(action='return', hash=hash, amount=return_amount,
+                                       notes='Returned transaction from history record %s' % txn[0])
+                if (donation_amount > 0) and (donation_amount <= int(txn[9])):
+                    hash2 = send(address, private_key, donation_amount, 'xrb_3jy9954gncxbhuieujc3pg5t1h36e7tyqfapw1y6zukn9y1g6dj5xr7r6pij')['hash']
+                    add_history_record(action='donate', hash=hash2, amount=donation_amount,
+                                       notes='Donation from returned tip %s' % txn[0])
                 # print("Returning a transaction. ", hash)
-                print('sent')
+
                 # update database if everything goes through
                 sql = "UPDATE history SET return_status = 'returned' WHERE id = %s"
                 val = (txn[0], )
@@ -1379,9 +1382,6 @@ def check_inactive_transactions():
                 mycursor.execute(sql, val)
                 mydb.commit()
 
-                add_history_record(action='return', hash=hash, amount=return_amount, notes='Returned transaction from history record %s' % txn[0])
-                add_history_record(action='donate', hash=hash2, amount=donation_amount, notes='Donation from returned tip %s' % txn[0])
-                print('done')
     print(time.time()-t0)
 
 # main loop
