@@ -63,7 +63,8 @@ def init_accounts():
                         "notes VARCHAR(255), "
                         "auto_receive BOOL, "
                         "silence BOOL, "
-                        "active BOOL"
+                        "active BOOL, "
+                        "percentage VARCHAR(255)"
                      ")"
                      )
     mydb.commit()
@@ -181,11 +182,13 @@ def modify_subreddit(subreddit, status):
     mycursor.execute(sql, val)
     mydb.commit()
 
+
 def add_history_record(username=None, action=None, sql_time=None, address=None, comment_or_message=None,
                        recipient_username=None, recipient_address=None, amount=None, hash=None, comment_id=None,
                        notes=None, reddit_time=None, comment_text=None, return_status=None):
     if sql_time is None:
         sql_time = time.strftime('%Y-%m-%d %H:%M:%S')
+        print(sql_time)
 
     sql = "INSERT INTO history (username, action, sql_time, address, comment_or_message, recipient_username, " \
           "recipient_address, amount, hash, comment_id, notes, reddit_time, comment_text, return_status) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
@@ -198,7 +201,6 @@ def add_history_record(username=None, action=None, sql_time=None, address=None, 
     return mycursor.lastrowid
 
 
-
 def backup_keys():
     sql = "SELECT username, address, private_key FROM accounts"
     mycursor.execute(sql)
@@ -208,5 +210,18 @@ def backup_keys():
         for result in results:
             f.write(result[0]+','+result[1]+','+result[2]+'\n')
 
+
+def update_percentage():
+    sql = "ALTER TABLE accounts ADD percentage VARCHAR(255)"
+    mycursor.execute(sql)
+    sql = "UPDATE accounts SET percentage = 10"
+    mycursor.execute(sql)
+    mydb.commit()
+
 if __name__=="__main__":
-    subreddits()
+    # add_history_record(username='zily88', sql_time=time.strftime('%Y-%m-%d %H:%M:%S'), recipient_username='nano_tipper_z_test2', action='send', hash='test', return_status='cleared')
+    add_history_record(username='zily88', sql_time='2018-04-13 09:21:28', recipient_username='nano_tipper_z_test2', action='send', hash='test', amount = 1*10**28, return_status='cleared')
+
+    #history(100)
+    #update_percentage()
+    #accounts()

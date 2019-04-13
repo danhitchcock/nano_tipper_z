@@ -973,6 +973,74 @@ def handle_minimum(message):
         return response
 
 
+def handle_percentage(message):
+    message_time = datetime.utcfromtimestamp(message.created_utc)  # time the reddit message was created
+    # user may select a minimum tip amount to avoid spamming. Tipbot minimum is 0.001
+    username = str(message.author)
+    # find any accounts associated with the redditor
+    parsed_text = message.body.replace('\\', '').split('\n')[0].split(' ')
+
+    # there should be at least 2 words, a minimum and an amount.
+    if len(parsed_text) < 2:
+        response = "I couldn't parse your command. I was expecting 'percentage <amount>'. Be sure to check your spacing."
+        return response
+    # check that the minimum is a number
+
+    if parsed_text[1].lower() == 'nan' or ('inf' in parsed_text[1].lower()):
+        response = "'%s' didn't look like a number to me. If it is blank, there might be extra spaces in the command."
+        return response
+    try:
+        amount = float(parsed_text[1])
+    except:
+        response = "'%s' didn't look like a number to me. If it is blank, there might be extra spaces in the command."
+        return response
+
+    # check that it's greater than 0.01
+    if round(amount, 2) < 0:
+        response = "Did not update. Your percentage cannot be negative."
+        return response
+
+    if round(amount, 2) > 100:
+        response = "Did not update. Your percentage must be 100 or lower."
+        return response
+
+    # check if the user is in the database
+    sql = "SELECT address FROM accounts WHERE username=%s"
+    val = (username, )
+    mycursor.execute(sql, val)
+    result = mycursor.fetchall()
+    if len(result) > 0:
+        #open_or_receive(result[0][0], result[0][1])
+        #balance = check_balance(result[0][0])
+        add_history_record(
+            username=username,
+            action='percentage',
+            amount=round(amount, 2),
+            address=result[0][0],
+            comment_or_message='message',
+            comment_id=message.name,
+            reddit_time=message_time.strftime('%Y-%m-%d %H:%M:%S'),
+            comment_text=str(message.body)[:255]
+        )
+        sql = "UPDATE accounts SET percentage = %s WHERE username = %s"
+        val = (round(amount, 2), username)
+        mycursor.execute(sql, val)
+        mydb.commit()
+        response = "Updating donation percentage to %s"%round(amount, 2)
+        return response
+    else:
+        add_history_record(
+            username=username,
+            action='percentage',
+            reddit_time=message_time.strftime('%Y-%m-%d %H:%M:%S'),
+            amount=round(amount, 2),
+            comment_id=message.name,
+            comment_text=str(message.body)[:255]
+        )
+        response = "You do not currently have an account open. To create one, respond with the text 'create' in the message body."
+        return response
+
+
 def handle_receive(message):
     """
 
@@ -1087,6 +1155,11 @@ def handle_message(message):
         subject = 'Nano Tipper - Tip Minimum'
         response = handle_minimum(message)
 
+    elif parsed_text[0].lower() == 'percentage' or parsed_text[0].lower() == 'percent':
+        print("Setting Percentage")
+        subject = 'Nano Tipper - Returned Tip Percentage for Donation'
+        response = handle_percentage(message)
+
     elif (parsed_text[0].lower() == 'create') or parsed_text[0].lower() == 'register':
         print("Creating")
         subject = 'Nano Tipper - Create'
@@ -1168,13 +1241,13 @@ def auto_receive():
     mycursor.execute("SELECT username, address, private_key FROM accounts WHERE auto_receive=TRUE")
     myresult = mycursor.fetchall()
 
-    # for some reason, requesting 15 addresses takes a whole second
     addresses = [str(result[1]) for result in myresult]
     private_keys = [str(result[2]) for result in myresult]
     # pendings = get_pendings(addresses, threshold=nano_to_raw(program_minimum))
+
+    # get any pending blocks from our address
     pendings = get_pendings(addresses)
-    # print(pendings)
-    # print('got pendings.')
+
     for address, private_key in zip(addresses, private_keys):
         try:
             if pendings['blocks'][address]:
@@ -1259,6 +1332,7 @@ def check_inactive_transactions():
             address = inactive_results[0][0]
             private_key = inactive_results[0][1]
 
+
             for txn in txns:
                 # set the pre-update message to 'return failed'. This will be changed to 'returned' upon success
                 sql = "UPDATE history SET return_status = 'return failed' WHERE id = %s"
@@ -1267,16 +1341,29 @@ def check_inactive_transactions():
                 mydb.commit()
 
                 # get the transaction information and find out to whom we are returning the tip
-                sql = "SELECT address FROM accounts WHERE username = %s"
+                sql = "SELECT address, percentage FROM accounts WHERE username = %s"
                 val = (txn[1], )
                 mycursor.execute(sql, val)
-                recipient_address = mycursor.fetchall()[0][0]
-                print('History record: ', txn[0], address, private_key, txn[9], recipient_address)
+                returned_results = mycursor.fetchall()
+                recipient_address = returned_results[0][0]
+                percentage = returned_results[0][1]
+                percentage = float(percentage) / 100
+                print(percentage)
+                # print('History record: ', txn[0], address, private_key, txn[9], recipient_address)
 
                 # send it back
-                hash = send(address, private_key, int(txn[9]), recipient_address)['hash']
-                print("Returning a transaction. ", hash)
+                donation_amount = int(txn[9])/10**30
+                donation_amount = donation_amount * percentage
+                donation_amount = nano_to_raw(donation_amount)
+                print(donation_amount)
+                return_amount = int(txn[9]) - donation_amount
+                print('Total, returned, donation')
+                print(int(txn[9]), return_amount, donation_amount)
 
+                hash = send(address, private_key, return_amount, recipient_address)['hash']
+                hash2 = send(address, private_key, donation_amount, 'xrb_3jy9954gncxbhuieujc3pg5t1h36e7tyqfapw1y6zukn9y1g6dj5xr7r6pij')['hash']
+                # print("Returning a transaction. ", hash)
+                print('sent')
                 # update database if everything goes through
                 sql = "UPDATE history SET return_status = 'returned' WHERE id = %s"
                 val = (txn[0], )
@@ -1286,13 +1373,15 @@ def check_inactive_transactions():
                 # send a message informing the tipper that the tip is being returned
                 message_recipient = txn[1]
                 subject = 'Returned your tip of %s to %s' % (int(txn[9])/10**30, result)
-                message_text = "Your tip to %s for %s Nano was returned since the user never activated their account." % (result, int(txn[9])/10**30)
+                message_text = "Your tip to %s for %s Nano was returned since the user never activated their account, and %s percent of this was donated to the TipBot development fund. You can change this percentage by messaging the TipBot 'percentage <amount>', where <amount> is a number between 0 and 100" % (result, int(txn[9])/10**30, round(percentage*100, 2))
                 sql = "INSERT INTO messages (username, subject, message) VALUES (%s, %s, %s)"
                 val = (message_recipient, subject, message_text)
                 mycursor.execute(sql, val)
                 mydb.commit()
 
-                add_history_record(hash=hash, amount=txn[9], notes='Returned transaction from history record %s'%txn[0])
+                add_history_record(action='return', hash=hash, amount=return_amount, notes='Returned transaction from history record %s' % txn[0])
+                add_history_record(action='donate', hash=hash2, amount=donation_amount, notes='Donation from returned tip %s' % txn[0])
+                print('done')
     print(time.time()-t0)
 
 # main loop
