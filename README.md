@@ -56,14 +56,10 @@ There are many other commands.
     'create' - Create a new account if one does not exist
     'send <amount or all> <user/address>' - Send Nano to a reddit user or an address
     'withdraw <amount or all> <user/address>' - Same as send
-    'receive' - Receive all pending transactions (if autoreceive is set to 'no')
     'balance' or 'address' - Retrieve your account balance. Includes both pocketed and unpocketed transactions
     'minimum <amount>' - (default 0.0001) Sets a minimum amount for receiving tips
-    'auto_receive <yes/no>' - (default 'yes') Automatically pockets transactions. Checks every 12 seconds
-    'silence <yes/no>' - (default 'no') Prevents the bot from sending you tip notifications or tagging in posts 
-    'history' - (disabled) Grabs the last 20 records of your account history
-    'private_key' - (disabled) Retrieve your account private key
-    'new_address' - (disabled) If you feel this address was compromised, create a new account and key
+    'silence <yes/no>' - (default 'no') Prevents the bot from sending you tip notifications or tagging in posts
+    'percentage <percent>' - (default 10 percent) Sets a percentage of returned tips to donate to TipBot development
     'help' - Get this help message\n
 
 ### Here's a few other great links:

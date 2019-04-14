@@ -1376,7 +1376,7 @@ def check_inactive_transactions():
                 # send a message informing the tipper that the tip is being returned
                 message_recipient = txn[1]
                 subject = 'Returned your tip of %s to %s' % (int(txn[9])/10**30, result)
-                message_text = "Your tip to %s for %s Nano was returned since the user never activated their account, and %s percent of this was donated to the TipBot development fund. You can change this percentage by messaging the TipBot 'percentage <amount>', where <amount> is a number between 0 and 100" % (result, int(txn[9])/10**30, round(percentage*100, 2))
+                message_text = "Your tip to %s for %s Nano was returned since the user never activated their account, and %s percent of this was donated to the TipBot development fund. You can change this percentage by messaging the TipBot 'percentage <amount>', where <amount> is a number between 0 and 100." % (result, int(txn[9])/10**30, round(percentage*100, 2))
                 sql = "INSERT INTO messages (username, subject, message) VALUES (%s, %s, %s)"
                 val = (message_recipient, subject, message_text)
                 mycursor.execute(sql, val)
