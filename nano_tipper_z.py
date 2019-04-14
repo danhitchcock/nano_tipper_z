@@ -73,14 +73,11 @@ You can tip any amount above the program minimum of 0.0001 Nano.\n\n
 For PM commands, create a new message with any of the following commands (be sure to remove the quotes, '<'s and '>'s):\n
     'create' - Create a new account if one does not exist
     'send <amount or all> <user/address>' - Send Nano to a reddit user or an address
-    'receive' - Receive all pending transactions (if autoreceive is set to 'no')
     'balance' or 'address' - Retrieve your account balance. Includes both pocketed and unpocketed transactions
     'minimum <amount>' - (default 0.0001) Sets a minimum amount for receiving tips
-    'auto_receive <yes/no>' - (default 'yes') Automatically pockets transactions. Checks every 12 seconds
     'silence <yes/no>' - (default 'no') Prevents the bot from sending you tip notifications or tagging in posts 
     'history <optional: number of records>' - Retrieves tipbot commands. Default 10, maximum is 50.
-    'private_key' - (disabled) Retrieve your account private key
-    'new_address' - (disabled) If you feel this address was compromised, create a new account and key
+    'percentage <percent>' - (default 10 percent) Sets a percentage of returned tips to donate to TipBot development
     'help' - Get this help message\n
 If you wanted to send 0.01 Nano to zily88, reply:\n
     send 0.01 zily88\n
