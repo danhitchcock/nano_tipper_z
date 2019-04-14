@@ -60,6 +60,7 @@ There are many other commands.
     'minimum <amount>' - (default 0.0001) Sets a minimum amount for receiving tips
     'silence <yes/no>' - (default 'no') Prevents the bot from sending you tip notifications or tagging in posts
     'percentage <percent>' - (default 10 percent) Sets a percentage of returned tips to donate to TipBot development
+    'history <optional: number of records>' - Retrieves tipbot commands. Default 10, maximum is 50.
     'help' - Get this help message\n
 
 ### Here's a few other great links:
