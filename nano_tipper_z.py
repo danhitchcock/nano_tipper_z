@@ -3,7 +3,7 @@ import time
 from datetime import datetime
 from time import sleep
 from rpc_bindings import open_account, generate_account, generate_qr, nano_to_raw, receive_all, send_all, \
-    check_balance, validate_address, open_or_receive, get_pendings, open_or_receive_blocks
+    check_balance, validate_address, open_or_receive, get_pendings, open_or_receive_blocks, open_or_receive_block
 from rpc_bindings import send_w as send
 import mysql.connector
 import configparser
@@ -147,6 +147,7 @@ To turn off these notifications, reply with "silence yes".
 # To check for new messages and comments, the function scans the subreddits and inbox every 6 seconds and builds a
 # set of current message. I compare the old set with the new set.
 def stream_comments_messages():
+    previous_time = time.time()
     previous_comments = {comment for comment in subreddit.comments()}
     previous_messages = {message for message in reddit.inbox.all(limit=25)}
     print('Received first stream!')
@@ -155,9 +156,12 @@ def stream_comments_messages():
         if toggle_receive and tip_bot_on:
             auto_receive()
         toggle_receive = not toggle_receive
-
-        sleep(6)
-
+        delay = 6-(time.time()-previous_time)
+        print(delay)
+        if delay <= 0:
+            delay = 0
+        sleep(delay)
+        previous_time = time.time()
         updated_comments = {comment for comment in subreddit.comments()}
         new_comments = updated_comments - previous_comments
         previous_comments = updated_comments
@@ -1232,8 +1236,9 @@ def handle_new_address(message):
     )
     return 'not activated yet.'
 
-
+"""
 def auto_receive():
+    count = 0
     # print('running autoreceive')
     mycursor.execute("SELECT username, address, private_key FROM accounts WHERE auto_receive=TRUE")
     myresult = mycursor.fetchall()
@@ -1248,20 +1253,53 @@ def auto_receive():
     for address, private_key in zip(addresses, private_keys):
         try:
             if pendings['blocks'][address]:
-                print('Receiving these blocks: ', pendings['blocks'][address])
+                print('Receiving these blocks: ', pendings['blocks'][address][0])
                 # address, private_key, dictionary where the blocks are the keys
-                open_or_receive_blocks(address, private_key, pendings['blocks'][address])
+                
+                #open_or_receive_blocks(address, private_key, pendings['blocks'][address][0])
+                open_or_receive_blocks(address, private_key, pendings['blocks'][address][0])
+                print(count)
+                count += 1
+                if count >= 2:
+                    break
                 # open_or_receive(address, private_key)
         except KeyError:
             pass
         except Exception as e:
             print(e)
-    """
+
+"""
 
 
-    for result in myresult:
-        open_or_receive(result[1], result[2])
-    """
+def auto_receive():
+    count = 0
+    mycursor.execute("SELECT username, address, private_key FROM accounts")
+    myresult = mycursor.fetchall()
+
+    addresses = [str(result[1]) for result in myresult]
+    private_keys = [str(result[2]) for result in myresult]
+    mydb.commit()
+    pendings = get_pendings(addresses, threshold=nano_to_raw(program_minimum))
+
+    # get any pending blocks from our address
+    for address, private_key in zip(addresses, private_keys):
+        if count >= 2:
+            break
+        try:
+            if pendings['blocks'][address]:
+                for sent_hash in pendings['blocks'][address]:
+                    print('receiving ', sent_hash)
+                    # address, private_key, dictionary where the blocks are the keys
+                    open_or_receive_block(address, private_key, sent_hash)
+                    print(count)
+                    count += 1
+                    if count >= 2:
+                        break
+
+        except KeyError:
+            pass
+        except Exception as e:
+            print(e)
 
 
 def message_in_database(message):
