@@ -68,7 +68,6 @@ def account_info(account):
     return results
 
 
-
 def send_block(origin, key, amount, destination, rep=None, work=None):
     balance = check_balance(origin)[0]
     balance = int(balance - amount)
@@ -249,6 +248,7 @@ def account_key(account):
     results = perform_curl(data)
     return results
 
+
 def get_pendings(accounts, count=-1, threshold=None):
     data = {
         "action": "accounts_pending",
@@ -378,6 +378,8 @@ def open_or_receive_block(account, key, sent_hash, rep=None):
         print('Opening.')
         work = work_generate(account_public_key, True)['work']
         # print(account, account_public_key, work)
+    else:
+        work = work_generate(previous, True)['work']
 
     amount = (int(sent_previous_block['balance']) - int(sent_block['balance']))
     amount = check_balance(account)[0] + amount

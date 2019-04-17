@@ -28,7 +28,6 @@ mycursor = mydb.cursor()
 
 # initiate the bot and all friendly subreddits
 reddit = praw.Reddit('bot1')
-
 mycursor.execute("SELECT subreddit FROM subreddits")
 results = mycursor.fetchall()
 subreddits=''
@@ -36,16 +35,11 @@ for result in results:
     subreddits += '%s+' % result[0]
 
 subreddits = subreddits[:-1]
-print('test2')
-print('Initializng in: ', subreddits)
 subreddit = reddit.subreddit(subreddits)
 
 # a few globals
-program_maximum = 10
 excluded_reditors = ['nano', 'nanos', 'xrb', 'usd', 'eur', 'btc', 'yen']
 toggle_receive = True
-print(repr(tip_bot_username))
-
 
 comment_footer = """\n\n
 ***\n\n
@@ -1283,15 +1277,14 @@ def auto_receive():
 
     # get any pending blocks from our address
     for address, private_key in zip(addresses, private_keys):
-        if count >= 2:
+        # allow 5 transactions to be received per cycle. If the bot gets transaction spammed, at least it won't be locked up receiving.
+        if count >= 5:
             break
         try:
             if pendings['blocks'][address]:
                 for sent_hash in pendings['blocks'][address]:
-                    print('receiving ', sent_hash)
                     # address, private_key, dictionary where the blocks are the keys
                     open_or_receive_block(address, private_key, sent_hash)
-                    print(count)
                     count += 1
                     if count >= 2:
                         break
@@ -1431,8 +1424,10 @@ for action_item in stream_comments_messages():
     if action_item is None:
         pass
     elif message_in_database(action_item[1]):
-        print("Previous message was found in stream...")
-        print('Previous: ', action_item[1].author, ' - ', action_item[1].name, ' - ', action_item[1].body[:25])
+        # print("Previous message was found in stream...")
+        # print('Previous: ', action_item[1].author, ' - ', action_item[1].name, ' - ', action_item[1].body[:25])
+        pass
+
     elif action_item[0] == 'comment':
         if action_item[1].body[0] == ' ':
             # remove any leading spaces. for convenience
@@ -1468,7 +1463,6 @@ for action_item in stream_comments_messages():
                 print('*****************************************************')
         except IndexError:
             pass
-
 
     elif action_item[0] == 'message':
         if action_item[1].author == tip_bot_username:
@@ -1533,8 +1527,8 @@ for action_item in stream_comments_messages():
         except IndexError:
             pass
 
-    # run the inactive script at the end of the loop
-    if time.time()-t0 > 3600:
+    # run the inactive script at the end of the loop; every 12 hours
+    if time.time()-t0 > 43200:
         t0 = time.time()
         check_inactive_transactions()
 
