@@ -144,12 +144,12 @@ def stream_comments_messages():
     previous_time = time.time()
     previous_comments = {comment for comment in subreddit.comments()}
     previous_messages = {message for message in reddit.inbox.all(limit=25)}
-    print('Received first stream!')
     global toggle_receive
     while True:
         if toggle_receive and tip_bot_on:
             auto_receive()
         toggle_receive = not toggle_receive
+
         delay = 6-(time.time()-previous_time)
         print(delay)
         if delay <= 0:
@@ -168,10 +168,8 @@ def stream_comments_messages():
         # send anything new to our main program
         # also, check the message type. this will prevent posts from being seen as messages
         if len(new_comments) >= 1:
-
             for new_comment in new_comments:
-                #print(new_comment.name)
-                # if new_comment starts with 't1_'
+                # if new_comment starts with 't1_, it's just a regular comment'
                 if new_comment.name[:3] == 't1_':
                     yield ('comment', new_comment)
         if len(new_messages) >= 1:
@@ -179,6 +177,7 @@ def stream_comments_messages():
                 # print(new_message, new_message.subject, new_message.body)
                 if new_message.name[:3] == 't4_':
                     yield ('message', new_message)
+                # if the message has any of these subjects and it is labeled t1_, it is a username tag
                 elif (new_message.subject == "comment reply" or new_message.subject == "username mention" or new_message.subject == "post reply") and new_message.name[:3] == 't1_':
                     # print('****username mention + comment reply')
                     yield ('username mention', new_message)
@@ -1323,6 +1322,7 @@ def check_inactive_transactions():
     tipped_inactivated_accounts = inactivated_accounts.intersection(tipped_accounts)
     print('Accounts on warning: ', sorted(tipped_inactivated_accounts))
     # scrolls through our inactive members and check if they have unclaimed tips
+
     for result in tipped_inactivated_accounts:
         # send warning messages on day 31
         sql = "SELECT * FROM history WHERE action = 'send' AND hash IS NOT NULL AND recipient_username = %s AND `sql_time` <= SUBDATE( CURRENT_DATE, INTERVAL 31 DAY) AND return_status = 'cleared'"
@@ -1410,10 +1410,9 @@ def check_inactive_transactions():
                 mycursor.execute(sql, val)
                 mydb.commit()
 
-    print(time.time()-t0)
 
 # main loop
-print('Starting up!')
+
 t0 = time.time()
 check_inactive_transactions()
 
