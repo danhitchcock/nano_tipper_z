@@ -7,6 +7,7 @@ from rpc_bindings import open_account, generate_account, generate_qr, nano_to_ra
 from rpc_bindings import send_w as send
 import mysql.connector
 import configparser
+import sys
 
 # access the sql library
 config = configparser.ConfigParser()
@@ -20,6 +21,7 @@ tip_bot_username = config['BOT']['tip_bot_username']
 program_minimum = float(config['BOT']['program_minimum'])
 recipient_minimum = float(config['BOT']['recipient_minimum'])
 tip_commands = config['BOT']['tip_commands'].split(',')
+tipbot_owner = config['BOT']['tipbot_owner']
 
 mydb = mysql.connector.connect(user='root', password=sql_password,
                               host='localhost',
@@ -30,10 +32,11 @@ mycursor = mydb.cursor()
 reddit = praw.Reddit('bot1')
 mycursor.execute("SELECT subreddit FROM subreddits")
 results = mycursor.fetchall()
+
 subreddits=''
 for result in results:
     subreddits += '%s+' % result[0]
-
+print(subreddits)
 subreddits = subreddits[:-1]
 subreddit = reddit.subreddit(subreddits)
 
@@ -151,7 +154,7 @@ def stream_comments_messages():
         toggle_receive = not toggle_receive
 
         delay = 6-(time.time()-previous_time)
-        print(delay)
+
         if delay <= 0:
             delay = 0
         sleep(delay)
@@ -301,7 +304,7 @@ def handle_send_nano(message, parsed_text, comment_or_message):
     # handle_send_nano will return a list
     # [message, status_code, tip_amount, recipient_username, recipient_address, hash]
 
-    # set the account to activate it if it was a new one
+    # set the account to activated it if it was a new one
     activate(message.author)
 
     # declare a few variables so I can keep track of them. They will be redeclared later
@@ -624,9 +627,10 @@ def handle_comment(message, parsed_text=None):
     #     print(prop)
     if parsed_text is None:
         if message.body[0] == ' ':
-            parsed_text = str(message.body[1:]).lower().replace('\\', '').split('\n')[0].split(' ')
+            parsed_text = parse_text(str(message.body[1:]))
         else:
-            parsed_text = str(message.body).lower().replace('\\', '').split('\n')[0].split(' ')
+            parsed_text = parse_text(str(message.body))
+
     response = handle_send_nano(message, parsed_text, 'comment')
 
     # apply the subreddit rules to our response message
@@ -726,7 +730,7 @@ def handle_auto_receive(message):
         reddit_time=message_time.strftime('%Y-%m-%d %H:%M:%S')
         )
 
-    parsed_text = message.body.replace('\\', '').split('\n')[0].split(' ')
+    parsed_text = parse_text(str(message.body))
 
     if len(parsed_text) < 2:
         response = "I couldn't parse your command. I was expecting 'auto_receive <yes/no>'. " \
@@ -827,7 +831,7 @@ def handle_help(message):
 def handle_history(message):
     message_time = datetime.utcfromtimestamp(message.created_utc)  # time the reddit message was created
     username = str(message.author)
-    parsed_text = message.body.replace('\\', '').split('\n')[0].split(' ')
+    parsed_text = parse_text(str(message.body))
     num_records = 10
     # print(len(parsed_text))
     # if there are more than 2 words, one of the words is a number for the number of records
@@ -908,7 +912,7 @@ def handle_minimum(message):
     # user may select a minimum tip amount to avoid spamming. Tipbot minimum is 0.001
     username = str(message.author)
     # find any accounts associated with the redditor
-    parsed_text = message.body.replace('\\', '').split('\n')[0].split(' ')
+    parsed_text = parse_text(str(message.body))
 
     # there should be at least 2 words, a minimum and an amount.
     if len(parsed_text) < 2:
@@ -972,7 +976,7 @@ def handle_percentage(message):
     # user may select a minimum tip amount to avoid spamming. Tipbot minimum is 0.001
     username = str(message.author)
     # find any accounts associated with the redditor
-    parsed_text = message.body.replace('\\', '').split('\n')[0].split(' ')
+    parsed_text = parse_text(str(message.body))
 
     # there should be at least 2 words, a minimum and an amount.
     if len(parsed_text) < 2:
@@ -1087,7 +1091,7 @@ def handle_silence(message):
         reddit_time=message_time.strftime('%Y-%m-%d %H:%M:%S')
         )
 
-    parsed_text = message.body.replace('\\', '').split('\n')[0].split(' ')
+    parsed_text = parse_text(str(message.body))
 
     if len(parsed_text) < 2:
         response = "I couldn't parse your command. I was expecting 'silence <yes/no>'. Be sure to check your spacing."
@@ -1116,7 +1120,7 @@ def handle_send(message):
     :param message:
     :return:
     """
-    parsed_text = str(message.body).lower().replace('\\', '').split('\n')[0].split(' ')
+    parsed_text = parse_text(str(message.body))
     response = handle_send_nano(message, parsed_text, 'message')
     response = response[0]
     return response
@@ -1129,9 +1133,9 @@ def handle_message(message):
     message_body = str(message.body).lower()
     print("Body: **", message_body, "**")
     if message.body[0] == ' ':
-        parsed_text = str(message.body[1:]).lower().replace('\\', '').split('\n')[0].split(' ')
+        parsed_text = parse_text(str(message.body[1:]))
     else:
-        parsed_text = str(message.body).lower().replace('\\', '').split('\n')[0].split(' ')
+        parsed_text = parse_text(str(message.body))
     print("Parsed Text:", parsed_text)
 
     if (parsed_text[0].lower() == 'help') or (parsed_text[0].lower() == '!help'):
@@ -1188,6 +1192,16 @@ def handle_message(message):
         print("receive")
         subject = 'Nano Tipper - Receive'
         response = handle_receive(message)
+    elif (parsed_text[0].lower() == 'restart'):
+        if str(message.author) == tipbot_owner:
+            add_history_record(
+                username=str(message.author),
+                action='restart',
+                comment_text=str(message.body)[:255],
+                comment_or_message='message',
+                comment_id=message.name,
+            )
+            sys.exit()
 
     elif (parsed_text[0].lower() == 'balance') or (parsed_text[0].lower() == 'address'):
         print("balance")
@@ -1411,6 +1425,8 @@ def check_inactive_transactions():
                 mydb.commit()
 
 
+def parse_text(text):
+    return(text.lower().replace('\\', '').replace('\n', ' ').split(' '))
 # main loop
 
 t0 = time.time()
@@ -1430,9 +1446,11 @@ for action_item in stream_comments_messages():
     elif action_item[0] == 'comment':
         if action_item[1].body[0] == ' ':
             # remove any leading spaces. for convenience
-            parsed_text = str(action_item[1].body[1:]).lower().replace('\\', '').split('\n')[0].split(' ')
+            parsed_text = parse_text(str(action_item[1].body[1:]))
+            #parsed_text = str(action_item[1].body[1:]).lower().replace('\\', '').replace('\n', ' ').split(' ')
         else:
-            parsed_text = str(action_item[1].body).lower().replace('\\', '').split('\n')[0].split(' ')
+            parsed_text = parse_text(str(action_item[1].body))
+            #parsed_text = str(action_item[1].body).lower().replace('\\', '').replace('\n', ' ').split(' ')
         try:
             if (parsed_text[0] in tip_commands):
                 print('*****************************************************')
@@ -1491,10 +1509,10 @@ for action_item in stream_comments_messages():
         # print('Printing Username mention: ', parsed_text[0])
         if action_item[1].body[0] == ' ':
             # remove any leading spaces. for convenience
-            parsed_text = str(action_item[1].body[1:]).lower().replace('\\', '').split('\n')[0].split(' ')
+            parsed_text = parse_text(str(action_item[1].body[1:]))
         else:
-            parsed_text = str(action_item[1].body).lower().replace('\\', '').split('\n')[0].split(' ')
-        print(parsed_text[0])
+            parsed_text = parse_text(str(action_item[1].body))
+
 
         try:
             if (parsed_text[0] == '/u/%s'%tip_bot_username) or (parsed_text[0] == 'u/%s' % tip_bot_username):
