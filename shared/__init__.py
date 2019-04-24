@@ -1,0 +1,14 @@
+mycursor = None
+mydb = None
+recipient_minimum = None
+welcome_create = None
+tip_bot_username = None
+excluded_redditors = None
+program_minimum = None
+reddit = None
+help_text = None
+new_tip = None
+comment_footer = None
+welcome_tipped = None
+cmc_token = None
+nano_value = None

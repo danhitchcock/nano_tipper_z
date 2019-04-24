@@ -1,8 +1,4 @@
-sql_password.txt
 praw.ini
-praw.in
-dpow_token
-sql_password
-tip_bot_username
-python_version
 tipper.ini
+./src/praw.ini
+./src/tipper.ini

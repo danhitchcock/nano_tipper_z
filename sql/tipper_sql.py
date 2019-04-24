@@ -219,8 +219,9 @@ def update_percentage():
     mydb.commit()
 
 if __name__=="__main__":
+    pass
     # add_history_record(username='zily88', sql_time=time.strftime('%Y-%m-%d %H:%M:%S'), recipient_username='nano_tipper_z_test2', action='send', hash='test', return_status='cleared')
-    add_history_record(username='zily88', sql_time='2018-04-13 09:21:28', recipient_username='nano_tipper_z_test2', action='send', hash='test', amount = 1*10**28, return_status='cleared')
+    # add_history_record(username='zily88', sql_time='2018-04-13 09:21:28', recipient_username='nano_tipper_z_test2', action='send', hash='test', amount = 1*10**28, return_status='cleared')
 
     #history(100)
     #update_percentage()
