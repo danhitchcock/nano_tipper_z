@@ -19,7 +19,21 @@ import json
 
 def add_history_record(username=None, action=None, sql_time=None, address=None, comment_or_message=None,
                        recipient_username=None, recipient_address=None, amount=None, hash=None, comment_id=None,
-                       notes=None, reddit_time=None, comment_text=None):
+                       notes=None, reddit_time
+
+
+
+
+
+
+
+
+
+
+
+
+
+                        =None, comment_text=None):
     if sql_time is None:
         sql_time = time.strftime('%Y-%m-%d %H:%M:%S')
 
@@ -356,7 +370,7 @@ def handle_send_nano(message, parsed_text, comment_or_message):
         print("Sending Nano: ", address, private_key, amount, recipient_address, recipient_username)
         t0 = time.time()
         sent = send(address, private_key, amount, recipient_address)
-        # print(time.time()-t0)
+        print(time.time()-t0)
         sql = "UPDATE history SET hash = %s, return_status = 'cleared' WHERE id = %s"
         val = (sent['hash'], entry_id)
         shared.mycursor.execute(sql, val)
