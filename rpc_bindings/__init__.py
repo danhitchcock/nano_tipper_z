@@ -69,9 +69,11 @@ def account_info(account):
 
 
 def send_block(origin, key, amount, destination, rep=None, work=None):
-    balance = check_balance(origin)[0]
-    balance = int(balance - amount)
-    previous = get_previous_hash(origin)
+
+    info = account_info(origin)
+    balance = int(info['balance'])
+    balance = balance - amount
+    previous = info['frontier']
     if rep is None:
         rep = "xrb_1thingspmippfngcrtk1ofd3uwftffnu4qu9xkauo9zkiuep6iknzci3jxa6"
     data = {
