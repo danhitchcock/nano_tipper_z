@@ -3,14 +3,6 @@ from helper_functions import parse_text, add_history_record, add_new_account, ha
 from rpc_bindings import check_balance, open_or_receive, nano_to_raw
 import shared
 
-# shared.mycursor
-# shared.mydb
-# shared.tip_bot_username
-# shared.welcome_create
-# shared.help_text
-# shared.program_minimum
-# shared.comment_footer
-
 
 def handle_percentage(message):
     message_time = datetime.utcfromtimestamp(message.created_utc)  # time the reddit message was created
@@ -98,7 +90,7 @@ def handle_balance(message):
     if len(result) > 0:
         results = check_balance(result[0][0])
 
-        response = "At address %s:\n\nAvailable: %s Nano\n\nUnpocketed: %s Nano\n\nNano will be pocketed automatically." \
+        response = "At address %s:\n\nAvailable: %s Nano\n\nUnpocketed: %s Nano\n\nNano will be pocketed automatically unless the transaction is below 0.0001 Nano." \
                    "\n\nhttps://nanocrawler.cc/explorer/account/%s" % (result[0][0], results[0]/10**30, results[1]/10**30, result[0][0])
 
         return response

@@ -19,21 +19,7 @@ import json
 
 def add_history_record(username=None, action=None, sql_time=None, address=None, comment_or_message=None,
                        recipient_username=None, recipient_address=None, amount=None, hash=None, comment_id=None,
-                       notes=None, reddit_time
-
-
-
-
-
-
-
-
-
-
-
-
-
-                        =None, comment_text=None):
+                       notes=None, reddit_time=None, comment_text=None):
     if sql_time is None:
         sql_time = time.strftime('%Y-%m-%d %H:%M:%S')
 
@@ -263,6 +249,7 @@ def handle_send_nano(message, parsed_text, comment_or_message):
 
     # if the command was from a PM, extract the recipient username or address
     # otherwise it was a comment, and extract the parent author
+    # or if it was a public nanocenter donation, extract the project name
     if comment_or_message == 'message':
         if len(parsed_text) == 2:
             sql = "UPDATE history SET notes = %s WHERE id = %s"
@@ -308,6 +295,40 @@ def handle_send_nano(message, parsed_text, comment_or_message):
                 shared.mydb.commit()
                 response = "Could not find redditor %s. Make sure you aren't writing or copy/pasting markdown." % recipient
                 return [response, 7, amount / 10 ** 30, None, None, None]
+    elif parsed_text[0].lower() in shared.donate_commands:
+        # if there is no nanocenter name specified, return an error
+        if len(parsed_text) < 3:
+            sql = "UPDATE history SET notes = %s WHERE id = %s"
+            val = ("no recipient specified", entry_id)
+            shared.mycursor.execute(sql, val)
+            shared.mydb.commit()
+            response = "You must specify an amount and a NanoCenter project."
+            return [response, 5, amount / 10 ** 30, None, None, None]
+
+        sql = "SELECT address FROM projects WHERE project=%s"
+        val = (parsed_text[2].lower(), )
+        shared.mycursor.execute(sql, val)
+        result = shared.mycursor.fetchall()
+        # if the nanocenter is found, assign the address, else return an error message
+        if len(result) > 0:
+            recipient_address = result[0][0]
+            user_or_address = 'address'
+        else:
+            sql = "UPDATE history SET notes = %s WHERE id = %s"
+            val = ("nanocenter project does not exist", entry_id)
+            shared.mycursor.execute(sql, val)
+            shared.mydb.commit()
+            response = "The NanoCenter project you specified does not exist."
+            return [response, 5, amount / 10 ** 30, None, None, None]
+
+        # if the nanocenter address is not valid, return an error message
+        if validate_address(address)['valid'] != '1':
+            sql = "UPDATE history SET notes = %s WHERE id = %s"
+            val = ("nanocenter address invalid", entry_id)
+            shared.mycursor.execute(sql, val)
+            shared.mydb.commit()
+            response = "The Nano address associated with this NanoCenter project is not valid."
+            return [response, 6, amount / 10 ** 30, None, None, None]
     else:
         recipient = str(message.parent().author)
         user_or_address = 'user'
@@ -318,11 +339,13 @@ def handle_send_nano(message, parsed_text, comment_or_message):
     # how the recipient was specified, 'user_or_address', is either 'user' or 'address',
     # 'recipient' is either a valid redditor or a valid Nano address. We need to figure out which
 
-
     # if a user is specified, reassign that as the username
     # otherwise check if the address is registered
     if user_or_address == 'user':
         recipient_username = recipient
+    elif parsed_text[0].lower() in shared.donate_commands:
+        print('donate command, setting username to none')
+        recipient_username = None
     else:
         recipient_address = recipient
         recipient_username = check_registered_by_address(recipient_address)
@@ -331,7 +354,6 @@ def handle_send_nano(message, parsed_text, comment_or_message):
     # if there is a recipient_username, check their minimum
     # also pull the address
     user_minimum, recipient_address, silence = get_user_settings(recipient_username, recipient_address)
-
     # if either we had an account or address which has been registered, recipient_address and recipient_username will
     # have values instead of being ''. We will check the minimum
     # Three things could happen, and are parsed by this if statement
@@ -379,16 +401,14 @@ def handle_send_nano(message, parsed_text, comment_or_message):
         if comment_or_message == "message" and (not silence):
             message_recipient = str(recipient_username)
             subject = 'You just received a new Nano tip!'
-
             message_text = shared.new_tip % (
                         amount / 10 ** 30, recipient_address, receiving_new_balance[0] / 10 ** 30,
                         (receiving_new_balance[1] / 10 ** 30 + amount / 10 ** 30), sent['hash']) + shared.comment_footer
-            # reddit.redditor(message_recipient).message(subject, message_text)
+
             sql = "INSERT INTO messages (username, subject, message) VALUES (%s, %s, %s)"
             val = (message_recipient, subject, message_text)
             shared.mycursor.execute(sql, val)
             shared.mydb.commit()
-
 
         if user_or_address == 'user':
             if silence:
@@ -406,21 +426,38 @@ def handle_send_nano(message, parsed_text, comment_or_message):
             return [response, 11, amount / 10 ** 30, recipient_username, recipient_address, sent['hash']]
 
     elif recipient_address:
-        # or if we have an address but no account, just send
-        sql = "UPDATE history SET notes = %s, address = %s, username = %s, recipient_address = %s, amount = %s WHERE id = %s"
-        val = (
-            'sent to unregistered address', address, username, recipient_address, str(amount), entry_id)
-        shared.mycursor.execute(sql, val)
-        shared.mydb.commit()
+        # or if we have an address but no account it might be a nanocenter donation.
+        if parsed_text[0].lower() in shared.donate_commands:
+            sql = "UPDATE history SET notes = %s, address = %s, username = %s, recipient_address = %s, amount = %s WHERE id = %s"
+            val = (
+                'sent to nanocenter address', address, username, recipient_address, str(amount), entry_id)
+            shared.mycursor.execute(sql, val)
+            shared.mydb.commit()
+            print("Sending nanocenter address: ", address, private_key, amount, recipient_address)
+            sent = send(address, private_key, amount, recipient_address)
+            sql = "UPDATE history SET hash = %s, return_status = 'cleared' WHERE id = %s"
+            val = (sent['hash'], entry_id)
+            shared.mycursor.execute(sql, val)
+            shared.mydb.commit()
+            response =  "Donated ```%s Nano``` to NanoCenter Project [%s](https://nanocrawler.cc/explorer/account/%s). -- [Transaction on Nano Crawler](https://nanocrawler.cc/explorer/block/%s)" % (amount/ 10 ** 30, parsed_text[2], recipient_address, sent['hash'])
+            return [response, 14, amount / 10 ** 30, parsed_text[2], recipient_address, sent['hash']]
 
-        print("Sending Unregistered Address: ", address, private_key, amount, recipient_address)
-        sent = send(address, private_key, amount, recipient_address)
-        sql = "UPDATE history SET hash = %s, return_status = 'cleared' WHERE id = %s"
-        val = (sent['hash'], entry_id)
-        shared.mycursor.execute(sql, val)
-        shared.mydb.commit()
-        response =  "Sent ```%s Nano``` to [%s](https://nanocrawler.cc/explorer/account/%s). -- [Transaction on Nano Crawler](https://nanocrawler.cc/explorer/block/%s)" % (amount/ 10 ** 30, recipient_address, recipient_address, sent['hash'])
-        return [response, 12, amount / 10 ** 30, recipient_username, recipient_address, sent['hash']]
+        else:
+            sql = "UPDATE history SET notes = %s, address = %s, username = %s, recipient_address = %s, amount = %s WHERE id = %s"
+            val = (
+                'sent to unregistered address', address, username, recipient_address, str(amount), entry_id)
+            shared.mycursor.execute(sql, val)
+            shared.mydb.commit()
+
+            print("Sending Unregistered Address: ", address, private_key, amount, recipient_address)
+            sent = send(address, private_key, amount, recipient_address)
+            sql = "UPDATE history SET hash = %s, return_status = 'cleared' WHERE id = %s"
+            val = (sent['hash'], entry_id)
+            shared.mycursor.execute(sql, val)
+            shared.mydb.commit()
+            response = "Sent ```%s Nano``` to [%s](https://nanocrawler.cc/explorer/account/%s). -- [Transaction on Nano Crawler](https://nanocrawler.cc/explorer/block/%s)" % (
+            amount / 10 ** 30, recipient_address, recipient_address, sent['hash'])
+            return [response, 12, amount / 10 ** 30, recipient_username, recipient_address, sent['hash']]
 
     else:
         # create a new account for redditor

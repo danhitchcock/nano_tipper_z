@@ -24,6 +24,7 @@ tip_bot_username = config['BOT']['tip_bot_username']
 program_minimum = float(config['BOT']['program_minimum'])
 recipient_minimum = float(config['BOT']['recipient_minimum'])
 tip_commands = config['BOT']['tip_commands'].split(',')
+donate_commands = config['BOT']['donate_commands'].split(',')
 tipbot_owner = config['BOT']['tipbot_owner']
 cmc_token = config['OTHER']['cmc_token']
 
@@ -46,123 +47,22 @@ subreddit = reddit.subreddit(subreddits)
 excluded_redditors = ['nano', 'nanos', 'xrb', 'usd', 'eur', 'btc', 'yen']
 toggle_receive = True
 
-comment_footer = """\n\n
-***\n\n
-[*^(Nano)*](https://nano.org)*^( | )*
-[*^(Nano Tipper)*](https://github.com/danhitchcock/nano_tipper_z)*^( | )*
-[*^(Free Nano!)*](https://nanolinks.info/#faucets-free-nano)*^( | )*
-[*^(Spend Nano)*](https://usenano.org/)*^( | )*
-[*^(Nano Links)*](https://nanolinks.info/)"""
-
-help_text = """
-Help from Nano Tipper! This bot was handles tips via the Nano cryptocurrency.
-[Visit us on GitHub](https://github.com/danhitchcock/nano_tipper_z), the [Wiki](http://reddit.com/r/nano_tipper/wiki/) 
-or /r/nano_tipper for more information on its use and its status. Be sure to read the 
-[Terms of Service](https://github.com/danhitchcock/nano_tipper_z#terms-of-service)\n\n
-
-Nano Tipper works in two ways -- either publicly tip a user on a subreddit, or send a PM to /u/nano_tipper with a PM command below.\n\n
-To tip 0.1 Nano on a comment or post on a [tracked subreddit](https://www.reddit.com/r/nano_tipper/comments/astwp6/nano_tipper_status/), make a comment starting with:\n
-    !nano_tip 0.1
-    -or-
-    !ntip 0.1\n
-To tip anywhere on reddit, tag the bot as such (it won't post on the all subreddits, but it will PM the users):\n
-    /u/nano_tipper 0.1
-You can tip any amount above the program minimum of 0.0001 Nano.\n\n
-    
-For PM commands, create a new message with any of the following commands (be sure to remove the quotes, '<'s and '>'s):\n
-    'create' - Create a new account if one does not exist
-    'send <amount or all> <user/address>' - Send Nano to a reddit user or an address
-    'balance' or 'address' - Retrieve your account balance. Includes both pocketed and unpocketed transactions
-    'minimum <amount>' - (default 0.0001) Sets a minimum amount for receiving tips
-    'silence <yes/no>' - (default 'no') Prevents the bot from sending you tip notifications or tagging in posts 
-    'history <optional: number of records>' - Retrieves tipbot commands. Default 10, maximum is 50.
-    'percentage <percent>' - (default 10 percent) Sets a percentage of returned tips to donate to TipBot development
-    'help' - Get this help message\n
-If you wanted to send 0.01 Nano to zily88, reply:\n
-    send 0.01 zily88\n
-If you have any questions or bug fixes, please contact /u/zily88."""
-
-welcome_create = """
-Welcome to Nano Tipper, a reddit tip bot which allows you to tip and send the Nano Currency to your favorite redditors! 
-Your account is **active** and your Nano address is %s. By using this service, you agree 
-to the [Terms of Service](https://github.com/danhitchcock/nano_tipper_z#terms-of-service).\n\n
-
-You will be receiving a tip of 0.001 Nano as a welcome gift! To load more Nano, try any of the the free 
-[Nano Faucets](https://nanolinks.info/#faucets-free-nano), or deposit some (click on the Nanode link for a QR code), 
-or receive a tip from a fellow redditor!\n\n
-***\n\n
-Nano Tipper can be used in two ways. The most common is to tip other redditors publicly by replying to a comment on a 
-[tracked subreddit](https://www.reddit.com/r/nano_tipper/comments/astwp6/nano_tipper_status/). 
-To tip someone 0.01 Nano, reply to their message with:\n\n
-```!ntip 0.01```\n\n
-To tip a redditor on any subreddit, tag the bot instead of issuing a command:\n\n
-```/u/nano_tipper 0.01```\n\n
-In unfamiliar subreddits, the minimum tip is 1 Nano.\n\n
-***\n\n
-There are also PM commands by [messaging](https://reddit.com/message/compose/?to=nano_tipper&subject=command&message=type_command_here) /u/nano_tipper. Remove any quotes, <'s and >'s.\n\n
-```send <amount> <valid_nano_address>``` Withdraw your Nano to your own wallet.\n\n
-```send <amount> <redditor username>``` Send to another redditor.\n\n
-```minimum <amount>``` Prevent annoying spam by setting a receiving tip minimum.\n\n
-```balance``` Check your account balance.\n\n
-```help``` Receive an in-depth help message.\n\n
-
-View your account on (the block explorer)[https://nanocrawler.cc/explorer/account/%s].\n\n
-If you have any questions, please post at /r/nano_tipper
-"""
-
-welcome_tipped = """
-Welcome to Nano Tipper, a reddit tip bot which allows you to tip and send the Nano Currency to your favorite redditors! 
-You have just received a Nano tip in the amount of ```%s Nano``` at your address %s.\n\n
-By using this service, you agree to the [Terms of Service](https://github.com/danhitchcock/nano_tipper_z#terms-of-service). Please activate your account by 
-replying to this message or any tips which are 30 days old will be returned to the sender.\n\n
-To load more Nano, try any of the the free 
-[Nano Faucets](https://nanolinks.info/#faucets-free-nano), or deposit some (click on the Nano Crawler link for a QR code).\n\n
-***\n\n
-Nano Tipper can be used in two ways. The most common is to tip other redditors publicly by replying to a comment on a 
-[tracked subreddit](https://www.reddit.com/r/nano_tipper/comments/astwp6/nano_tipper_status/). 
-To tip someone 0.01 Nano, reply to their message with:\n\n
-```!ntip 0.01```\n\n
-To tip a redditor on any subreddit, tag the bot instead of issuing a command:\n\n
-```/u/nano_tipper 0.01```\n\n
-In unfamiliar subreddits, the minimum tip is 1 Nano.\n\n
-***\n\n
-There are also PM commands by [messaging](https://reddit.com/message/compose/?to=nano_tipper&subject=command&message=type_command_here) /u/nano_tipper. Remove any quotes, <'s and >'s.\n\n
-```send <amount> <valid_nano_address>``` Withdraw your Nano to your own wallet.\n\n
-```send <amount> <redditor username>``` Send to another redditor.\n\n
-```minimum <amount>``` Prevent annoying spam by setting a receiving tip minimum.\n\n
-```balance``` Check your account balance.\n\n
-```help``` Receive an in-depth help message.\n\n
-
-View your account on Nano Crawler: https://nanocrawler.cc/explorer/account/%s\n\n
-If you have any questions, please post at /r/nano_tipper
-"""
-
-new_tip = """
-Somebody just tipped you %s Nano at your address %s. Your new account balance is:\n\n
-Available: %s Nano\n\n
-Unpocketed: %s Nano\n\n  
-Unpocketed Nanos will be pocketed automatically. [Transaction on Nano Crawler](https://nanocrawler.cc/explorer/block/%s)\n\n
-To turn off these notifications, reply with "silence yes".
-"""
-
 # make a package with our shared objects. All of these shared variables are static
 shared.cmc_token = cmc_token
 shared.mycursor = mycursor
 shared.mydb = mydb
 shared.recipient_minimum = recipient_minimum
-shared.welcome_create = welcome_create
 shared.tip_bot_username = tip_bot_username
 shared.excluded_redditors = excluded_redditors
 shared.program_minimum = program_minimum
 shared.reddit = reddit
-shared.help_text = help_text
-shared.new_tip = new_tip
-shared.comment_footer = comment_footer
-shared.welcome_tipped = welcome_tipped
+shared.donate_commands = donate_commands
 
-# this is dynamic
-nano_value = {"USD": 0}
-shared.nano_value = nano_value
+help_text = shared.help_text
+new_tip = shared.new_tip
+comment_footer = shared.comment_footer
+welcome_tipped = shared.welcome_tipped
+welcome_create = shared.welcome_create
 
 
 # generator to stream comments and messages to the main loop at the bottom, and contains the auto_receive functionality.
@@ -223,15 +123,21 @@ def handle_comment(message, parsed_text=None):
     :return:
     """
     # remove an annoying extra space that might be in the front
-
-    # for prop in dir(message):
-    #     print(prop)
     if parsed_text is None:
         if message.body[0] == ' ':
             parsed_text = parse_text(str(message.body[1:]))
         else:
             parsed_text = parse_text(str(message.body))
 
+    # attempt to parse the message, send the Nano, and record responses
+    # response is a 6-member list with some info
+    # response[0] - message to the tip sender
+    # response[1] - a status code
+    # response[2] - Tip amount in 'Nano'
+    # response[3] - reddit username
+    # response[4] - reddit address
+    # response[5] - transaction hash
+    # If the recipient is new, it will automatically send a welcome greeting.
     response = handle_send_nano(message, parsed_text, 'comment')
 
     # apply the subreddit rules to our response message
@@ -247,10 +153,8 @@ def handle_comment(message, parsed_text=None):
     mycursor.execute(sql, val)
     results = mycursor.fetchall()
 
-
     if len(results) == 0:
         subreddit_status = 'hostile'
-
     else:
         subreddit_status = results[0][0]
     # if it is a top level reply and the subreddit is friendly
@@ -273,6 +177,10 @@ def handle_comment(message, parsed_text=None):
             # this actually shouldn't ever happen
             message.reply(
                 '^[Sent](https://nanocrawler.cc/explorer/block/%s) ^(%s Nano to %s)' % (response[5], response[2], response[4]))
+        elif (response[1] == 14):
+            message.reply(
+                '^[Sent](https://nanocrawler.cc/explorer/block/%s) ^(%s Nano to NanoCenter Project %s)' % (
+                response[5], response[2], response[3]))
     elif subreddit_status == 'hostile':
         # it's a hostile place, no posts allowed. Will need to PM users
         if response[1] <= 8:
@@ -283,7 +191,6 @@ def handle_comment(message, parsed_text=None):
             val = (message_recipient, subject, message_text)
             mycursor.execute(sql, val)
             mydb.commit()
-            # reddit.redditor(str(message.author)).message('Your Nano tip did not go through', response[0] + comment_footer)
         else:
             # if it was a new account, a PM was already sent to the recipient
             message_recipient = str(message.author)
@@ -293,7 +200,6 @@ def handle_comment(message, parsed_text=None):
             val = (message_recipient, subject, message_text)
             mycursor.execute(sql, val)
             mydb.commit()
-            # reddit.redditor(str(message.author)).message('Successful tip!', response[0] + comment_footer)
             # status code 10 means the recipient has not requested silence, so send a message
             if response[1] == 10:
                 message_recipient = response[3]
@@ -307,13 +213,7 @@ def handle_comment(message, parsed_text=None):
                 val = (message_recipient, subject, message_text)
                 mycursor.execute(sql, val)
                 mydb.commit()
-                """
-                x = reddit.redditor(response[3]). \
-                    message('You just received a new Nano tip!',
-                            'Somebody just tipped you ```%s Nano``` at your address %s. [Transaction on Nano Crawler](https://nanocrawler.cc/explorer/block/%s)\n\n'
-                            'To turn off these notifications, reply with "silence yes"' % (
-                                response[2], response[4], response[5]) + comment_footer)
-                """
+
     elif subreddit_status == 'custom':
         # not sure what to do with this yet.
         pass
@@ -368,63 +268,79 @@ def handle_message(message):
         parsed_text = parse_text(str(message.body))
     print("Parsed Text:", parsed_text)
 
+    # standard things
     if (parsed_text[0].lower() == 'help') or (parsed_text[0].lower() == '!help'):
         print("Helping")
         subject = 'Nano Tipper - Help'
         response = handle_help(message)
-
-    elif parsed_text[0].lower() == 'auto_receive':
-        print("Setting auto_receive")
-        subject = 'Nano Tipper - Auto Receive'
-        response = handle_auto_receive(message)
-
+    elif (parsed_text[0].lower() == 'balance') or (parsed_text[0].lower() == 'address'):
+        print("balance")
+        subject = 'Nano Tipper - Account Balance'
+        response = handle_balance(message)
     elif parsed_text[0].lower() == 'minimum':
         print("Setting Minimum")
         subject = 'Nano Tipper - Tip Minimum'
         response = handle_minimum(message)
-
     elif parsed_text[0].lower() == 'percentage' or parsed_text[0].lower() == 'percent':
         print("Setting Percentage")
         subject = 'Nano Tipper - Returned Tip Percentage for Donation'
         response = handle_percentage(message)
-
     elif (parsed_text[0].lower() == 'create') or parsed_text[0].lower() == 'register':
         print("Creating")
         subject = 'Nano Tipper - Create'
         response = handle_create(message)
-
-    elif parsed_text[0].lower() == 'private_key':
-        print("private_keying")
-        subject = 'Nano Tipper - Private Key'
-        # handle_private_key(message)
-
-    elif parsed_text[0].lower() == 'new_address':
-        print("new address")
-        subject = 'Nano Tipper - New Address'
-        # handle_new_address(message)
-
     elif (parsed_text[0].lower() == 'send') or (parsed_text[0].lower() == 'withdraw'):
         subject = 'Nano Tipper - Send'
         print("send via PM")
         response = handle_send(message)
-
     elif parsed_text[0].lower() == 'history':
         print("history")
         subject = 'Nano Tipper - History'
         response = handle_history(message)
-
     elif parsed_text[0].lower() == 'silence':
         print("silencing")
         subject = 'Nano Tipper - Silence'
         response = handle_silence(message)
 
-    elif (parsed_text[0].lower() == 'receive') or (parsed_text[0].lower() == 'pocket'):
-        pass
-        #print("receive")
-        #subject = 'Nano Tipper - Receive'
-        #response = handle_receive(message)
-        return None
-    elif (parsed_text[0].lower() == 'restart'):
+    # nanocenter donation commands
+    elif parsed_text[0].lower() == 'project' or parsed_text[0].lower() == 'projects':
+        if ((str(message.author) == tipbot_owner) or (str(message.author).lower() == 'rockmsockmjesus')) and len(parsed_text) > 2:
+            sql = "INSERT INTO projects (project, address) VALUES(%s, %s) ON DUPLICATE KEY UPDATE address=%s"
+            val = (parsed_text[1], parsed_text[2], parsed_text[2])
+            mycursor.execute(sql, val)
+            mydb.commit()
+        add_history_record(
+            username=str(message.author),
+            action='project',
+            comment_text=str(message.body)[:255],
+            comment_or_message='message',
+            comment_id=message.name,
+        )
+
+        response = "Current NanoCenter Donation Projects: \n\n"
+        subject = 'Nanocenter Projects'
+        sql = "SELECT project, address FROM projects"
+        mycursor.execute(sql)
+        results = mycursor.fetchall()
+        for result in results:
+            response += "%s %s  \n" % (result[0], result[1])
+    elif parsed_text[0].lower() == 'delete_project':
+        if ((str(message.author) == tipbot_owner) or (str(message.author).lower() == 'rockmsockmjesus')) and len(parsed_text) > 1:
+            sql = "DELETE FROM projects WHERE project=%s"
+            val = (parsed_text[1], )
+            mycursor.execute(sql, val)
+            mydb.commit()
+        response = "Current NanoCenter Donation Projects: \n\n"
+        subject = 'Nanocenter Projects'
+        sql = "SELECT project, address FROM projects"
+        mycursor.execute(sql)
+        results = mycursor.fetchall()
+        for result in results:
+            response += "%s %s  \n" % (result[0], result[1])
+
+
+    # a few administrative tasks
+    elif parsed_text[0].lower() == 'restart':
         if str(message.author) == tipbot_owner:
             add_history_record(
                 username=str(message.author),
@@ -434,18 +350,21 @@ def handle_message(message):
                 comment_id=message.name,
             )
             sys.exit()
-
-    elif (parsed_text[0].lower() == 'balance') or (parsed_text[0].lower() == 'address'):
-        print("balance")
-        subject = 'Nano Tipper - Account Balance'
-        response = handle_balance(message)
+    elif parsed_text[0].lower() == 'status':
+        # benchmark a few SQL Selects
+        if str(message.author) == tipbot_owner:
+            previous_message_check = time.time()
+            message_in_database(message)
+            previous_message_check = previous_message_check-time.time()
+            subject = 'Status'
+            message = 'Check for Previous Messages: %s\n'%previous_message_check
     elif parsed_text[0].lower() == 'test_welcome_tipped':
         subject = 'Nano Tipper - Welcome By Tip'
         response = welcome_tipped % (0.01, 'xrb_3jy9954gncxbhuieujc3pg5t1h36e7tyqfapw1y6zukn9y1g6dj5xr7r6pij', 'xrb_3jy9954gncxbhuieujc3pg5t1h36e7tyqfapw1y6zukn9y1g6dj5xr7r6pij')
     elif parsed_text[0].lower() == 'test_welcome_create':
         subject = 'Nano Tipper - Create'
         response = welcome_create % ('xrb_3jy9954gncxbhuieujc3pg5t1h36e7tyqfapw1y6zukn9y1g6dj5xr7r6pij', 'xrb_3jy9954gncxbhuieujc3pg5t1h36e7tyqfapw1y6zukn9y1g6dj5xr7r6pij')
-        pass
+
     else:
         add_history_record(
             username=str(message.author),
@@ -460,7 +379,6 @@ def handle_message(message):
     val = (message_recipient, subject, message_text)
     mycursor.execute(sql, val)
     mydb.commit()
-    # reddit.redditor(message_recipient).message(subject, message_text)
 
 
 def auto_receive():
@@ -613,26 +531,23 @@ def check_inactive_transactions():
 t0 = time.time()
 check_inactive_transactions()
 for action_item in stream_comments_messages():
-    # our 'stream_comments_messages()' generator will give us either messages or
+    # our 'stream_comments_messages()' generator will give us either a comment/reply, message, or username mention
     # (t1 = comment, t4 = message)
     # The bot handles these differently
     if action_item is None:
+        # if we have nothing after the poll, pass
         pass
     elif message_in_database(action_item[1]):
-        # print("Previous message was found in stream...")
-        # print('Previous: ', action_item[1].author, ' - ', action_item[1].name, ' - ', action_item[1].body[:25])
+        # if a message was already handled, pass
         pass
-
     elif action_item[0] == 'comment':
         if action_item[1].body[0] == ' ':
             # remove any leading spaces. for convenience
             parsed_text = parse_text(str(action_item[1].body[1:]))
-            #parsed_text = str(action_item[1].body[1:]).lower().replace('\\', '').replace('\n', ' ').split(' ')
         else:
             parsed_text = parse_text(str(action_item[1].body))
-            #parsed_text = str(action_item[1].body).lower().replace('\\', '').replace('\n', ' ').split(' ')
         try:
-            if (parsed_text[0] in tip_commands):
+            if (parsed_text[0] in tip_commands) or (parsed_text[0] in donate_commands):
                 print('*****************************************************')
                 print(time.strftime('%Y-%m-%d %H:%M:%S'), 'Comment, beginning: ', action_item[1].author, ' - ', action_item[1].body[:20])
 
@@ -658,6 +573,21 @@ for action_item in stream_comments_messages():
                 else:
                     print('Too many requests for %s' % action_item[1].author)
                 print('*****************************************************')
+            elif (parsed_text[-3] in donate_commands):
+                print('*****************************************************')
+                print(time.strftime('%Y-%m-%d %H:%M:%S'), 'Comment, end: ', action_item[1].author, ' - ',
+                      action_item[1].body[:20])
+
+                if allowed_request(action_item[1].author, 30, 5) and not message_in_database(action_item[1]):
+                    if tip_bot_on:
+                        handle_comment(action_item[1], parsed_text=parsed_text[-3:])
+                    else:
+                        reddit.redditor(str(action_item[1].author)).message('Nano Tipper Currently Disabled',
+                                                                            '[^(Nano Tipper is currently disabled)](https://www.reddit.com/r/nano_tipper/comments/astwp6/nano_tipper_status/)')
+                else:
+                    print('Too many requests for %s' % action_item[1].author)
+                print('*****************************************************')
+
         except IndexError:
             pass
 

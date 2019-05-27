@@ -81,6 +81,15 @@ def init_subreddits():
     mydb.commit()
 
 
+def init_projects():
+    mycursor.execute("CREATE TABLE projects ("
+                        "project VARCHAR(255) PRIMARY KEY, "
+                        "address VARCHAR(255)"
+                     ")"
+                     )
+    mydb.commit()
+
+
 def history(num_records, username=None):
     mycursor.execute('SHOW COLUMNS FROM history')
     myresult = mycursor.fetchall()
@@ -219,7 +228,8 @@ def update_percentage():
     mydb.commit()
 
 if __name__=="__main__":
-    subreddits()
+    init_projects()
+    # subreddits()
     # add_history_record(username='zily88', sql_time=time.strftime('%Y-%m-%d %H:%M:%S'), recipient_username='nano_tipper_z_test2', action='send', hash='test', return_status='cleared')
     # add_history_record(username='zily88', sql_time='2018-04-13 09:21:28', recipient_username='nano_tipper_z_test2', action='send', hash='test', amount = 1*10**28, return_status='cleared')
 
