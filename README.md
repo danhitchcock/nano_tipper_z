@@ -32,6 +32,16 @@ or
 
 If the subreddit is a [friendly subreddit](https://www.reddit.com/r/nano_tipper/comments/astwp6/nano_tipper_status/) (which correlates to [tracked subreddit](https://www.reddit.com/r/nano_tipper/comments/astwp6/nano_tipper_status/)), the bot will repsond with a message. If the subreddit is not friendly, a PM will be sent to both the sender and the recipient.
 
+### NEW!
+
+    !nanocenter <amount> <project>
+
+such as
+
+    !nanocenter 1 unity
+    
+for a list of NanoCenter projects, see the PM commands below.
+    
 # Private Messages
 
 Nano Tipper also works by PM. [Send a message](https://reddit.com/message/compose/?to=nano_tipper&subject=command&message=type_command_here) to /u/nano_tipper for a variety of actions.
@@ -61,6 +71,7 @@ There are many other commands.
     'silence <yes/no>' - (default 'no') Prevents the bot from sending you tip notifications or tagging in posts
     'percentage <percent>' - (default 10 percent) Sets a percentage of returned tips to donate to TipBot development
     'history <optional: number of records>' - Retrieves tipbot commands. Default 10, maximum is 50.
+    'projects' - Retrives a list of NanoCenter donation projects
     'help' - Get this help message\n
 
 ### Here's a few other great links:
@@ -124,3 +135,4 @@ and FYI there are success codes, but you won't see these
 * 11 - Success! Sent to registered nano address -- If redditor has requested silence, they won't get a notification.
 * 12 - Success! Sent to unregistered nano address
 * 13 - Success! Sent to a newly created reddit account
+* 14 - Success! Send to a NanoCenter project fund
