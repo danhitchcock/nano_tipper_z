@@ -566,7 +566,10 @@ for action_item in stream_comments_messages():
 
                 if allowed_request(action_item[1].author, 30, 5) and not message_in_database(action_item[1]):
                     if tip_bot_on:
-                        handle_comment(action_item[1], parsed_text=parsed_text[-2:])
+                        if str(action_item[1].subreddit).lower() == 'cryptocurrency':
+                            print('ignoring cryptocurrency post')
+                        else:
+                            handle_comment(action_item[1], parsed_text=parsed_text[-2:])
                     else:
                         reddit.redditor(str(action_item[1].author)).message('Nano Tipper Currently Disabled',
                                                                             '[^(Nano Tipper is currently disabled)](https://www.reddit.com/r/nano_tipper/comments/astwp6/nano_tipper_status/)')
@@ -581,7 +584,10 @@ for action_item in stream_comments_messages():
 
                 if allowed_request(action_item[1].author, 30, 5) and not message_in_database(action_item[1]):
                     if tip_bot_on:
-                        handle_comment(action_item[1], parsed_text=parsed_text[-3:])
+                        if str(action_item[1].subreddit).lower() == 'cryptocurrency':
+                            print('ignoring cryptocurrency post')
+                        else:
+                            handle_comment(action_item[1], parsed_text=parsed_text[-3:])
                     else:
                         reddit.redditor(str(action_item[1].author)).message('Nano Tipper Currently Disabled',
                                                                             '[^(Nano Tipper is currently disabled)](https://www.reddit.com/r/nano_tipper/comments/astwp6/nano_tipper_status/)')
