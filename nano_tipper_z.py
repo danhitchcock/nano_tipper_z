@@ -575,6 +575,7 @@ for action_item in stream_comments_messages():
                 print('*****************************************************')
             elif (parsed_text[-3] in donate_commands):
                 print('*****************************************************')
+                print('Donate command."%s", %s' % (parsed_text[-3], donate_commands))
                 print(time.strftime('%Y-%m-%d %H:%M:%S'), 'Comment, end: ', action_item[1].author, ' - ',
                       action_item[1].body[:20])
 
