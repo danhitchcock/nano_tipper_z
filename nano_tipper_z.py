@@ -44,7 +44,6 @@ subreddits = subreddits[:-1]
 subreddit = reddit.subreddit(subreddits)
 
 # a few globals. We'll put them in a shared file for use by other scripts
-excluded_redditors = ['nano', 'nanos', 'xrb', 'usd', 'eur', 'btc', 'yen']
 toggle_receive = True
 
 # make a package with our shared objects. All of these shared variables are static
@@ -53,11 +52,12 @@ shared.mycursor = mycursor
 shared.mydb = mydb
 shared.recipient_minimum = recipient_minimum
 shared.tip_bot_username = tip_bot_username
-shared.excluded_redditors = excluded_redditors
 shared.program_minimum = program_minimum
 shared.reddit = reddit
 shared.donate_commands = donate_commands
 
+# and pull a few out!
+excluded_redditors = shared.excluded_redditors
 help_text = shared.help_text
 new_tip = shared.new_tip
 comment_footer = shared.comment_footer

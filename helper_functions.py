@@ -5,6 +5,7 @@ from rpc_bindings import generate_account, nano_to_raw, check_balance, validate_
 from requests import Request, Session
 from requests.exceptions import ConnectionError, Timeout, TooManyRedirects
 import json
+import requests
 
 # mycursor = shared.mycursor
 # mydb = shared.mydb
@@ -167,16 +168,49 @@ def handle_send_nano(message, parsed_text, comment_or_message):
         response ='Could not read your tip command.'
         return [response, 0, None, None, None, None]
 
+
+    # check if there was an attempt to send via a currency conversion
+    if len(parsed_text)>=3:
+        if parsed_text[2].lower() in shared.excluded_redditors:
+            sql = "UPDATE history SET notes = %s WHERE id = %s"
+            val = ('conversion syntax error', entry_id)
+            shared.mycursor.execute(sql, val)
+            shared.mydb.commit()
+            response = "It wasn't clear if you were trying to perform a currency conversion or not. If so, be sure there is no space between the amount and currency. Example: '!ntip 0.5USD'"
+            return [response, 1, None, None, None, None]
+
+
+    # check if it's a currency code and parse the amount accordingly
+    conversion = 1
+    if parsed_text[1][-3:].lower() in shared.excluded_redditors:
+
+        currency = parsed_text[1][-3:].upper()
+        url = 'https://min-api.cryptocompare.com/data/price?fsym={}&tsyms={}'.format('NANO', currency)
+        try:
+            results = requests.get(url, timeout=1)
+            results = json.loads(results.text)
+
+            conversion = float(results[currency])
+            amount = parsed_text[1][:-3].lower()
+
+        except requests.exceptions.Timeout:
+            amount = 'Could not reach conversion server.'
+        except:
+            amount = 'Currency [%s] not supported.'%currency.upper()
+    else:
+        amount = parsed_text[1].lower()
+
+    # amount will be a string at this point. If the currency conversion failed, it will be an error message
     # check that the tip is a number or 'all'
     # if the amount is 'all', we need to lookup the users account balance
-    if parsed_text[1].lower() == 'nan' or ('inf' in parsed_text[1].lower()):
+    if amount == 'nan' or ('inf' in amount):
         sql = "UPDATE history SET notes = %s WHERE id = %s"
         val = ('could not parse amount', entry_id)
         shared.mycursor.execute(sql, val)
         shared.mydb.commit()
         response = "Could not read your tip or send amount. Is '%s' a number?" % parsed_text[1]
         return [response, 1, None, None, None, None]
-    elif parsed_text[1].lower() == 'all':
+    elif str(amount) == 'all':
         sql = "SELECT address FROM accounts WHERE username = %s"
         val = (username,)
         shared.mycursor.execute(sql, val)
@@ -190,13 +224,13 @@ def handle_send_nano(message, parsed_text, comment_or_message):
             return [response, 2, None, None, None, None]
     else:
         try:
-            amount = nano_to_raw(float(parsed_text[1]))
+            amount = nano_to_raw(float(amount)/conversion)
         except:
             sql = "UPDATE history SET notes = %s WHERE id = %s"
             val = ('could not parse amount', entry_id)
             shared.mycursor.execute(sql, val)
             shared.mydb.commit()
-            response = "Could not read your tip or send amount. Is '%s' a number?" % parsed_text[1]
+            response = "Could not read your tip or send amount. Is '%s' a number, or is the currency code valid?" % amount
             return [response, 1, None, None, None, None]
 
     if amount < nano_to_raw(shared.program_minimum):
@@ -244,7 +278,7 @@ def handle_send_nano(message, parsed_text, comment_or_message):
             val = ('insufficient funds', entry_id)
             shared.mycursor.execute(sql, val)
             shared.mydb.commit()
-            response = 'You have insufficient funds (%s Nano)'%(results[0]/10**30)
+            response = 'You have insufficient funds. Please check your balance.'
             return [response, 4, amount / 10 ** 30, None, None, None]
 
     # if the command was from a PM, extract the recipient username or address

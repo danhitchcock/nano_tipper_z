@@ -119,7 +119,7 @@ Send /u/zily88 a PM on reddit, or post on https://reddit.com/r/nano_tipper
 # Error Codes
 If a reddit tip is a reply to a reply, it's better to keep a short message with an error code.
 * 0 - Could not read the tip command
-* 1 - Could not read the tip amount -- use either a number or the word 'all'
+* 1 - Could not read the tip amount -- use either a number or the word 'all', or if using currency conversion, make sure there is no space
 * 2 - Sender does not have an account -- Create an account by typing 'create' or by receiving a tip from another redditor
 * 3 - Tip amount is below program minimum -- This is to prevent spamming other redditors.
 * 4 - Insufficient funds -- The amount of Nano in your account is lower than your tip amount. If you are using 'auto_receive' for your transactions, your account is scanned every 12 seconds.
