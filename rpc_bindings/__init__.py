@@ -49,6 +49,7 @@ def work_generate(hash, dpow=False):
             print(hash)
             print('successful dPoW!')
         except requests.exceptions.Timeout:
+            print("dpow failed.")
             return work_generate(hash)
         return results
     else:
