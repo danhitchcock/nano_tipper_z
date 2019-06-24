@@ -532,7 +532,7 @@ def check_inactive_transactions():
         val = (result,)
         mycursor.execute(sql, val)
         txns = mycursor.fetchall()
-        print('running inactive for faileds')
+        print('running inactive for 2')
         print(txns)
         if len(txns) >= 1:
             sql = "SELECT address, private_key FROM accounts WHERE username = %s"
