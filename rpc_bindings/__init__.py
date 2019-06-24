@@ -37,12 +37,13 @@ def work_generate(hash, dpow=False):
     if dpow:
         # API call
         try:
-            # Some dummy variables. api token will be in a separate text file
+            # api token will be in a separate text file
             data = {
                 "key": dpow_token,
+                "user": 'zily_reddit',
                 "hash": hash
             }
-            results = requests.post('http://178.62.11.37:5000/work', json.dumps(data), timeout=10)
+            results = requests.post('https://dpow.nanocenter.org/service/', json.dumps(data), timeout=10)
             results = json.loads(results.text)
             print('successful dPoW!')
         except requests.exceptions.Timeout:

@@ -476,8 +476,6 @@ def check_inactive_transactions():
             inactive_results = mycursor.fetchall()
             address = inactive_results[0][0]
             private_key = inactive_results[0][1]
-
-
             for txn in txns:
                 # set the pre-update message to 'return failed'. This will be changed to 'returned' upon success
                 sql = "UPDATE history SET return_status = 'return failed' WHERE id = %s"
@@ -526,6 +524,193 @@ def check_inactive_transactions():
                 val = (message_recipient, subject, message_text)
                 mycursor.execute(sql, val)
                 mydb.commit()
+
+                # return transactions over 35 days old
+                sql = "SELECT * FROM history WHERE action = 'send' AND hash IS NOT NULL AND recipient_username = %s AND `sql_time` <= SUBDATE( CURRENT_DATE, INTERVAL 35 DAY) AND return_status = 'warned'"
+                val = (result,)
+                mycursor.execute(sql, val)
+                txns = mycursor.fetchall()
+                if len(txns) >= 1:
+                    sql = "SELECT address, private_key FROM accounts WHERE username = %s"
+                    val = (result,)
+                    mycursor.execute(sql, val)
+                    inactive_results = mycursor.fetchall()
+                    address = inactive_results[0][0]
+                    private_key = inactive_results[0][1]
+                    for txn in txns:
+                        # set the pre-update message to 'return failed'. This will be changed to 'returned' upon success
+                        sql = "UPDATE history SET return_status = 'return failed' WHERE id = %s"
+                        val = (txn[0],)
+                        mycursor.execute(sql, val)
+                        mydb.commit()
+
+                        # get the transaction information and find out to whom we are returning the tip
+                        sql = "SELECT address, percentage FROM accounts WHERE username = %s"
+                        val = (txn[1],)
+                        mycursor.execute(sql, val)
+                        returned_results = mycursor.fetchall()
+                        recipient_address = returned_results[0][0]
+                        percentage = returned_results[0][1]
+                        percentage = float(percentage) / 100
+                        # print('History record: ', txn[0], address, private_key, txn[9], recipient_address)
+
+                        # send it back
+                        donation_amount = int(txn[9]) / 10 ** 30
+                        donation_amount = donation_amount * percentage
+                        donation_amount = nano_to_raw(donation_amount)
+
+                        return_amount = int(txn[9]) - donation_amount
+
+                        if (return_amount > 0) and (return_amount <= int(txn[9])):
+                            hash = send(address, private_key, return_amount, recipient_address)['hash']
+                            add_history_record(action='return', hash=hash, amount=return_amount,
+                                               notes='Returned transaction from history record %s' % txn[0])
+                        if (donation_amount > 0) and (donation_amount <= int(txn[9])):
+                            hash2 = send(address, private_key, donation_amount,
+                                         'xrb_3jy9954gncxbhuieujc3pg5t1h36e7tyqfapw1y6zukn9y1g6dj5xr7r6pij')['hash']
+                            add_history_record(action='donate', hash=hash2, amount=donation_amount,
+                                               notes='Donation from returned tip %s' % txn[0])
+                        # print("Returning a transaction. ", hash)
+
+                        # update database if everything goes through
+                        sql = "UPDATE history SET return_status = 'returned' WHERE id = %s"
+                        val = (txn[0],)
+                        mycursor.execute(sql, val)
+                        mydb.commit()
+
+                        # send a message informing the tipper that the tip is being returned
+                        message_recipient = txn[1]
+                        subject = 'Returned your tip of %s to %s' % (int(txn[9]) / 10 ** 30, result)
+                        message_text = "Your tip to %s for %s Nano was returned since the user never activated their account, and %s percent of this was donated to the TipBot development fund. You can change this percentage by messaging the TipBot 'percentage <amount>', where <amount> is a number between 0 and 100." % (
+                        result, int(txn[9]) / 10 ** 30, round(percentage * 100, 2))
+                        sql = "INSERT INTO messages (username, subject, message) VALUES (%s, %s, %s)"
+                        val = (message_recipient, subject, message_text)
+                        mycursor.execute(sql, val)
+                        mydb.commit()
+
+        # return failed transactions over 35 days old
+        sql = "SELECT * FROM history WHERE action = 'send' AND hash IS NOT NULL AND recipient_username = %s AND `sql_time` <= SUBDATE( CURRENT_DATE, INTERVAL 35 DAY) AND return_status = 'return failed'"
+        val = (result, )
+        mycursor.execute(sql, val)
+        txns = mycursor.fetchall()
+        if len(txns) >= 1:
+            sql = "SELECT address, private_key FROM accounts WHERE username = %s"
+            val = (result,)
+            mycursor.execute(sql, val)
+            inactive_results = mycursor.fetchall()
+            address = inactive_results[0][0]
+            private_key = inactive_results[0][1]
+            for txn in txns:
+                # set the pre-update message to 'return failed'. This will be changed to 'returned' upon success
+                sql = "UPDATE history SET return_status = 'return failed2' WHERE id = %s"
+                val = (txn[0], )
+                mycursor.execute(sql, val)
+                mydb.commit()
+
+                # get the transaction information and find out to whom we are returning the tip
+                sql = "SELECT address, percentage FROM accounts WHERE username = %s"
+                val = (txn[1], )
+                mycursor.execute(sql, val)
+                returned_results = mycursor.fetchall()
+                recipient_address = returned_results[0][0]
+                percentage = returned_results[0][1]
+                percentage = float(percentage) / 100
+                # print('History record: ', txn[0], address, private_key, txn[9], recipient_address)
+
+                # send it back
+                donation_amount = int(txn[9])/10**30
+                donation_amount = donation_amount * percentage
+                donation_amount = nano_to_raw(donation_amount)
+
+                return_amount = int(txn[9]) - donation_amount
+
+                if (return_amount > 0) and (return_amount <= int(txn[9])):
+                    hash = send(address, private_key, return_amount, recipient_address)['hash']
+                    add_history_record(action='return', hash=hash, amount=return_amount,
+                                       notes='Returned transaction from history record %s' % txn[0])
+                if (donation_amount > 0) and (donation_amount <= int(txn[9])):
+                    hash2 = send(address, private_key, donation_amount, 'xrb_3jy9954gncxbhuieujc3pg5t1h36e7tyqfapw1y6zukn9y1g6dj5xr7r6pij')['hash']
+                    add_history_record(action='donate', hash=hash2, amount=donation_amount,
+                                       notes='Donation from returned tip %s' % txn[0])
+                # print("Returning a transaction. ", hash)
+
+                # update database if everything goes through
+                sql = "UPDATE history SET return_status = 'saved from failed' WHERE id = %s"
+                val = (txn[0], )
+                mycursor.execute(sql, val)
+                mydb.commit()
+
+                # send a message informing the tipper that the tip is being returned
+                message_recipient = txn[1]
+                subject = 'Returned your tip of %s to %s' % (int(txn[9])/10**30, result)
+                message_text = "Your tip to %s for %s Nano was returned since the user never activated their account, and %s percent of this was donated to the TipBot development fund. You can change this percentage by messaging the TipBot 'percentage <amount>', where <amount> is a number between 0 and 100." % (result, int(txn[9])/10**30, round(percentage*100, 2))
+                sql = "INSERT INTO messages (username, subject, message) VALUES (%s, %s, %s)"
+                val = (message_recipient, subject, message_text)
+                mycursor.execute(sql, val)
+                mydb.commit()
+
+                # return transactions over 35 days old
+                sql = "SELECT * FROM history WHERE action = 'send' AND hash IS NOT NULL AND recipient_username = %s AND `sql_time` <= SUBDATE( CURRENT_DATE, INTERVAL 35 DAY) AND return_status = 'warned'"
+                val = (result,)
+                mycursor.execute(sql, val)
+                txns = mycursor.fetchall()
+                if len(txns) >= 1:
+                    sql = "SELECT address, private_key FROM accounts WHERE username = %s"
+                    val = (result,)
+                    mycursor.execute(sql, val)
+                    inactive_results = mycursor.fetchall()
+                    address = inactive_results[0][0]
+                    private_key = inactive_results[0][1]
+                    for txn in txns:
+                        # set the pre-update message to 'return failed'. This will be changed to 'returned' upon success
+                        sql = "UPDATE history SET return_status = 'return failed' WHERE id = %s"
+                        val = (txn[0],)
+                        mycursor.execute(sql, val)
+                        mydb.commit()
+
+                        # get the transaction information and find out to whom we are returning the tip
+                        sql = "SELECT address, percentage FROM accounts WHERE username = %s"
+                        val = (txn[1],)
+                        mycursor.execute(sql, val)
+                        returned_results = mycursor.fetchall()
+                        recipient_address = returned_results[0][0]
+                        percentage = returned_results[0][1]
+                        percentage = float(percentage) / 100
+                        # print('History record: ', txn[0], address, private_key, txn[9], recipient_address)
+
+                        # send it back
+                        donation_amount = int(txn[9]) / 10 ** 30
+                        donation_amount = donation_amount * percentage
+                        donation_amount = nano_to_raw(donation_amount)
+
+                        return_amount = int(txn[9]) - donation_amount
+
+                        if (return_amount > 0) and (return_amount <= int(txn[9])):
+                            hash = send(address, private_key, return_amount, recipient_address)['hash']
+                            add_history_record(action='return', hash=hash, amount=return_amount,
+                                               notes='Returned transaction from history record %s' % txn[0])
+                        if (donation_amount > 0) and (donation_amount <= int(txn[9])):
+                            hash2 = send(address, private_key, donation_amount,
+                                         'xrb_3jy9954gncxbhuieujc3pg5t1h36e7tyqfapw1y6zukn9y1g6dj5xr7r6pij')['hash']
+                            add_history_record(action='donate', hash=hash2, amount=donation_amount,
+                                               notes='Donation from returned tip %s' % txn[0])
+                        # print("Returning a transaction. ", hash)
+
+                        # update database if everything goes through
+                        sql = "UPDATE history SET return_status = 'returned' WHERE id = %s"
+                        val = (txn[0],)
+                        mycursor.execute(sql, val)
+                        mydb.commit()
+
+                        # send a message informing the tipper that the tip is being returned
+                        message_recipient = txn[1]
+                        subject = 'Returned your tip of %s to %s' % (int(txn[9]) / 10 ** 30, result)
+                        message_text = "Your tip to %s for %s Nano was returned since the user never activated their account, and %s percent of this was donated to the TipBot development fund. You can change this percentage by messaging the TipBot 'percentage <amount>', where <amount> is a number between 0 and 100." % (
+                        result, int(txn[9]) / 10 ** 30, round(percentage * 100, 2))
+                        sql = "INSERT INTO messages (username, subject, message) VALUES (%s, %s, %s)"
+                        val = (message_recipient, subject, message_text)
+                        mycursor.execute(sql, val)
+                        mydb.commit()
 
 # main loop
 t0 = time.time()

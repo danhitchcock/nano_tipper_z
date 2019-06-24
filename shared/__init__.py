@@ -72,7 +72,7 @@ If you have any questions, please post at /r/nano_tipper
 
 welcome_tipped = """
 Welcome to Nano Tipper, a reddit tip bot which allows you to tip and send the Nano Currency to your favorite redditors! 
-You have just received a Nano tip in the amount of ```%s Nano``` at your address %s.\n\n
+You have just received a Nano tip in the amount of ```%.4g Nano``` at your address %s.\n\n
 By using this service, you agree to the [Terms of Service](https://github.com/danhitchcock/nano_tipper_z#terms-of-service). Please activate your account by 
 replying to this message or any tips which are 30 days old will be returned to the sender.\n\n
 To load more Nano, try any of the the free 
@@ -98,7 +98,7 @@ If you have any questions, please post at /r/nano_tipper
 """
 
 new_tip = """
-Somebody just tipped you %s Nano at your address %s. Your new account balance is:\n\n
+Somebody just tipped you %.4g Nano at your address %s. Your new account balance is:\n\n
 Available: %s Nano\n\n
 Unpocketed: %s Nano\n\n  
 Unpocketed Nanos will be pocketed automatically. [Transaction on Nano Crawler](https://nanocrawler.cc/explorer/block/%s)\n\n

@@ -219,6 +219,28 @@ def backup_keys():
         for result in results:
             f.write(result[0]+','+result[1]+','+result[2]+'\n')
 
+def backup_accounts():
+    sql = "SELECT * FROM accounts"
+    mycursor.execute(sql)
+    results = mycursor.fetchall()
+    mydb.commit()
+    with open('../backup_accounts', 'w') as f:
+        for result in results:
+            for r in result:
+                f.write(str(r) + ';')
+            f.write('\n')
+
+def backup_history():
+    sql = "SELECT * FROM history"
+    mycursor.execute(sql)
+    results = mycursor.fetchall()
+    mydb.commit()
+    with open('../backup_history', 'w') as f:
+        for result in results:
+            for r in result:
+                f.write(str(r) + ';')
+            f.write('\n')
+
 
 def update_percentage():
     sql = "ALTER TABLE accounts ADD percentage VARCHAR(255)"
@@ -236,3 +258,4 @@ if __name__=="__main__":
     #history(100)
     #update_percentage()
     #accounts()
+

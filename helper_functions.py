@@ -42,8 +42,8 @@ def add_new_account(username):
     address = generate_account()
     private = address['private']
     address = address['account']
-    sql = "INSERT INTO accounts (username, private_key, address, minimum, auto_receive, silence, active) VALUES (%s, %s, %s, %s, %s, %s, %s)"
-    val = (username, private, address, nano_to_raw(shared.recipient_minimum), True, False, False)
+    sql = "INSERT INTO accounts (username, private_key, address, minimum, auto_receive, silence, active, percentage) VALUES (%s, %s, %s, %s, %s, %s, %s)"
+    val = (username, private, address, nano_to_raw(shared.recipient_minimum), True, False, False, 10)
     shared.mycursor.execute(sql, val)
     shared.mydb.commit()
     return address
@@ -398,7 +398,7 @@ def handle_send_nano(message, parsed_text, comment_or_message):
     # else
     #   create a new address for the redditor and send
     if recipient_username in shared.excluded_redditors:
-        response = "Sorry, the redditor '%s' is in the list of exluded addresses. More than likely you didn't intend to send to that user." % (recipient_username)
+        response = "Sorry, the redditor '%s' is in the list of excluded addresses. More than likely you didn't intend to send to that user." % (recipient_username)
         return [response, 0, amount / 10 ** 30, recipient_username, recipient_address, None]
 
     if (user_minimum >= 0) and recipient_address and recipient_username:
@@ -445,16 +445,18 @@ def handle_send_nano(message, parsed_text, comment_or_message):
             shared.mydb.commit()
 
         if user_or_address == 'user':
+            print('Amount: ', amount / 10 ** 30)
+            print('Formatted: %.4f' % (amount / 10 ** 30))
             if silence:
-                response = "Sent ```%s Nano``` to %s -- [Transaction on Nano Crawler](https://nanocrawler.cc/explorer/block/%s)" % (
+                response = "Sent ```%.4g Nano``` to %s -- [Transaction on Nano Crawler](https://nanocrawler.cc/explorer/block/%s)" % (
                        amount / 10 ** 30, recipient_username, sent['hash'])
                 return [response, 9, amount / 10 ** 30, recipient_username, recipient_address, sent['hash']]
             else:
-                response = "Sent ```%s Nano``` to /u/%s -- [Transaction on Nano Crawler](https://nanocrawler.cc/explorer/block/%s)" % (
+                response = "Sent ```%.4g Nano``` to /u/%s -- [Transaction on Nano Crawler](https://nanocrawler.cc/explorer/block/%s)" % (
                        amount / 10 ** 30, recipient_username, sent['hash'])
                 return [response, 10, amount / 10 ** 30, recipient_username, recipient_address, sent['hash']]
         else:
-            response = "Sent ```%s Nano``` to [%s](https://nanocrawler.cc/explorer/account/%s) -- " \
+            response = "Sent ```%.4g Nano``` to [%s](https://nanocrawler.cc/explorer/account/%s) -- " \
                    "[Transaction on Nano Crawler](https://nanocrawler.cc/explorer/block/%s)" % (
                    amount / 10 ** 30, recipient_address, recipient_address, sent['hash'])
             return [response, 11, amount / 10 ** 30, recipient_username, recipient_address, sent['hash']]
@@ -473,7 +475,7 @@ def handle_send_nano(message, parsed_text, comment_or_message):
             val = (sent['hash'], entry_id)
             shared.mycursor.execute(sql, val)
             shared.mydb.commit()
-            response =  "Donated ```%s Nano``` to NanoCenter Project [%s](https://nanocrawler.cc/explorer/account/%s). -- [Transaction on Nano Crawler](https://nanocrawler.cc/explorer/block/%s)" % (amount/ 10 ** 30, parsed_text[2], recipient_address, sent['hash'])
+            response =  "Donated ```%.4g Nano``` to NanoCenter Project [%s](https://nanocrawler.cc/explorer/account/%s). -- [Transaction on Nano Crawler](https://nanocrawler.cc/explorer/block/%s)" % (amount/ 10 ** 30, parsed_text[2], recipient_address, sent['hash'])
             return [response, 14, amount / 10 ** 30, parsed_text[2], recipient_address, sent['hash']]
 
         else:
@@ -489,7 +491,7 @@ def handle_send_nano(message, parsed_text, comment_or_message):
             val = (sent['hash'], entry_id)
             shared.mycursor.execute(sql, val)
             shared.mydb.commit()
-            response = "Sent ```%s Nano``` to [%s](https://nanocrawler.cc/explorer/account/%s). -- [Transaction on Nano Crawler](https://nanocrawler.cc/explorer/block/%s)" % (
+            response = "Sent ```%.4g Nano``` to [%s](https://nanocrawler.cc/explorer/account/%s). -- [Transaction on Nano Crawler](https://nanocrawler.cc/explorer/block/%s)" % (
             amount / 10 ** 30, recipient_address, recipient_address, sent['hash'])
             return [response, 12, amount / 10 ** 30, recipient_username, recipient_address, sent['hash']]
 
@@ -519,28 +521,7 @@ def handle_send_nano(message, parsed_text, comment_or_message):
         shared.mydb.commit()
         print("Sending New Account Address: ", address, private_key, amount, recipient_address, recipient_username)
         response = "Creating a new account for /u/%s and "\
-                      "sending ```%s Nano```. [Transaction on Nano Crawler](https://nanocrawler.cc/explorer/block/%s)" % (recipient_username, amount / 10 **30, sent['hash'])
+                      "sending ```%.4g Nano```. [Transaction on Nano Crawler](https://nanocrawler.cc/explorer/block/%s)" % (recipient_username, amount / 10 **30, sent['hash'])
         return [response, 13, amount / 10 ** 30, recipient_username, recipient_address, sent['hash']]
 
 
-def get_nano_value():
-    url = 'https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/latest'
-    parameters = {
-        'symbol': 'NANO',
-        'convert': 'USD',
-    }
-    headers = {
-        'Accepts': 'application/json',
-        'X-CMC_PRO_API_KEY': shared.cmc_token,
-    }
-
-    session = Session()
-    session.headers.update(headers)
-
-    try:
-        response = session.get(url, params=parameters)
-        data = json.loads(response.text)
-        shared.nano_value
-        print(data)
-    except (ConnectionError, Timeout, TooManyRedirects) as e:
-        print(e)
