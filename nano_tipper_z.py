@@ -576,6 +576,7 @@ def check_inactive_transactions():
                                  'xrb_3jy9954gncxbhuieujc3pg5t1h36e7tyqfapw1y6zukn9y1g6dj5xr7r6pij')['hash']
                     add_history_record(action='donate', hash=hash2, amount=donation_amount,
                                        notes='Donation from returned tip %s' % txn[0])
+                print('sent')
                 # print("Returning a transaction. ", hash)
 
                 # update database if everything goes through
