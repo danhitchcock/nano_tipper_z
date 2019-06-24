@@ -565,11 +565,12 @@ def check_inactive_transactions():
                 donation_amount = nano_to_raw(donation_amount)
 
                 return_amount = int(txn[9]) - donation_amount
-
+                print('sending transaction')
                 if (return_amount > 0) and (return_amount <= int(txn[9])):
                     hash = send(address, private_key, return_amount, recipient_address)['hash']
                     add_history_record(action='return', hash=hash, amount=return_amount,
                                        notes='Returned transaction from history record %s' % txn[0])
+                print('sending donation')
                 if (donation_amount > 0) and (donation_amount <= int(txn[9])):
                     hash2 = send(address, private_key, donation_amount,
                                  'xrb_3jy9954gncxbhuieujc3pg5t1h36e7tyqfapw1y6zukn9y1g6dj5xr7r6pij')['hash']
