@@ -28,6 +28,8 @@ To tip 0.1 Nano on a comment or post on a [tracked subreddit](https://www.reddit
 To tip anywhere on reddit, tag the bot as such (it won't post on the all subreddits, but it will PM the users):\n
     /u/nano_tipper 0.1
 You can tip any amount above the program minimum of 0.0001 Nano.\n\n
+Also, you can specify a currency, liked USD:\n
+    !ntip 1USD\n
 
 For PM commands, create a new message with any of the following commands (be sure to remove the quotes, '<'s and '>'s):\n
     'create' - Create a new account if one does not exist

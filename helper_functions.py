@@ -42,7 +42,7 @@ def add_new_account(username):
     address = generate_account()
     private = address['private']
     address = address['account']
-    sql = "INSERT INTO accounts (username, private_key, address, minimum, auto_receive, silence, active, percentage) VALUES (%s, %s, %s, %s, %s, %s, %s)"
+    sql = "INSERT INTO accounts (username, private_key, address, minimum, auto_receive, silence, active, percentage) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"
     val = (username, private, address, nano_to_raw(shared.recipient_minimum), True, False, False, 10)
     shared.mycursor.execute(sql, val)
     shared.mydb.commit()
@@ -525,3 +525,5 @@ def handle_send_nano(message, parsed_text, comment_or_message):
         return [response, 13, amount / 10 ** 30, recipient_username, recipient_address, sent['hash']]
 
 
+def function_for_test():
+    shared.db.commit()

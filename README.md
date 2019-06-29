@@ -30,6 +30,10 @@ or
 
     This is great! /u/nano_tipper 0.01
 
+Even specify a currency!
+
+    !ntip 1USD Enjoy a dollar!
+
 If the subreddit is a [friendly subreddit](https://www.reddit.com/r/nano_tipper/comments/astwp6/nano_tipper_status/) (which correlates to [tracked subreddit](https://www.reddit.com/r/nano_tipper/comments/astwp6/nano_tipper_status/)), the bot will repsond with a message. If the subreddit is not friendly, a PM will be sent to both the sender and the recipient.
 
 ### NEW!
@@ -64,7 +68,7 @@ or send all your balance:
 There are many other commands.
 
     'create' - Create a new account if one does not exist
-    'send <amount or all> <user/address>' - Send Nano to a reddit user or an address
+    'send <amount or all, optional: Currency> <user/address>' - Send Nano to a reddit user or an address
     'withdraw <amount or all> <user/address>' - Same as send
     'balance' or 'address' - Retrieve your account balance. Includes both pocketed and unpocketed transactions
     'minimum <amount>' - (default 0.0001) Sets a minimum amount for receiving tips
@@ -72,7 +76,7 @@ There are many other commands.
     'percentage <percent>' - (default 10 percent) Sets a percentage of returned tips to donate to TipBot development
     'history <optional: number of records>' - Retrieves tipbot commands. Default 10, maximum is 50.
     'projects' - Retrives a list of NanoCenter donation projects
-    'help' - Get this help message\n
+    'help' - Get this help message
 
 ### Here's a few other great links:
 [Nano Tipper Subreddit](https://reddit.com/r/nano_tipper) -- Post any questions about Nano Tipper

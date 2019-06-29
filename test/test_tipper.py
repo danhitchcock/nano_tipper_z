@@ -1,7 +1,6 @@
 import pytest
-import monkeypatch
-import mysql.connector
-from helper_functions import handle_send_nano, add_history_record
+
+from helper_functions import function_for_test
 
 class Message:
     pass
@@ -20,8 +19,9 @@ messages = [
 
 def send_nano():
     pass
-
-def test_send_nano():
+"""
+def test_send_nano(monkeypatch):
+    
     def mock_history_record(*args, **kwargs):
         return 0
 
@@ -35,6 +35,13 @@ def test_send_nano():
         return None
 
 
-    monkeypatch.setattr('add_history_record', mock_history_record)
-    monkeypatch.setattr(mycursor, 'add_history_record', mock_history_record)
-    monkeypatch.setattr('add_history_record', mock_history_record)
+    # monkeypatch.setattr('add_history_record', mock_history_record)
+    # monkeypatch.setattr(mycursor, 'add_history_record', mock_history_record)
+    # monkeypatch.setattr('add_history_record', mock_history_record)
+"""
+
+def mock_commit(*args, **kwargs):
+    return 'success'
+
+def test_test_function(monkeypatch):
+    monkeypatch.setattr(mydb, 'commit', mock_commit)
