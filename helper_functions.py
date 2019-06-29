@@ -1,7 +1,8 @@
 import time
 from datetime import datetime
 import shared
-from rpc_bindings import generate_account, nano_to_raw, check_balance, validate_address, send
+from rpc_bindings import generate_account, nano_to_raw, check_balance, validate_address
+from rpc_bindings import send_w as send
 from requests import Request, Session
 from requests.exceptions import ConnectionError, Timeout, TooManyRedirects
 import json
