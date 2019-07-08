@@ -45,8 +45,8 @@ def work_generate(hash, dpow=False):
             }
             results = requests.post('https://dpow.nanocenter.org/service/', json.dumps(data), timeout=10)
             results = json.loads(results.text)
-            print(results)
-            print(hash)
+            #print(results)
+            #print(hash)
             print('successful dPoW!')
         except requests.exceptions.Timeout:
             print("dpow failed.")
