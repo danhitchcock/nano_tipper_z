@@ -30,11 +30,13 @@ while True:
     for result in results:
         print(time.strftime('%Y-%m-%d %H:%M:%S'), result[1], result[2], repr(result[3])[:50])
         # send the message
-        try:
-            reddit.redditor(str(result[1])).message(str(result[2]), str(result[3]))
-        except APIException as e:
-            print(e)
-            pass
+        # try:
+        reddit.redditor(str(result[1])).message(str(result[2]), str(result[3]))
+        # print('message sent')
+        #except APIException as e:
+        #    print('message not sent')
+        #    print(e)
+        #    pass
         sql = "DELETE FROM messages WHERE id = %s"
         val = (result[0], )
         mycursor.execute(sql, val)
