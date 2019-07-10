@@ -438,8 +438,8 @@ def check_inactive_transactions():
 
     tipped_inactivated_accounts = inactivated_accounts.intersection(tipped_accounts)
     print('Accounts on warning: ', sorted(tipped_inactivated_accounts))
+    returns = {}
     # scrolls through our inactive members and check if they have unclaimed tips
-
     for result in tipped_inactivated_accounts:
         # send warning messages on day 31
         sql = "SELECT * FROM history WHERE action = 'send' AND hash IS NOT NULL AND recipient_username = %s AND `sql_time` <= SUBDATE( CURRENT_DATE, INTERVAL 31 DAY) AND return_status = 'cleared'"
@@ -469,7 +469,6 @@ def check_inactive_transactions():
         val = (result, )
         mycursor.execute(sql, val)
         txns = mycursor.fetchall()
-        returns = {}
         if len(txns) >= 1:
             sql = "SELECT address, private_key FROM accounts WHERE username = %s"
             val = (result,)
@@ -548,26 +547,11 @@ def check_inactive_transactions():
                 mycursor.execute(sql, val)
                 mydb.commit()
                 """
-
-        # send the return messages as a single message
-        for user in returns:
-            message = 'The following tips have been returned and %s percent of each tip has been donated to the tipbot development fund:\n\n ' \
-                                       '(Redditor, Total Tip Amount, Returned Amount, Donation Amount)\n\n '%returns[user]['percent']
-            for transaction in returns[user]['transactions']:
-                message += "%s | %s | %s | %s\n\n " % (transaction[0], transaction[1], transaction[2], transaction[3])
-            sql = "INSERT INTO messages (username, subject, message) VALUES (%s, %s, %s)"
-            val = (user, 'Returned Tips', message)
-            mycursor.execute(sql, val)
-            mydb.commit()
-
-
         # return transactions over 35 days old
         sql = "SELECT * FROM history WHERE action = 'send' AND hash IS NOT NULL AND recipient_username = %s AND `sql_time` <= SUBDATE( CURRENT_DATE, INTERVAL 35 DAY) AND return_status = 'return failed'"
         val = (result,)
         mycursor.execute(sql, val)
         txns = mycursor.fetchall()
-        print('running inactive for 2')
-        print(txns)
         if len(txns) >= 1:
             sql = "SELECT address, private_key FROM accounts WHERE username = %s"
             val = (result,)
@@ -628,6 +612,17 @@ def check_inactive_transactions():
                 val = (message_recipient, subject, message_text)
                 mycursor.execute(sql, val)
                 mydb.commit()
+
+        # send out our return messages
+        for user in returns:
+            message = 'The following tips have been returned and %s percent of each tip has been donated to the tipbot development fund:\n\n ' \
+                                       '(Redditor, Total Tip Amount, Returned Amount, Donation Amount)\n\n '%returns[user]['percent']
+            for transaction in returns[user]['transactions']:
+                message += "%s | %s | %s | %s\n\n " % (transaction[0], transaction[1], transaction[2], transaction[3])
+            sql = "INSERT INTO messages (username, subject, message) VALUES (%s, %s, %s)"
+            val = (user, 'Returned Tips', message)
+            mycursor.execute(sql, val)
+            mydb.commit()
 
 # main loop
 t0 = time.time()
