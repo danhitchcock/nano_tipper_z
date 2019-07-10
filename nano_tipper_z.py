@@ -469,6 +469,7 @@ def check_inactive_transactions():
         val = (result, )
         mycursor.execute(sql, val)
         txns = mycursor.fetchall()
+        returns = {}
         if len(txns) >= 1:
             sql = "SELECT address, private_key FROM accounts WHERE username = %s"
             val = (result,)
@@ -486,7 +487,7 @@ def check_inactive_transactions():
             #         ]
             #     }
             # }
-            returns = {}
+
             for txn in txns:
                 # set the pre-update message to 'return failed'. This will be changed to 'returned' upon success
                 sql = "UPDATE history SET return_status = 'return failed' WHERE id = %s"
