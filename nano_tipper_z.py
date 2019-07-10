@@ -477,7 +477,16 @@ def check_inactive_transactions():
             address = inactive_results[0][0]
             private_key = inactive_results[0][1]
 
-
+            # returns = {
+            #     'zily88': {
+            #         'percentage': 50,
+            #         'transactions': [
+            #             [1, .9. .1],
+            #             [2, 1.8, .2]
+            #         ]
+            #     }
+            # }
+            returns = {}
             for txn in txns:
                 # set the pre-update message to 'return failed'. This will be changed to 'returned' upon success
                 sql = "UPDATE history SET return_status = 'return failed' WHERE id = %s"
@@ -518,6 +527,17 @@ def check_inactive_transactions():
                 mycursor.execute(sql, val)
                 mydb.commit()
 
+                # add transactions to the messaging queue to build a single message
+                message_recipient = txn[1]
+                if message_recipient not in returns.keys():
+                    returns[message_recipient] = {
+                        'percent': round(percentage*100, 2),
+                        'transactions': []
+                    }
+                returns[message_recipient]['transactions'].append([result, int(txn[9])/10**30, return_amount/10**30, donation_amount/10**30])
+
+
+                """
                 # send a message informing the tipper that the tip is being returned
                 message_recipient = txn[1]
                 subject = 'Returned your tip of %s to %s' % (int(txn[9])/10**30, result)
@@ -526,6 +546,19 @@ def check_inactive_transactions():
                 val = (message_recipient, subject, message_text)
                 mycursor.execute(sql, val)
                 mydb.commit()
+                """
+
+        # send the return messages as a single message
+        for user in returns:
+            message = 'The following tips have been returned and %s percent of each tip has been donated to the tipbot development fund:\n\n ' \
+                                       '(Redditor, Total Tip Amount, Returned Amount, Donation Amount)\n\n '%returns[user]['percent']
+            for transaction in returns[user]['transactions']:
+                message += "%s | %s | %s | %s\n\n " % (transaction[0], transaction[1], transaction[2], transaction[3])
+            sql = "INSERT INTO messages (username, subject, message) VALUES (%s, %s, %s)"
+            val = (user, 'Returned Tips', message)
+            mycursor.execute(sql, val)
+            mydb.commit()
+
 
         # return transactions over 35 days old
         sql = "SELECT * FROM history WHERE action = 'send' AND hash IS NOT NULL AND recipient_username = %s AND `sql_time` <= SUBDATE( CURRENT_DATE, INTERVAL 35 DAY) AND return_status = 'return failed'"

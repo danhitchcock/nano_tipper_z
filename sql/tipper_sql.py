@@ -249,10 +249,15 @@ def update_percentage():
     mycursor.execute(sql)
     mydb.commit()
 
+def clear_messages():
+    sql = "DELETE FROM messages"
+    mycursor.execute(sql)
+    mydb.commit()
+
 if __name__=="__main__":
-    init_projects()
+    # init_projects()
     # subreddits()
-    # add_history_record(username='zily88', sql_time=time.strftime('%Y-%m-%d %H:%M:%S'), recipient_username='nano_tipper_z_test2', action='send', hash='test', return_status='cleared')
+    clear_messages()
     # add_history_record(username='zily88', sql_time='2018-04-13 09:21:28', recipient_username='nano_tipper_z_test2', action='send', hash='test', amount = 1*10**28, return_status='cleared')
 
     #history(100)
