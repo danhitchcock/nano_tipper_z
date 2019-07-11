@@ -257,8 +257,8 @@ def clear_messages():
 if __name__=="__main__":
     # init_projects()
     # subreddits()
-    clear_messages()
-    # add_history_record(username='zily88', sql_time='2018-04-13 09:21:28', recipient_username='nano_tipper_z_test2', action='send', hash='test', amount = 1*10**28, return_status='cleared')
+    # clear_messages()
+    add_history_record(username='zily88', sql_time='2018-04-13 09:21:28', recipient_username='nano_tipper_z_test2', action='send', hash='test', amount = 1*10**28, return_status='cleared')
 
     #history(100)
     #update_percentage()
