@@ -45,11 +45,7 @@ def work_generate(hash, dpow=False):
             }
             results = requests.post('https://dpow.nanocenter.org/service/', json.dumps(data), timeout=10)
             results = json.loads(results.text)
-            #print(results)
-            #print(hash)
-            print('successful dPoW!')
         except requests.exceptions.Timeout:
-            print("dpow failed.")
             return work_generate(hash)
         return results
     else:
@@ -58,7 +54,6 @@ def work_generate(hash, dpow=False):
             "hash": hash
         }
     results = perform_curl(data)
-    print('local PoW')
     return results
 
 
