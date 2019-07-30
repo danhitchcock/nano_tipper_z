@@ -32,7 +32,7 @@ while True:
         # send the message
         try:
             reddit.redditor(str(result[1])).message(str(result[2]), str(result[3]))
-        except APIException as e:
+        except:
             pass
         sql = "DELETE FROM messages WHERE id = %s"
         val = (result[0], )
