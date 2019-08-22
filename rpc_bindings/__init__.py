@@ -356,7 +356,6 @@ def open_or_receive_blocks(account, key, blocks, rep=None):
 
 
 def open_or_receive_block(account, key, sent_hash, rep=None):
-
     work = None
     if rep is None:
         rep = "xrb_1thingspmippfngcrtk1ofd3uwftffnu4qu9xkauo9zkiuep6iknzci3jxa6"
@@ -400,12 +399,15 @@ def open_or_receive_block(account, key, sent_hash, rep=None):
     previous = process_block(perform_curl(data))['hash']
     work = None
 
-data = {
-        "action": "account_history",
-        "account": 'xrb_1wnc4mmgizw95up3yshqt7uexmphuz5ezx3o3kb1n1jhh6swbg18o7nrc6zn',
-        "count": "10"
-    }
+#data = {
+#        "action": "account_history",
+#        "account": 'xrb_1wnc4mmgizw95up3yshqt7uexmphuz5ezx3o3kb1n1jhh6swbg18o7nrc6zn',
+#        "count": "10"
+#    }
 
 # f = perform_curl(data)
 # for item in f['history']:
 #     print(item)
+if __name__=="__main__":
+    open_account('nano_1z514qfsnb54tqmu5zrdxcprstr1m4b17ornz8r9km3o3zg6k1a3bshzjswd', 'A3333365E5F27CA63F9389565FE26901886D8E4D71C38A2DF0F0C8F962B2AC32')
+    # send('nano_37w5ticr1xkbxru31insi7izdbnexs6wsfie6j9oh3ya5ydb43iumukftsfk', 'E937F6D3E8BE8444A302ECCA1A80A0C559E7C60F046203B17472B57A31D4ED05', .1, 'xrb_3h6wcsrwq9yowtkjscyswb3z6cddgfxrmn5prw4qro6fgut8dpip8m6ppagt' )

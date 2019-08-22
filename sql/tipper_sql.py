@@ -254,11 +254,19 @@ def clear_messages():
     mycursor.execute(sql)
     mydb.commit()
 
+
+def update_to_nano():
+    sql = "UPDATE accounts SET address = REPLACE(address, 'xrb_', 'nano_')"
+    mycursor.execute(sql)
+    mydb.commit()
+
+
 if __name__=="__main__":
+    update_to_nano()
     # init_projects()
     # subreddits()
     # clear_messages()
-    add_history_record(username='zily88', sql_time='2018-04-13 09:21:28', recipient_username='nano_tipper_z_test2', action='send', hash='test', amount = 1*10**28, return_status='cleared')
+    # add_history_record(username='zily88', sql_time='2018-04-13 09:21:28', recipient_username='nano_tipper_z_test2', action='send', hash='test', amount = 1*10**28, return_status='cleared')
 
     #history(100)
     #update_percentage()

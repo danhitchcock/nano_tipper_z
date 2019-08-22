@@ -390,7 +390,6 @@ def auto_receive():
     private_keys = [str(result[2]) for result in myresult]
     mydb.commit()
     pendings = get_pendings(addresses, threshold=nano_to_raw(program_minimum))
-
     # get any pending blocks from our address
     for address, private_key in zip(addresses, private_keys):
         # allow 5 transactions to be received per cycle. If the bot gets transaction spammed, at least it won't be locked up receiving.
