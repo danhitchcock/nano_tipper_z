@@ -260,7 +260,6 @@ def update_to_nano():
     mycursor.execute(sql)
     mydb.commit()
 
-
 if __name__=="__main__":
     update_to_nano()
     # init_projects()
