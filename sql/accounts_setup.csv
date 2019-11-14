@@ -1,1 +1,1 @@
-username [varchar(255],address [varchar(255)],private_key [varchar(255)],key_released [bool],minimum [varchar(255)],notes [varchar(255)],auto_receive [bool],silence [bool],active [bool]
+username [varchar(255],address [varchar(255)],private_key [varchar(255)],key_released [bool],minimum [varchar(255)],notes [varchar(255)],auto_receive [bool],silence [bool],active [bool],opt-out [bool], private [bool]
