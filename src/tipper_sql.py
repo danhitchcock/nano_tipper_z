@@ -178,7 +178,7 @@ def delete_user(username):
     mydb.commit()
 
 
-def add_subreddit(subreddit, reply_to_comments, footer, status):
+def add_subreddit(subreddit, reply_to_comments=True, footer = '', status='friendly'):
     sql = "INSERT INTO subreddits (subreddit, reply_to_comments, footer, status) VALUES (%s, %s, %s, %s)"
     val = (subreddit, reply_to_comments, footer, status, )
     mycursor.execute(sql, val)
