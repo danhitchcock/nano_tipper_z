@@ -20,7 +20,7 @@ default_url = config["NODE"]["default_url"]
 python_command = config["BOT"]["python_command"]
 tipper_options = config["BOT"]["tipper_options"]
 messenger_options = config["BOT"]["messenger_options"]
-print(sql_password)
+
 mydb = mysql.connector.connect(
     user="root",
     password=sql_password,

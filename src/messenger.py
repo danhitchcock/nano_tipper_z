@@ -1,5 +1,4 @@
 import time
-
 from time import sleep
 from translations import mydb, mycursor, reddit
 
