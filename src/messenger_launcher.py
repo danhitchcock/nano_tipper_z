@@ -1,14 +1,9 @@
 import subprocess
 from time import sleep
 import configparser
+from translations import python_command, messenger_options
 
-config = configparser.ConfigParser()
-config.read('./tipper.ini')
-# config.sections()
-python_command = config['BOT']['python_command']
-messenger_options = config['BOT']['messenger_options']
-
-filename = 'messenger.py'
+filename = "messenger.py"
 print(python_command + " " + filename)
 while True:
     p = subprocess.Popen(python_command + " " + filename, shell=True).wait()
@@ -17,4 +12,3 @@ while True:
         continue
     else:
         break
-
