@@ -21,13 +21,23 @@ python_command = config["BOT"]["python_command"]
 tipper_options = config["BOT"]["tipper_options"]
 messenger_options = config["BOT"]["messenger_options"]
 
-mydb = mysql.connector.connect(
-    user="root",
-    password=sql_password,
-    host="localhost",
-    auth_plugin="mysql_native_password",
-    database=database_name,
-)
+# only fails if no databases have been created
+try:
+    mydb = mysql.connector.connect(
+        user="root",
+        password=sql_password,
+        host="localhost",
+        auth_plugin="mysql_native_password",
+        database=database_name,
+    )
+except:
+    mydb = mysql.connector.connect(
+        user="root",
+        password=sql_password,
+        host="localhost",
+        auth_plugin="mysql_native_password",
+    )
+
 mycursor = mydb.cursor()
 reddit = praw.Reddit("bot1")
 

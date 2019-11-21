@@ -1,7 +1,6 @@
-import mysql.connector
 import time
 from datetime import datetime
-from translations import sql_password, database_name, mydb, mycursor
+from translations import database_name, mydb, mycursor
 
 
 def init_db():
@@ -295,7 +294,12 @@ def update_to_nano():
 
 
 if __name__ == "__main__":
-    update_to_nano()
+    add_subreddit("nano_tipper", True, None, "friendly")
+    # init_history()
+    # init_messages()
+    # init_projects()
+    # init_subreddits()
+    # update_to_nano()
     # init_projects()
     # subreddits()
     # clear_messages()
