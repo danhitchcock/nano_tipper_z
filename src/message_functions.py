@@ -442,6 +442,34 @@ def handle_silence(message):
     return response
 
 
+def handle_subreddit(message):
+    parsed_text = parse_text(str(message.body))
+    # check if there are at least 3 items (command, sub, action, option)
+    if len(parsed_text) < 4:
+        return "could not parse your command"
+    # check if the user is a moderator of the subreddit
+
+    if parsed_text[2] in ("disable", "deactivate"):
+        # disable the bot
+        pass
+    else:
+        return "could not parse message"
+    if len(parsed_text) < 5:
+        return "could not parse message"
+
+    if parsed_text[2] == "activate":
+        if parsed_text[3] in ["friendly", "minimal", "hostile"]:
+            # sql to change subreddit to that status
+            pass
+        else:
+            return "not a subreddit response type"
+
+    if parsed_text[2] == "minimum":
+        pass
+
+    pass
+
+
 def handle_send(message):
     """
     Extracts send command information from a PM command

@@ -292,6 +292,10 @@ def handle_message(message):
         subject = "Nano Tipper - Silence"
         response = handle_silence(message)
 
+    elif parsed_text[0].lower() == "subreddit":
+        print("subredditing")
+        subject = "Nano Tipper - Subreddit"
+        response = "just a test!'"
     # nanocenter donation commands
     elif parsed_text[0].lower() == "project" or parsed_text[0].lower() == "projects":
         if (
