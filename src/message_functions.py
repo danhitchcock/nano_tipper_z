@@ -13,6 +13,7 @@ from translations import (
     tip_bot_username,
     help_text,
     program_minimum,
+    reddit,
 )
 
 
@@ -443,28 +444,49 @@ def handle_silence(message):
 
 
 def handle_subreddit(message):
+
     parsed_text = parse_text(str(message.body))
     # check if there are at least 3 items (command, sub, action, option)
     if len(parsed_text) < 4:
-        return "could not parse your command"
+        return "could not parse your command 1"
     # check if the user is a moderator of the subreddit
+    if message.author not in reddit.subreddit(parsed_text[1]).moderator():
+        return "You are not a moderator. 2"
 
     if parsed_text[2] in ("disable", "deactivate"):
         # disable the bot
         pass
-    else:
-        return "could not parse message"
-    if len(parsed_text) < 5:
-        return "could not parse message"
+
+    if len(parsed_text) < 4:
+        return "could not parse message 3"
 
     if parsed_text[2] == "activate":
-        if parsed_text[3] in ["friendly", "minimal", "hostile"]:
+        if parsed_text[3] in [
+            "friendly",
+            "minimal",
+            "hostile",
+            "full",
+            "normal",
+            "silent",
+        ]:
             # sql to change subreddit to that status
-            pass
+            try:
+                sql = "INSERT INTO subreddits (subreddit, reply_to_comments, footer, status) VALUES (%s, %s, %s, %s)"
+                val = (parsed_text[1], True, None, parsed_text[2])
+                mycursor.execute(sql, val)
+                mydb.commit()
+            except:
+                sql = "UPDATE subreddits SET status = %s WHERE subreddit = %s"
+                val = (parsed_text[3], parsed_text[1])
+                mycursor.execute(sql, val)
+                mydb.commit()
+            return "Updated!"
         else:
             return "not a subreddit response type"
 
     if parsed_text[2] == "minimum":
+        pass
+    if parsed_text[2] == "status":
         pass
 
     pass
