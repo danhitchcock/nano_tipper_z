@@ -22,16 +22,22 @@ from tipper_functions import *
 
 
 # initiate the bot and all friendly subreddits
-mycursor.execute("SELECT subreddit FROM subreddits")
-results = mycursor.fetchall()
-subreddits = ""
-for result in results:
-    subreddits += "%s+" % result[0]
-subreddits = subreddits[:-1]
-subreddit = reddit.subreddit(subreddits)
+def get_subreddits():
+    mycursor.execute("SELECT subreddit FROM subreddits")
+    results = mycursor.fetchall()
+    subreddits = ""
+    for result in results:
+        subreddits += "%s+" % result[0]
+    subreddits = subreddits[:-1]
+    return reddit.subreddit(subreddits)
+
+
+subreddits = get_subreddits()
+
 
 # a few globals.
 toggle_receive = True
+
 
 # generator to stream comments and messages to the main loop at the bottom, and contains the auto_receive functionality.
 # Maybe this wasn't necessary, but I never get to use generators.
@@ -39,7 +45,7 @@ toggle_receive = True
 # set of current message. I compare the old set with the new set.
 def stream_comments_messages():
     previous_time = time.time()
-    previous_comments = {comment for comment in subreddit.comments()}
+    previous_comments = {comment for comment in subreddits.comments()}
     previous_messages = {message for message in reddit.inbox.all(limit=25)}
     global toggle_receive
     while True:
@@ -53,7 +59,7 @@ def stream_comments_messages():
             delay = 0
         sleep(delay)
         previous_time = time.time()
-        updated_comments = {comment for comment in subreddit.comments()}
+        updated_comments = {comment for comment in subreddits.comments()}
         new_comments = updated_comments - previous_comments
         previous_comments = updated_comments
 
@@ -295,7 +301,11 @@ def handle_message(message):
     elif parsed_text[0].lower() == "subreddit":
         print("subredditing")
         subject = "Nano Tipper - Subreddit"
-        response = "just a test!'"
+        response = handle_subreddit(message)
+        global subreddits
+        subreddits = get_subreddits()
+        print(subreddits)
+
     # nanocenter donation commands
     elif parsed_text[0].lower() == "project" or parsed_text[0].lower() == "projects":
         if (
