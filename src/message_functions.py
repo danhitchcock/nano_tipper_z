@@ -447,28 +447,28 @@ def handle_subreddit(message):
 
     parsed_text = parse_text(str(message.body))
     # check if there are at least 3 items (command, sub, action, option)
-    if len(parsed_text) < 4:
-        return "could not parse your command 1"
+    if len(parsed_text) < 3:
+        print(len(parsed_text))
+        return "Your command seems to be missing something. Make sure it follow the format `subreddit <subreddit> <command> <option>.`"
     # check if the user is a moderator of the subreddit
     if message.author not in reddit.subreddit(parsed_text[1]).moderator():
-        return "You are not a moderator. 2"
+        return "You are not a moderator of the subreddit."
 
     if parsed_text[2] in ("disable", "deactivate"):
         # disable the bot
-        pass
+        try:
+            sql = "DELETE FROM subreddits WHERE subreddit=%s"
+            val = (parsed_text[1],)
+            mycursor.execute(sql, val)
+            mydb.commit()
+        except:
+            return "Your subreddit was not found in the database."
+        return "Tipping has been deactivated in your subreddit %s" % parsed_text[1]
 
-    if len(parsed_text) < 4:
-        return "could not parse message 3"
+    # TODO: fix the 3 word text stuff with enable/activate
 
-    if parsed_text[2] == "activate":
-        if parsed_text[3] in [
-            "friendly",
-            "minimal",
-            "hostile",
-            "full",
-            "normal",
-            "silent",
-        ]:
+    if parsed_text[2] in ("enable", "activate"):
+        if len(parsed_text) > parsed_text[3] in ["full", "minimal", "silent"]:
             # sql to change subreddit to that status
             try:
                 sql = "INSERT INTO subreddits (subreddit, reply_to_comments, footer, status) VALUES (%s, %s, %s, %s)"
@@ -480,16 +480,14 @@ def handle_subreddit(message):
                 val = (parsed_text[3], parsed_text[1])
                 mycursor.execute(sql, val)
                 mydb.commit()
-            return "Updated!"
+            return "Set the tipbot response in your Subreddit to %s" % parsed_text[3]
         else:
-            return "not a subreddit response type"
-
+            return "Set the tipbot response in your Subreddit to full."
+    # only 4 word commands after this point
+    if len(parsed_text) < 4:
+        return "There was something wrong with your activate or minimum command."
     if parsed_text[2] == "minimum":
-        pass
-    if parsed_text[2] == "status":
-        pass
-
-    pass
+        return "Subreddit-specific minimums aren't enabled yet. Check back soon!"
 
 
 def handle_send(message):

@@ -25,6 +25,7 @@ from tipper_functions import *
 def get_subreddits():
     mycursor.execute("SELECT subreddit FROM subreddits")
     results = mycursor.fetchall()
+    print(results)
     subreddits = ""
     for result in results:
         subreddits += "%s+" % result[0]
