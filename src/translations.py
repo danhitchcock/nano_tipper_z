@@ -30,6 +30,7 @@ try:
         auth_plugin="mysql_native_password",
         database=database_name,
     )
+    mycursor = mydb.cursor()
 except:
     mydb = mysql.connector.connect(
         user="root",
