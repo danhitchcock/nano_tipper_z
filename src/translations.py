@@ -4,7 +4,7 @@ import praw
 
 config = configparser.ConfigParser()
 config.read("tipper.ini")
-
+print(config)
 sql_password = config["SQL"]["sql_password"]
 database_name = config["SQL"]["database_name"]
 tip_bot_on = config["BOT"]["tip_bot_on"]

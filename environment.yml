@@ -9,6 +9,7 @@ dependencies:
     - praw==6.4.0
     - qrcode==6.1
     - mysql-connector-python==8.0.18
+    - click
 
 
 
