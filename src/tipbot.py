@@ -1,23 +1,7 @@
 from time import sleep
 from tipper_rpc import get_pendings, open_or_receive_block
-from tipper_rpc import send_w as send
 import sys
-from translations import (
-    mycursor,
-    mydb,
-    tip_bot_username,
-    program_minimum,
-    reddit,
-    donate_commands,
-    help_text,
-    comment_footer,
-    welcome_tipped,
-    welcome_create,
-    tipbot_owner,
-    tip_commands,
-    tip_bot_on,
-    LOGGER,
-)
+from translations import tipbot_owner, tip_commands, tip_bot_on, LOGGER
 from message_functions import *
 from tipper_functions import *
 
