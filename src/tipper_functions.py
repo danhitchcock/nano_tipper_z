@@ -298,10 +298,10 @@ def handle_send_nano(message, parsed_text, comment_or_message):
         mycursor.execute(sql, val)
         results = mycursor.fetchall()
         if len(results) == 0:
-            subreddit_status = "hostile"
+            subreddit_status = "silent"
         else:
             subreddit_status = results[0][0]
-        if subreddit_status != "friendly":
+        if subreddit_status not in ["friendly", "full", "minimal"]:
             if amount < nano_to_raw(1):
                 response = (
                     "To tip in unfamiliar subreddits, the tip amount must be 1 Nano or more. You attempted to tip %s Nano"

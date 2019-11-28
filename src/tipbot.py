@@ -26,6 +26,9 @@ def get_subreddits():
     mycursor.execute("SELECT subreddit FROM subreddits")
     results = mycursor.fetchall()
     print(results)
+    mydb.commit()
+    if len(results) == 0:
+        return None
     subreddits = ""
     for result in results:
         subreddits += "%s+" % result[0]
@@ -33,7 +36,10 @@ def get_subreddits():
     return reddit.subreddit(subreddits)
 
 
-subreddits = get_subreddits()
+try:
+    subreddits = get_subreddits()
+except:
+    subreddits
 
 
 # a few globals.
@@ -46,7 +52,10 @@ toggle_receive = True
 # set of current message. I compare the old set with the new set.
 def stream_comments_messages():
     previous_time = time.time()
-    previous_comments = {comment for comment in subreddits.comments()}
+    if subreddits is not None:
+        previous_comments = {comment for comment in subreddits.comments()}
+    else:
+        previous_comments = set()
     previous_messages = {message for message in reddit.inbox.all(limit=25)}
     global toggle_receive
     while True:
@@ -60,7 +69,10 @@ def stream_comments_messages():
             delay = 0
         sleep(delay)
         previous_time = time.time()
-        updated_comments = {comment for comment in subreddits.comments()}
+        if subreddits is not None:
+            updated_comments = {comment for comment in subreddits.comments()}
+        else:
+            updated_comments = set()
         new_comments = updated_comments - previous_comments
         previous_comments = updated_comments
 
@@ -133,14 +145,16 @@ def handle_comment(message, parsed_text=None):
     results = mycursor.fetchall()
 
     if len(results) == 0:
-        subreddit_status = "hostile"
+        subreddit_status = "silent"
     else:
         subreddit_status = results[0][0]
     # if it is a top level reply and the subreddit is friendly
-    if (str(message.parent_id)[:3] == "t3_") and (subreddit_status == "friendly"):
+    if (str(message.parent_id)[:3] == "t3_") and (
+        subreddit_status in ["friendly", "full"]
+    ):
         message.reply(response[0] + comment_footer)
     # otherwise, if the subreddit is friendly (and reply is not top level) or subreddit is minimal
-    elif (subreddit_status == "friendly") or (subreddit_status == "minimal"):
+    elif subreddit_status in ["friendly", "minimal", "full"]:
         if response[1] <= 8:
             message.reply(
                 "^(Tip not sent. Error code )^[%s](https://github.com/danhitchcock/nano_tipper_z#error-codes) ^- [^(Nano Tipper)](https://github.com/danhitchcock/nano_tipper_z)"
@@ -168,7 +182,7 @@ def handle_comment(message, parsed_text=None):
                 "^[Sent](https://nanocrawler.cc/explorer/block/%s) ^(%s Nano to NanoCenter Project %s)"
                 % (response[5], response[2], response[3])
             )
-    elif subreddit_status == "hostile":
+    elif subreddit_status in ["hostile", "silent"]:
         # it's a hostile place, no posts allowed. Will need to PM users
         if response[1] <= 8:
             message_recipient = str(message.author)

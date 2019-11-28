@@ -448,11 +448,13 @@ def handle_subreddit(message):
     parsed_text = parse_text(str(message.body))
     # check if there are at least 3 items (command, sub, action, option)
     if len(parsed_text) < 3:
-        print(len(parsed_text))
         return "Your command seems to be missing something. Make sure it follow the format `subreddit <subreddit> <command> <option>.`"
     # check if the user is a moderator of the subreddit
     if message.author not in reddit.subreddit(parsed_text[1]).moderator():
         return "You are not a moderator of the subreddit."
+
+    if parsed_text[2] == "minimum":
+        return "Subreddit-specific minimums aren't enabled yet. Check back soon!"
 
     if parsed_text[2] in ("disable", "deactivate"):
         # disable the bot
@@ -462,32 +464,34 @@ def handle_subreddit(message):
             mycursor.execute(sql, val)
             mydb.commit()
         except:
-            return "Your subreddit was not found in the database."
-        return "Tipping has been deactivated in your subreddit %s" % parsed_text[1]
-
-    # TODO: fix the 3 word text stuff with enable/activate
+            pass
+        return (
+            "Tipping via !ntip has been deactivated in your subreddit %s"
+            % parsed_text[1]
+        )
 
     if parsed_text[2] in ("enable", "activate"):
-        if len(parsed_text) > parsed_text[3] in ["full", "minimal", "silent"]:
-            # sql to change subreddit to that status
-            try:
-                sql = "INSERT INTO subreddits (subreddit, reply_to_comments, footer, status) VALUES (%s, %s, %s, %s)"
-                val = (parsed_text[1], True, None, parsed_text[2])
-                mycursor.execute(sql, val)
-                mydb.commit()
-            except:
-                sql = "UPDATE subreddits SET status = %s WHERE subreddit = %s"
-                val = (parsed_text[3], parsed_text[1])
-                mycursor.execute(sql, val)
-                mydb.commit()
-            return "Set the tipbot response in your Subreddit to %s" % parsed_text[3]
+        # if it's at least 4 words, set the status to that one
+        if (len(parsed_text) > 3) and (parsed_text[3] in ["full", "minimal", "silent"]):
+            status = parsed_text[3]
         else:
-            return "Set the tipbot response in your Subreddit to full."
+            status = "full"
+        # sql to change subreddit to that status
+        try:
+            sql = "INSERT INTO subreddits (subreddit, reply_to_comments, footer, status) VALUES (%s, %s, %s, %s)"
+            val = (parsed_text[1], True, None, status)
+            mycursor.execute(sql, val)
+            mydb.commit()
+        except:
+            sql = "UPDATE subreddits SET status = %s WHERE subreddit = %s"
+            val = (status, parsed_text[1])
+            mycursor.execute(sql, val)
+            mydb.commit()
+        return "Set the tipbot response in your Subreddit to %s" % status
+
     # only 4 word commands after this point
     if len(parsed_text) < 4:
         return "There was something wrong with your activate or minimum command."
-    if parsed_text[2] == "minimum":
-        return "Subreddit-specific minimums aren't enabled yet. Check back soon!"
 
 
 def handle_send(message):
