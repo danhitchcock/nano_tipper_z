@@ -16,16 +16,16 @@ from translations import (
     tipbot_owner,
     tip_commands,
     tip_bot_on,
+    LOGGER,
 )
 from message_functions import *
 from tipper_functions import *
-
 
 # initiate the bot and all friendly subreddits
 def get_subreddits():
     mycursor.execute("SELECT subreddit FROM subreddits")
     results = mycursor.fetchall()
-    print(results)
+    LOGGER.info(f"Initializing in the following subreddits: {results}")
     mydb.commit()
     if len(results) == 0:
         return None
@@ -272,54 +272,53 @@ def handle_message(message):
     activate(message.author)
     response = "not activated"
     message_body = str(message.body).lower()
-    print("Body: **", message_body, "**")
+
     if message.body[0] == " ":
         parsed_text = parse_text(str(message.body[1:]))
     else:
         parsed_text = parse_text(str(message.body))
-    print("Parsed Text:", parsed_text)
 
     # standard things
     if (parsed_text[0].lower() == "help") or (parsed_text[0].lower() == "!help"):
-        print("Helping")
+        LOGGER.info("Helping")
         subject = "Nano Tipper - Help"
         response = handle_help(message)
     elif (parsed_text[0].lower() == "balance") or (parsed_text[0].lower() == "address"):
-        print("balance")
+        LOGGER.info("balance")
         subject = "Nano Tipper - Account Balance"
         response = handle_balance(message)
     elif parsed_text[0].lower() == "minimum":
-        print("Setting Minimum")
+        LOGGER.info("Setting Minimum")
         subject = "Nano Tipper - Tip Minimum"
         response = handle_minimum(message)
     elif parsed_text[0].lower() == "percentage" or parsed_text[0].lower() == "percent":
-        print("Setting Percentage")
+        LOGGER.info("Setting Percentage")
         subject = "Nano Tipper - Returned Tip Percentage for Donation"
         response = handle_percentage(message)
     elif (parsed_text[0].lower() == "create") or parsed_text[0].lower() == "register":
-        print("Creating")
+        LOGGER.info("Creating")
         subject = "Nano Tipper - Create"
         response = handle_create(message)
     elif (parsed_text[0].lower() == "send") or (parsed_text[0].lower() == "withdraw"):
         subject = "Nano Tipper - Send"
-        print("send via PM")
+        LOGGER.info("send via PM")
         response = handle_send(message)
     elif parsed_text[0].lower() == "history":
-        print("history")
+        LOGGER.info("history")
         subject = "Nano Tipper - History"
         response = handle_history(message)
     elif parsed_text[0].lower() == "silence":
-        print("silencing")
+        LOGGER.info("silencing")
         subject = "Nano Tipper - Silence"
         response = handle_silence(message)
 
     elif parsed_text[0].lower() == "subreddit":
-        print("subredditing")
+        LOGGER.info("subredditing")
         subject = "Nano Tipper - Subreddit"
         response = handle_subreddit(message)
         global subreddits
         subreddits = get_subreddits()
-        print(subreddits)
+        LOGGER.info(subreddits)
 
     # nanocenter donation commands
     elif parsed_text[0].lower() == "project" or parsed_text[0].lower() == "projects":
@@ -447,17 +446,16 @@ def message_in_database(message):
     mycursor.execute(sql, val)
     results = mycursor.fetchall()
     if len(results) > 0:
-        print("previous message")
-        print(message.name)
+        LOGGER.info("Found previous messages: ")
         for result in results:
-            print("Result: ", results)
+            LOGGER.info(result)
         return True
     return False
 
 
 def check_inactive_transactions():
     t0 = time.time()
-    print("running inactive script")
+    LOGGER.info("Running inactive script")
     mycursor.execute("SELECT username FROM accounts WHERE active IS NOT TRUE")
     myresults = mycursor.fetchall()
     inactivated_accounts = {item[0] for item in myresults}
@@ -469,7 +467,7 @@ def check_inactive_transactions():
     tipped_accounts = {item[0] for item in results}
 
     tipped_inactivated_accounts = inactivated_accounts.intersection(tipped_accounts)
-    print("Accounts on warning: ", sorted(tipped_inactivated_accounts))
+    LOGGER.info(f"Accounts on warning: {sorted(tipped_inactivated_accounts)}")
     returns = {}
     # scrolls through our inactive members and check if they have unclaimed tips
     for result in tipped_inactivated_accounts:
@@ -479,7 +477,7 @@ def check_inactive_transactions():
         mycursor.execute(sql, val)
         txns = mycursor.fetchall()
         if len(txns) >= 1:
-            print("generating a message for %s" % result)
+            LOGGER.info(f"Warning Message to {result}")
 
             message_recipient = result
             subject = "Please Activate Your Nano Tipper Account"
@@ -593,7 +591,7 @@ def check_inactive_transactions():
                 mydb.commit()
                 """
 
-        # return transactions over 35 days old
+        # return transactions over 35 days old, take two
         sql = "SELECT * FROM history WHERE action = 'send' AND hash IS NOT NULL AND recipient_username = %s AND `sql_time` <= SUBDATE( CURRENT_DATE, INTERVAL 35 DAY) AND return_status = 'return failed'"
         val = (result,)
         mycursor.execute(sql, val)
@@ -631,7 +629,7 @@ def check_inactive_transactions():
                 donation_amount = nano_to_raw(donation_amount)
 
                 return_amount = int(txn[9]) - donation_amount
-                print("sending transaction")
+                LOGGER.info("Returning transaction")
                 if (return_amount > 0) and (return_amount <= int(txn[9])):
                     hash = send(address, private_key, return_amount, recipient_address)[
                         "hash"
@@ -642,7 +640,7 @@ def check_inactive_transactions():
                         amount=return_amount,
                         notes="Returned transaction from history record %s" % txn[0],
                     )
-                print("sending donation")
+                LOGGER.info("Donating donation")
                 if (donation_amount > 0) and (donation_amount <= int(txn[9])):
                     hash2 = send(
                         address,
@@ -656,7 +654,6 @@ def check_inactive_transactions():
                         amount=donation_amount,
                         notes="Donation from returned tip %s" % txn[0],
                     )
-                print("sent")
                 # print("Returning a transaction. ", hash)
 
                 # update database if everything goes through
@@ -721,7 +718,6 @@ for action_item in stream_comments_messages():
             parsed_text = parse_text(str(action_item[1].body))
         try:
             if (parsed_text[0] in tip_commands) or (parsed_text[0] in donate_commands):
-                print("*****************************************************")
                 print(
                     time.strftime("%Y-%m-%d %H:%M:%S"),
                     "Comment, beginning: ",
@@ -741,16 +737,10 @@ for action_item in stream_comments_messages():
                             "[^(Nano Tipper is currently disabled)](https://www.reddit.com/r/nano_tipper/comments/astwp6/nano_tipper_status/)",
                         )
                 else:
-                    print("Too many requests for %s" % action_item[1].author)
-                print("*****************************************************")
+                    LOGGER.info(f"Too many requests for{action_item[1].author}")
             elif parsed_text[-2] in tip_commands:
-                print("*****************************************************")
-                print(
-                    time.strftime("%Y-%m-%d %H:%M:%S"),
-                    "Comment, end: ",
-                    action_item[1].author,
-                    " - ",
-                    action_item[1].body[:20],
+                LOGGER.info(
+                    f"Comment, end: {action_item[1].author} - {action_item[1].body[:20]}"
                 )
 
                 if allowed_request(
@@ -758,7 +748,7 @@ for action_item in stream_comments_messages():
                 ) and not message_in_database(action_item[1]):
                     if tip_bot_on:
                         if str(action_item[1].subreddit).lower() == "cryptocurrency":
-                            print("ignoring cryptocurrency post")
+                            LOGGER.info("ignoring cryptocurrency post")
                         else:
                             handle_comment(action_item[1], parsed_text=parsed_text[-2:])
                     else:
@@ -767,17 +757,13 @@ for action_item in stream_comments_messages():
                             "[^(Nano Tipper is currently disabled)](https://www.reddit.com/r/nano_tipper/comments/astwp6/nano_tipper_status/)",
                         )
                 else:
-                    print("Too many requests for %s" % action_item[1].author)
-                print("*****************************************************")
+                    LOGGER.info("Too many requests for %s" % action_item[1].author)
             elif parsed_text[-3] in donate_commands:
-                print("*****************************************************")
-                print('Donate command."%s", %s' % (parsed_text[-3], donate_commands))
-                print(
-                    time.strftime("%Y-%m-%d %H:%M:%S"),
-                    "Comment, end: ",
-                    action_item[1].author,
-                    " - ",
-                    action_item[1].body[:20],
+                LOGGER.info(
+                    'Donate command."%s", %s' % (parsed_text[-3], donate_commands)
+                )
+                LOGGER.info(
+                    f"Comment, end: {action_item[1].author} - {action_item[1].body[:20]}"
                 )
 
                 if allowed_request(
@@ -794,8 +780,7 @@ for action_item in stream_comments_messages():
                             "[^(Nano Tipper is currently disabled)](https://www.reddit.com/r/nano_tipper/comments/astwp6/nano_tipper_status/)",
                         )
                 else:
-                    print("Too many requests for %s" % action_item[1].author)
-                print("*****************************************************")
+                    LOGGER.info("Too many requests for %s" % action_item[1].author)
 
         except IndexError:
             pass
@@ -807,21 +792,15 @@ for action_item in stream_comments_messages():
                 and (action_item[1].body[:11] == "send 0.001 ")
                 and not message_in_database(action_item[1])
             ):
-                print("*****************************************************")
-                print(
-                    time.strftime("%Y-%m-%d %H:%M:%S"),
-                    "Faucet Tip: ",
-                    action_item[1].author,
-                    " - ",
-                    action_item[1].body[:20],
+                LOGGER.info(
+                    f"Faucet Tip: {action_item[1].author} - {action_item[1].body[:20]}"
                 )
                 handle_message(action_item[1])
-                print("*****************************************************")
             else:
-                print("ignoring nano_tipper message")
+                LOGGER.info("ignoring nano_tipper message")
 
         elif not allowed_request(action_item[1].author, 30, 5):
-            print("Too many requests for %s" % action_item[1].author)
+            LOGGER.info("Too many requests for %s" % action_item[1].author)
         else:
             if tip_bot_on:
                 # parse out the text
@@ -829,16 +808,11 @@ for action_item in stream_comments_messages():
                     action_item[1]
                 ):
 
-                    print("*****************************************************")
-                    print(
-                        time.strftime("%Y-%m-%d %H:%M:%S"),
-                        "Message: ",
-                        action_item[1].author,
-                        " - ",
-                        action_item[1].body[:20],
+                    LOGGER.info(
+                        f"Message: {action_item[1].author} - {action_item[1].body[:20]}"
                     )
                     handle_message(action_item[1])
-                    print("*****************************************************")
+
             else:
                 action_item[1].reply(
                     "[^(Nano Tipper is currently disabled)](https://www.reddit.com/r/nano_tipper/comments/astwp6/nano_tipper_status/)"
@@ -856,13 +830,9 @@ for action_item in stream_comments_messages():
             if (parsed_text[0] == "/u/%s" % tip_bot_username) or (
                 parsed_text[0] == "u/%s" % tip_bot_username
             ):
-                print("*****************************************************")
-                print(
-                    time.strftime("%Y-%m-%d %H:%M:%S"),
-                    "Username Mention: ",
-                    action_item[1].author,
-                    " - ",
-                    action_item[1].body[:20],
+
+                LOGGER.info(
+                    f"Username Mention: { action_item[1].author} - {action_item[1].body[:20]}"
                 )
                 if allowed_request(
                     action_item[1].author, 30, 5
@@ -876,18 +846,14 @@ for action_item in stream_comments_messages():
                             "[^(Nano Tipper is currently disabled)](https://www.reddit.com/r/nano_tipper/comments/astwp6/nano_tipper_status/)",
                         )
                 else:
-                    print("Too many requests for %s" % action_item[1].author)
-                print("*****************************************************")
+                    LOGGER.info("Too many requests for %s" % action_item[1].author)
+
             elif (parsed_text[-2] == "/u/%s" % tip_bot_username) or (
                 parsed_text[-2] == "u/%s" % tip_bot_username
             ):
-                print("*****************************************************")
-                print(
-                    time.strftime("%Y-%m-%d %H:%M:%S"),
-                    "Username Mention: ",
-                    action_item[1].author,
-                    " - ",
-                    action_item[1].body[:20],
+
+                LOGGER.info(
+                    f"Username Mention: f{action_item[1].author} - {action_item[1].body[:20]}"
                 )
                 if allowed_request(
                     action_item[1].author, 30, 5
@@ -900,8 +866,8 @@ for action_item in stream_comments_messages():
                             "[^(Nano Tipper is currently disabled)](https://www.reddit.com/r/nano_tipper/comments/astwp6/nano_tipper_status/)",
                         )
                 else:
-                    print("Too many requests for %s" % action_item[1].author)
-                print("*****************************************************")
+                    LOGGER.info("Too many requests for %s" % action_item[1].author)
+
         except IndexError:
             pass
 

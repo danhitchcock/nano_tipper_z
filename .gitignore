@@ -2,3 +2,5 @@ praw.ini
 tipper.ini
 ./src/praw.ini
 ./src/tipper.ini
+log
+./src/log
