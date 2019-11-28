@@ -1,7 +1,6 @@
 import json
 import qrcode
 import requests
-import configparser
 from translations import dpow_token, default_url
 
 
@@ -15,6 +14,16 @@ def perform_curl(data=None, URL=None, timeout=30):
 
 
 def send_w(origin, key, amount, destination, rep=None, work=None):
+    """
+    Highest level send command. Takes care of everything.
+    :param origin:
+    :param key:
+    :param amount:
+    :param destination:
+    :param rep:
+    :param work:
+    :return:
+    """
     hash = account_info(origin)["frontier"]
     work = work_generate(hash, True)["work"]
     generated_send_block = send_block(origin, key, amount, destination, work=work)
