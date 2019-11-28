@@ -14,8 +14,6 @@ fh.setFormatter(formatter)
 ch.setFormatter(formatter)
 LOGGER.addHandler(fh)
 LOGGER.addHandler(ch)
-
-LOGGER.info("Logging enabled.")
 config = configparser.ConfigParser()
 config.read("tipper.ini")
 sql_password = config["SQL"]["sql_password"]
