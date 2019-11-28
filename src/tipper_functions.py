@@ -239,9 +239,9 @@ def handle_send_nano(message, parsed_text, comment_or_message):
             amount = parsed_text[1][:-3].lower()
 
         except requests.exceptions.Timeout:
-            amount = "Could not reach conversion server."
+            amount = "Could not reach conversion server. Tip not sent."
         except:
-            amount = "Currency [%s] not supported." % currency.upper()
+            amount = "Currency [%s] not supported. Tip not sent." % currency.upper()
     else:
         amount = parsed_text[1].lower()
 
@@ -278,8 +278,9 @@ def handle_send_nano(message, parsed_text, comment_or_message):
             mycursor.execute(sql, val)
             mydb.commit()
             response = (
-                "Could not read your tip or send amount. Is '%s' a number, or is the currency code valid?"
-                % amount
+                "Could not read your tip or send amount. Is '%s' a number, or is the "
+                "currency code valid? If you are trying to send Nano directly, omit "
+                "'Nano' from the amount (I will fix this in a future update)." % amount
             )
             return [response, 1, None, None, None, None]
 
