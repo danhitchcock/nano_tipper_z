@@ -1,4 +1,4 @@
-from .sql_scripts import add_subreddit
+from .sql_scripts import add_subreddit, list_subreddits
 import click
 
 
@@ -8,3 +8,4 @@ def cli():
 
 
 cli.add_command(add_subreddit)
+cli.add_command(list_subreddits)

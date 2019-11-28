@@ -31,15 +31,16 @@ try:
         database=database_name,
     )
     mycursor = mydb.cursor()
-except:
+except mysql.connector.errors.DatabaseError:
     mydb = mysql.connector.connect(
         user="root",
         password=sql_password,
         host="localhost",
         auth_plugin="mysql_native_password",
     )
+    mycursor = mydb.cursor()
 
-mycursor = mydb.cursor()
+
 reddit = praw.Reddit("bot1")
 
 comment_footer = """\n\n

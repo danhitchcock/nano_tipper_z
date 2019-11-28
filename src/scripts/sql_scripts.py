@@ -10,5 +10,6 @@ def add_subreddit(subreddit, status):
 
 
 @click.command()
-def list_subreddits(subreddit, status):
+def list_subreddits():
+    print("Listing")
     tipper_sql.subreddits()
