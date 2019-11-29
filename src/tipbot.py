@@ -290,7 +290,6 @@ def handle_message(message):
         LOGGER.info("silencing")
         subject = "Nano Tipper - Silence"
         response = handle_silence(message)
-
     elif parsed_text[0].lower() == "subreddit":
         LOGGER.info("subredditing")
         subject = "Nano Tipper - Subreddit"
