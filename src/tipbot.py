@@ -255,12 +255,7 @@ def handle_message(message):
     # activate the account
     activate(message.author)
     response = "not activated"
-    message_body = str(message.body).lower()
-
-    if message.body[0] == " ":
-        parsed_text = parse_text(str(message.body[1:]))
-    else:
-        parsed_text = parse_text(str(message.body))
+    parsed_text = parse_text(str(message.body))
 
     # standard things
     if (parsed_text[0].lower() == "help") or (parsed_text[0].lower() == "!help"):
@@ -691,16 +686,15 @@ for action_item in stream_comments_messages():
     if action_item is None:
         # if we have nothing after the poll, pass
         pass
+
     elif message_in_database(action_item[1]):
         # if a message was already handled, pass
         pass
+
     elif action_item[0] == "comment":
-        if action_item[1].body[0] == " ":
-            # remove any leading spaces. for convenience
-            parsed_text = parse_text(str(action_item[1].body[1:]))
-        else:
-            parsed_text = parse_text(str(action_item[1].body))
+        parsed_text = parse_text(str(action_item[1].body))
         try:
+            # check if it's a command at the beginning
             if (parsed_text[0] in tip_commands) or (parsed_text[0] in donate_commands):
                 print(
                     time.strftime("%Y-%m-%d %H:%M:%S"),
@@ -722,6 +716,7 @@ for action_item in stream_comments_messages():
                         )
                 else:
                     LOGGER.info(f"Too many requests for{action_item[1].author}")
+            # check if it's a tip command at the end of the message
             elif parsed_text[-2] in tip_commands:
                 LOGGER.info(
                     f"Comment, end: {action_item[1].author} - {action_item[1].body[:20]}"
@@ -742,6 +737,7 @@ for action_item in stream_comments_messages():
                         )
                 else:
                     LOGGER.info("Too many requests for %s" % action_item[1].author)
+            # check if it's a donate command at the end of the message
             elif parsed_text[-3] in donate_commands:
                 LOGGER.info(
                     'Donate command."%s", %s' % (parsed_text[-3], donate_commands)
@@ -770,6 +766,7 @@ for action_item in stream_comments_messages():
             pass
 
     elif action_item[0] == "message":
+        # if it's from the tipbot itself
         if action_item[1].author == tip_bot_username:
             if (
                 (action_item[1].name[:3] == "t4_")
@@ -782,12 +779,12 @@ for action_item in stream_comments_messages():
                 handle_message(action_item[1])
             else:
                 LOGGER.info("ignoring nano_tipper message")
-
+        # if the user isn't spamming
         elif not allowed_request(action_item[1].author, 30, 5):
             LOGGER.info("Too many requests for %s" % action_item[1].author)
         else:
             if tip_bot_on:
-                # parse out the text
+                # handle the message finally
                 if action_item[1].name[:3] == "t4_" and not message_in_database(
                     action_item[1]
                 ):
@@ -803,12 +800,7 @@ for action_item in stream_comments_messages():
                 )
 
     elif action_item[0] == "username mention":
-        # print('Printing Username mention: ', parsed_text[0])
-        if action_item[1].body[0] == " ":
-            # remove any leading spaces. for convenience
-            parsed_text = parse_text(str(action_item[1].body[1:]))
-        else:
-            parsed_text = parse_text(str(action_item[1].body))
+        parsed_text = parse_text(str(action_item[1].body))
 
         try:
             if (parsed_text[0] == "/u/%s" % tip_bot_username) or (

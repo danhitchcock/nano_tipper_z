@@ -63,6 +63,8 @@ def add_history_record(
 
 
 def parse_text(text):
+    if text[0] == " ":
+        text = text[1:]
     return text.lower().replace("\\", "").replace("\n", " ").split(" ")
 
 
