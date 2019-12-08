@@ -1,32 +1,23 @@
 from time import sleep
 from tipper_rpc import get_pendings, open_or_receive_block
 import sys
-from shared import (
-    tipbot_owner,
-    tip_commands,
-    tip_bot_on,
-    LOGGER,
-    WELCOME_CREATE,
-    WELCOME_TIP,
-    HELP,
-    COMMENT_FOOTER,
-)
+from shared import TIPBOT_OWNER, TIP_COMMANDS, TIP_BOT_ON, LOGGER
 from message_functions import *
 from tipper_functions import *
 
 # initiate the bot and all friendly subreddits
 def get_subreddits():
-    mycursor.execute("SELECT subreddit FROM subreddits")
-    results = mycursor.fetchall()
+    MYCURSOR.execute("SELECT subreddit FROM subreddits")
+    results = MYCURSOR.fetchall()
     LOGGER.info(f"Initializing in the following subreddits: {results}")
-    mydb.commit()
+    MYDB.commit()
     if len(results) == 0:
         return None
     subreddits = ""
     for result in results:
         subreddits += "%s+" % result[0]
     subreddits = subreddits[:-1]
-    return reddit.subreddit(subreddits)
+    return REDDIT.subreddit(subreddits)
 
 
 try:
@@ -49,10 +40,10 @@ def stream_comments_messages():
         previous_comments = {comment for comment in subreddits.comments()}
     else:
         previous_comments = set()
-    previous_messages = {message for message in reddit.inbox.all(limit=25)}
+    previous_messages = {message for message in REDDIT.inbox.all(limit=25)}
     global toggle_receive
     while True:
-        if toggle_receive and tip_bot_on:
+        if toggle_receive and TIP_BOT_ON:
             auto_receive()
         toggle_receive = not toggle_receive
 
@@ -70,7 +61,7 @@ def stream_comments_messages():
         previous_comments = updated_comments
 
         # check for new messages
-        updated_messages = {message for message in reddit.inbox.all(limit=25)}
+        updated_messages = {message for message in REDDIT.inbox.all(limit=25)}
         new_messages = updated_messages - previous_messages
         previous_messages = updated_messages
 
@@ -134,8 +125,8 @@ def handle_comment(message, parsed_text=None):
     # handle top level comment
     sql = "SELECT status FROM subreddits WHERE subreddit=%s"
     val = (str(message.subreddit).lower(),)
-    mycursor.execute(sql, val)
-    results = mycursor.fetchall()
+    MYCURSOR.execute(sql, val)
+    results = MYCURSOR.fetchall()
 
     if len(results) == 0:
         subreddit_status = "silent"
@@ -185,8 +176,8 @@ def handle_comment(message, parsed_text=None):
                 "INSERT INTO messages (username, subject, message) VALUES (%s, %s, %s)"
             )
             val = (message_recipient, subject, message_text)
-            mycursor.execute(sql, val)
-            mydb.commit()
+            MYCURSOR.execute(sql, val)
+            MYDB.commit()
         else:
             # if it was a new account, a PM was already sent to the recipient
             message_recipient = str(message.author)
@@ -196,8 +187,8 @@ def handle_comment(message, parsed_text=None):
                 "INSERT INTO messages (username, subject, message) VALUES (%s, %s, %s)"
             )
             val = (message_recipient, subject, message_text)
-            mycursor.execute(sql, val)
-            mydb.commit()
+            MYCURSOR.execute(sql, val)
+            MYDB.commit()
             # status code 10 means the recipient has not requested silence, so send a message
             if response[1] == 10:
                 message_recipient = response[3]
@@ -212,8 +203,8 @@ def handle_comment(message, parsed_text=None):
 
                 sql = "INSERT INTO messages (username, subject, message) VALUES (%s, %s, %s)"
                 val = (message_recipient, subject, message_text)
-                mycursor.execute(sql, val)
-                mydb.commit()
+                MYCURSOR.execute(sql, val)
+                MYDB.commit()
 
     elif subreddit_status == "custom":
         # not sure what to do with this yet.
@@ -246,16 +237,16 @@ def handle_auto_receive(message):
     if parsed_text[1] == "yes":
         sql = "UPDATE accounts SET auto_receive = TRUE WHERE username = %s "
         val = (username,)
-        mycursor.execute(sql, val)
+        MYCURSOR.execute(sql, val)
         response = "auto_receive set to 'yes'."
     elif parsed_text[1] == "no":
         sql = "UPDATE accounts SET auto_receive = FALSE WHERE username = %s"
         val = (username,)
-        mycursor.execute(sql, val)
+        MYCURSOR.execute(sql, val)
         response = "auto_receive set to 'no'. Use 'receive' to manually receive unpocketed transactions."
     else:
         response = "I did not see 'no' or 'yes' after 'auto_receive'. If you did type that, check your spacing."
-    mydb.commit()
+    MYDB.commit()
 
     return response
 
@@ -310,13 +301,13 @@ def handle_message(message):
     # nanocenter donation commands
     elif parsed_text[0].lower() == "project" or parsed_text[0].lower() == "projects":
         if (
-            (str(message.author) == tipbot_owner)
+            (str(message.author) == TIPBOT_OWNER)
             or (str(message.author).lower() == "rockmsockmjesus")
         ) and len(parsed_text) > 2:
             sql = "INSERT INTO projects (project, address) VALUES(%s, %s) ON DUPLICATE KEY UPDATE address=%s"
             val = (parsed_text[1], parsed_text[2], parsed_text[2])
-            mycursor.execute(sql, val)
-            mydb.commit()
+            MYCURSOR.execute(sql, val)
+            MYDB.commit()
         add_history_record(
             username=str(message.author),
             action="project",
@@ -328,30 +319,30 @@ def handle_message(message):
         response = "Current NanoCenter Donation Projects: \n\n"
         subject = "Nanocenter Projects"
         sql = "SELECT project, address FROM projects"
-        mycursor.execute(sql)
-        results = mycursor.fetchall()
+        MYCURSOR.execute(sql)
+        results = MYCURSOR.fetchall()
         for result in results:
             response += "%s %s  \n" % (result[0], result[1])
     elif parsed_text[0].lower() == "delete_project":
         if (
-            (str(message.author) == tipbot_owner)
+            (str(message.author) == TIPBOT_OWNER)
             or (str(message.author).lower() == "rockmsockmjesus")
         ) and len(parsed_text) > 1:
             sql = "DELETE FROM projects WHERE project=%s"
             val = (parsed_text[1],)
-            mycursor.execute(sql, val)
-            mydb.commit()
+            MYCURSOR.execute(sql, val)
+            MYDB.commit()
         response = "Current NanoCenter Donation Projects: \n\n"
         subject = "Nanocenter Projects"
         sql = "SELECT project, address FROM projects"
-        mycursor.execute(sql)
-        results = mycursor.fetchall()
+        MYCURSOR.execute(sql)
+        results = MYCURSOR.fetchall()
         for result in results:
             response += "%s %s  \n" % (result[0], result[1])
 
     # a few administrative tasks
     elif parsed_text[0].lower() == "restart":
-        if str(message.author) == tipbot_owner:
+        if str(message.author) == TIPBOT_OWNER:
             add_history_record(
                 username=str(message.author),
                 action="restart",
@@ -362,7 +353,7 @@ def handle_message(message):
             sys.exit()
     elif parsed_text[0].lower() == "status":
         # benchmark a few SQL Selects
-        if str(message.author) == tipbot_owner:
+        if str(message.author) == TIPBOT_OWNER:
             previous_message_check = time.time()
             message_in_database(message)
             previous_message_check = previous_message_check - time.time()
@@ -394,22 +385,23 @@ def handle_message(message):
     message_text = response + COMMENT_FOOTER
     sql = "INSERT INTO messages (username, subject, message) VALUES (%s, %s, %s)"
     val = (message_recipient, subject, message_text)
-    mycursor.execute(sql, val)
-    mydb.commit()
+    MYCURSOR.execute(sql, val)
+    MYDB.commit()
 
 
 def auto_receive():
     count = 0
-    mycursor.execute("SELECT username, address, private_key FROM accounts")
-    myresult = mycursor.fetchall()
+    MYCURSOR.execute("SELECT username, address, private_key FROM accounts")
+    myresult = MYCURSOR.fetchall()
 
     addresses = [str(result[1]) for result in myresult]
     private_keys = [str(result[2]) for result in myresult]
-    mydb.commit()
-    pendings = get_pendings(addresses, threshold=nano_to_raw(program_minimum))
+    MYDB.commit()
+    pendings = get_pendings(addresses, threshold=nano_to_raw(PROGRAM_MINIMUM))
     # get any pending blocks from our address
     for address, private_key in zip(addresses, private_keys):
-        # allow 5 transactions to be received per cycle. If the bot gets transaction spammed, at least it won't be locked up receiving.
+        # allow 5 transactions to be received per cycle. If the bot gets transaction spammed, at least it won't be
+        # locked up receiving.
         if count >= 5:
             break
         try:
@@ -430,8 +422,8 @@ def auto_receive():
 def message_in_database(message):
     sql = "SELECT * FROM history WHERE comment_id = %s"
     val = (message.name,)
-    mycursor.execute(sql, val)
-    results = mycursor.fetchall()
+    MYCURSOR.execute(sql, val)
+    results = MYCURSOR.fetchall()
     if len(results) > 0:
         LOGGER.info("Found previous messages: ")
         for result in results:
@@ -443,14 +435,14 @@ def message_in_database(message):
 def check_inactive_transactions():
     t0 = time.time()
     LOGGER.info("Running inactive script")
-    mycursor.execute("SELECT username FROM accounts WHERE active IS NOT TRUE")
-    myresults = mycursor.fetchall()
+    MYCURSOR.execute("SELECT username FROM accounts WHERE active IS NOT TRUE")
+    myresults = MYCURSOR.fetchall()
     inactivated_accounts = {item[0] for item in myresults}
 
-    mycursor.execute(
+    MYCURSOR.execute(
         "SELECT recipient_username FROM history WHERE action = 'send' AND hash IS NOT NULL AND `sql_time` <= SUBDATE( CURRENT_DATE, INTERVAL 31 DAY) AND (return_status = 'cleared' OR return_status = 'warned' OR return_status = 'return failed')"
     )
-    results = mycursor.fetchall()
+    results = MYCURSOR.fetchall()
     tipped_accounts = {item[0] for item in results}
 
     tipped_inactivated_accounts = inactivated_accounts.intersection(tipped_accounts)
@@ -461,8 +453,8 @@ def check_inactive_transactions():
         # send warning messages on day 31
         sql = "SELECT * FROM history WHERE action = 'send' AND hash IS NOT NULL AND recipient_username = %s AND `sql_time` <= SUBDATE( CURRENT_DATE, INTERVAL 31 DAY) AND return_status = 'cleared'"
         val = (result,)
-        mycursor.execute(sql, val)
-        txns = mycursor.fetchall()
+        MYCURSOR.execute(sql, val)
+        txns = MYCURSOR.fetchall()
         if len(txns) >= 1:
             LOGGER.info(f"Warning Message to {result}")
 
@@ -474,25 +466,25 @@ def check_inactive_transactions():
                 "INSERT INTO messages (username, subject, message) VALUES (%s, %s, %s)"
             )
             val = (message_recipient, subject, message_text)
-            mycursor.execute(sql, val)
-            mydb.commit()
+            MYCURSOR.execute(sql, val)
+            MYDB.commit()
             for txn in txns:
                 sql = "UPDATE history SET return_status = 'warned' WHERE id = %s"
                 val = (txn[0],)
-                mycursor.execute(sql, val)
-                mydb.commit()
+                MYCURSOR.execute(sql, val)
+                MYDB.commit()
             # print(message_recipient, subject, message_text)
 
         # return transactions over 35 days old
         sql = "SELECT * FROM history WHERE action = 'send' AND hash IS NOT NULL AND recipient_username = %s AND `sql_time` <= SUBDATE( CURRENT_DATE, INTERVAL 35 DAY) AND return_status = 'warned'"
         val = (result,)
-        mycursor.execute(sql, val)
-        txns = mycursor.fetchall()
+        MYCURSOR.execute(sql, val)
+        txns = MYCURSOR.fetchall()
         if len(txns) >= 1:
             sql = "SELECT address, private_key FROM accounts WHERE username = %s"
             val = (result,)
-            mycursor.execute(sql, val)
-            inactive_results = mycursor.fetchall()
+            MYCURSOR.execute(sql, val)
+            inactive_results = MYCURSOR.fetchall()
             address = inactive_results[0][0]
             private_key = inactive_results[0][1]
 
@@ -500,14 +492,14 @@ def check_inactive_transactions():
                 # set the pre-update message to 'return failed'. This will be changed to 'returned' upon success
                 sql = "UPDATE history SET return_status = 'return failed' WHERE id = %s"
                 val = (txn[0],)
-                mycursor.execute(sql, val)
-                mydb.commit()
+                MYCURSOR.execute(sql, val)
+                MYDB.commit()
 
                 # get the transaction information and find out to whom we are returning the tip
                 sql = "SELECT address, percentage FROM accounts WHERE username = %s"
                 val = (txn[1],)
-                mycursor.execute(sql, val)
-                returned_results = mycursor.fetchall()
+                MYCURSOR.execute(sql, val)
+                returned_results = MYCURSOR.fetchall()
                 recipient_address = returned_results[0][0]
                 percentage = returned_results[0][1]
                 percentage = float(percentage) / 100
@@ -548,8 +540,8 @@ def check_inactive_transactions():
                 # update database if everything goes through
                 sql = "UPDATE history SET return_status = 'returned' WHERE id = %s"
                 val = (txn[0],)
-                mycursor.execute(sql, val)
-                mydb.commit()
+                MYCURSOR.execute(sql, val)
+                MYDB.commit()
 
                 # add transactions to the messaging queue to build a single message
                 message_recipient = txn[1]
@@ -574,20 +566,20 @@ def check_inactive_transactions():
                 message_text = "Your tip to %s for %s Nano was returned since the user never activated their account, and %s percent of this was donated to the TipBot development fund. You can change this percentage by messaging the TipBot 'percentage <amount>', where <amount> is a number between 0 and 100." % (result, int(txn[9])/10**30, round(percentage*100, 2))
                 sql = "INSERT INTO messages (username, subject, message) VALUES (%s, %s, %s)"
                 val = (message_recipient, subject, message_text)
-                mycursor.execute(sql, val)
-                mydb.commit()
+                MYCURSOR.execute(sql, val)
+                MYDB.commit()
                 """
 
         # return transactions over 35 days old, take two
         sql = "SELECT * FROM history WHERE action = 'send' AND hash IS NOT NULL AND recipient_username = %s AND `sql_time` <= SUBDATE( CURRENT_DATE, INTERVAL 35 DAY) AND return_status = 'return failed'"
         val = (result,)
-        mycursor.execute(sql, val)
-        txns = mycursor.fetchall()
+        MYCURSOR.execute(sql, val)
+        txns = MYCURSOR.fetchall()
         if len(txns) >= 1:
             sql = "SELECT address, private_key FROM accounts WHERE username = %s"
             val = (result,)
-            mycursor.execute(sql, val)
-            inactive_results = mycursor.fetchall()
+            MYCURSOR.execute(sql, val)
+            inactive_results = MYCURSOR.fetchall()
             address = inactive_results[0][0]
             private_key = inactive_results[0][1]
 
@@ -597,14 +589,14 @@ def check_inactive_transactions():
                     "UPDATE history SET return_status = 'return failed2' WHERE id = %s"
                 )
                 val = (txn[0],)
-                mycursor.execute(sql, val)
-                mydb.commit()
+                MYCURSOR.execute(sql, val)
+                MYDB.commit()
 
                 # get the transaction information and find out to whom we are returning the tip
                 sql = "SELECT address, percentage FROM accounts WHERE username = %s"
                 val = (txn[1],)
-                mycursor.execute(sql, val)
-                returned_results = mycursor.fetchall()
+                MYCURSOR.execute(sql, val)
+                returned_results = MYCURSOR.fetchall()
                 recipient_address = returned_results[0][0]
                 percentage = returned_results[0][1]
                 percentage = float(percentage) / 100
@@ -646,8 +638,8 @@ def check_inactive_transactions():
                 # update database if everything goes through
                 sql = "UPDATE history SET return_status = 'returned' WHERE id = %s"
                 val = (txn[0],)
-                mycursor.execute(sql, val)
-                mydb.commit()
+                MYCURSOR.execute(sql, val)
+                MYDB.commit()
 
                 # send a message informing the tipper that the tip is being returned
                 message_recipient = txn[1]
@@ -661,8 +653,8 @@ def check_inactive_transactions():
                 )
                 sql = "INSERT INTO messages (username, subject, message) VALUES (%s, %s, %s)"
                 val = (message_recipient, subject, message_text)
-                mycursor.execute(sql, val)
-                mydb.commit()
+                MYCURSOR.execute(sql, val)
+                MYDB.commit()
 
         # send out our return messages
     for user in returns:
@@ -680,8 +672,8 @@ def check_inactive_transactions():
             )
         sql = "INSERT INTO messages (username, subject, message) VALUES (%s, %s, %s)"
         val = (user, "Returned Tips", message)
-        mycursor.execute(sql, val)
-        mydb.commit()
+        MYCURSOR.execute(sql, val)
+        MYDB.commit()
 
 
 # main loop
@@ -703,7 +695,7 @@ for action_item in stream_comments_messages():
         parsed_text = parse_text(str(action_item[1].body))
         try:
             # check if it's a command at the beginning
-            if (parsed_text[0] in tip_commands) or (parsed_text[0] in donate_commands):
+            if (parsed_text[0] in TIP_COMMANDS) or (parsed_text[0] in DONATE_COMMANDS):
                 print(
                     time.strftime("%Y-%m-%d %H:%M:%S"),
                     "Comment, beginning: ",
@@ -715,17 +707,17 @@ for action_item in stream_comments_messages():
                 if allowed_request(
                     action_item[1].author, 30, 5
                 ) and not message_in_database(action_item[1]):
-                    if tip_bot_on:
+                    if TIP_BOT_ON:
                         handle_comment(action_item[1])
                     else:
-                        reddit.redditor(str(action_item[1].author)).message(
+                        REDDIT.redditor(str(action_item[1].author)).message(
                             "Nano Tipper Currently Disabled",
                             "[^(Nano Tipper is currently disabled)](https://www.reddit.com/r/nano_tipper/comments/astwp6/nano_tipper_status/)",
                         )
                 else:
                     LOGGER.info(f"Too many requests for{action_item[1].author}")
             # check if it's a tip command at the end of the message
-            elif parsed_text[-2] in tip_commands:
+            elif parsed_text[-2] in TIP_COMMANDS:
                 LOGGER.info(
                     f"Comment, end: {action_item[1].author} - {action_item[1].body[:20]}"
                 )
@@ -733,22 +725,22 @@ for action_item in stream_comments_messages():
                 if allowed_request(
                     action_item[1].author, 30, 5
                 ) and not message_in_database(action_item[1]):
-                    if tip_bot_on:
+                    if TIP_BOT_ON:
                         if str(action_item[1].subreddit).lower() == "cryptocurrency":
                             LOGGER.info("ignoring cryptocurrency post")
                         else:
                             handle_comment(action_item[1], parsed_text=parsed_text[-2:])
                     else:
-                        reddit.redditor(str(action_item[1].author)).message(
+                        REDDIT.redditor(str(action_item[1].author)).message(
                             "Nano Tipper Currently Disabled",
                             "[^(Nano Tipper is currently disabled)](https://www.reddit.com/r/nano_tipper/comments/astwp6/nano_tipper_status/)",
                         )
                 else:
                     LOGGER.info("Too many requests for %s" % action_item[1].author)
             # check if it's a donate command at the end of the message
-            elif parsed_text[-3] in donate_commands:
+            elif parsed_text[-3] in DONATE_COMMANDS:
                 LOGGER.info(
-                    'Donate command."%s", %s' % (parsed_text[-3], donate_commands)
+                    'Donate command."%s", %s' % (parsed_text[-3], DONATE_COMMANDS)
                 )
                 LOGGER.info(
                     f"Comment, end: {action_item[1].author} - {action_item[1].body[:20]}"
@@ -757,13 +749,13 @@ for action_item in stream_comments_messages():
                 if allowed_request(
                     action_item[1].author, 30, 5
                 ) and not message_in_database(action_item[1]):
-                    if tip_bot_on:
+                    if TIP_BOT_ON:
                         if str(action_item[1].subreddit).lower() == "cryptocurrency":
                             print("ignoring cryptocurrency post")
                         else:
                             handle_comment(action_item[1], parsed_text=parsed_text[-3:])
                     else:
-                        reddit.redditor(str(action_item[1].author)).message(
+                        REDDIT.redditor(str(action_item[1].author)).message(
                             "Nano Tipper Currently Disabled",
                             "[^(Nano Tipper is currently disabled)](https://www.reddit.com/r/nano_tipper/comments/astwp6/nano_tipper_status/)",
                         )
@@ -775,7 +767,7 @@ for action_item in stream_comments_messages():
 
     elif action_item[0] == "message":
         # if it's from the tipbot itself
-        if action_item[1].author == tip_bot_username:
+        if action_item[1].author == TIP_BOT_USERNAME:
             if (
                 (action_item[1].name[:3] == "t4_")
                 and (action_item[1].body[:11] == "send 0.001 ")
@@ -791,7 +783,7 @@ for action_item in stream_comments_messages():
         elif not allowed_request(action_item[1].author, 30, 5):
             LOGGER.info("Too many requests for %s" % action_item[1].author)
         else:
-            if tip_bot_on:
+            if TIP_BOT_ON:
                 # handle the message finally
                 if action_item[1].name[:3] == "t4_" and not message_in_database(
                     action_item[1]
@@ -811,8 +803,8 @@ for action_item in stream_comments_messages():
         parsed_text = parse_text(str(action_item[1].body))
 
         try:
-            if (parsed_text[0] == "/u/%s" % tip_bot_username) or (
-                parsed_text[0] == "u/%s" % tip_bot_username
+            if (parsed_text[0] == "/u/%s" % TIP_BOT_USERNAME) or (
+                parsed_text[0] == "u/%s" % TIP_BOT_USERNAME
             ):
 
                 LOGGER.info(
@@ -821,19 +813,19 @@ for action_item in stream_comments_messages():
                 if allowed_request(
                     action_item[1].author, 30, 5
                 ) and not message_in_database(action_item[1]):
-                    if tip_bot_on:
+                    if TIP_BOT_ON:
                         handle_comment(action_item[1])
                         pass
                     else:
-                        reddit.redditor(str(action_item[1].author)).message(
+                        REDDIT.redditor(str(action_item[1].author)).message(
                             "Nano Tipper Currently Disabled",
                             "[^(Nano Tipper is currently disabled)](https://www.reddit.com/r/nano_tipper/comments/astwp6/nano_tipper_status/)",
                         )
                 else:
                     LOGGER.info("Too many requests for %s" % action_item[1].author)
 
-            elif (parsed_text[-2] == "/u/%s" % tip_bot_username) or (
-                parsed_text[-2] == "u/%s" % tip_bot_username
+            elif (parsed_text[-2] == "/u/%s" % TIP_BOT_USERNAME) or (
+                parsed_text[-2] == "u/%s" % TIP_BOT_USERNAME
             ):
 
                 LOGGER.info(
@@ -842,10 +834,10 @@ for action_item in stream_comments_messages():
                 if allowed_request(
                     action_item[1].author, 30, 5
                 ) and not message_in_database(action_item[1]):
-                    if tip_bot_on:
+                    if TIP_BOT_ON:
                         handle_comment(action_item[1], parsed_text=parsed_text[-2:])
                     else:
-                        reddit.redditor(str(action_item[1].author)).message(
+                        REDDIT.redditor(str(action_item[1].author)).message(
                             "Nano Tipper Currently Disabled",
                             "[^(Nano Tipper is currently disabled)](https://www.reddit.com/r/nano_tipper/comments/astwp6/nano_tipper_status/)",
                         )

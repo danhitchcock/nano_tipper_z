@@ -23,45 +23,45 @@ LOGGER.addHandler(fh)
 LOGGER.addHandler(ch)
 config = configparser.ConfigParser()
 config.read("tipper.ini")
-sql_password = config["SQL"]["sql_password"]
-database_name = config["SQL"]["database_name"]
-tip_bot_on = config["BOT"]["tip_bot_on"]
-tip_bot_username = config["BOT"]["tip_bot_username"]
-program_minimum = float(config["BOT"]["program_minimum"])
-recipient_minimum = float(config["BOT"]["recipient_minimum"])
-tip_commands = config["BOT"]["tip_commands"].split(",")
-donate_commands = config["BOT"]["donate_commands"].split(",")
-tipbot_owner = config["BOT"]["tipbot_owner"]
-cmc_token = config["OTHER"]["cmc_token"]
-dpow_token = config["NODE"]["dpow_token"]
-default_url = config["NODE"]["default_url"]
-python_command = config["BOT"]["python_command"]
-tipper_options = config["BOT"]["tipper_options"]
-messenger_options = config["BOT"]["messenger_options"]
+SQL_PASSWORD = config["SQL"]["sql_password"]
+DATABASE_NAME = config["SQL"]["database_name"]
+TIP_BOT_ON = config["BOT"]["tip_bot_on"]
+TIP_BOT_USERNAME = config["BOT"]["tip_bot_username"]
+PROGRAM_MINIMUM = float(config["BOT"]["program_minimum"])
+RECIPIENT_MINIMUM = float(config["BOT"]["recipient_minimum"])
+TIP_COMMANDS = config["BOT"]["tip_commands"].split(",")
+DONATE_COMMANDS = config["BOT"]["donate_commands"].split(",")
+TIPBOT_OWNER = config["BOT"]["tipbot_owner"]
+CMC_TOKEN = config["OTHER"]["cmc_token"]
+DPOW_TOKEN = config["NODE"]["dpow_token"]
+DEFAULT_URL = config["NODE"]["default_url"]
+PYTHON_COMMAND = config["BOT"]["python_command"]
+TIPPER_OPTIONS = config["BOT"]["tipper_options"]
+MESSENGER_OPTIONS = config["BOT"]["messenger_options"]
 
 # only fails if no databases have been created
 try:
-    mydb = mysql.connector.connect(
+    MYDB = mysql.connector.connect(
         user="root",
-        password=sql_password,
+        password=SQL_PASSWORD,
         host="localhost",
         auth_plugin="mysql_native_password",
-        database=database_name,
+        database=DATABASE_NAME,
     )
-    mycursor = mydb.cursor()
+    MYCURSOR = MYDB.cursor()
 except mysql.connector.errors.DatabaseError:
-    mydb = mysql.connector.connect(
+    MYDB = mysql.connector.connect(
         user="root",
-        password=sql_password,
+        password=SQL_PASSWORD,
         host="localhost",
         auth_plugin="mysql_native_password",
     )
-    mycursor = mydb.cursor()
+    MYCURSOR = MYDB.cursor()
 
 
-reddit = praw.Reddit("bot1")
+REDDIT = praw.Reddit("bot1")
 
-excluded_redditors = [
+EXCLUDED_REDDITORS = [
     "nano",
     "nanos",
     "btc",

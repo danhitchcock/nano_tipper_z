@@ -7,13 +7,13 @@ from tipper_functions import (
 )
 from tipper_rpc import check_balance, open_or_receive, nano_to_raw
 from shared import (
-    mycursor,
-    mydb,
+    MYCURSOR,
+    MYDB,
     WELCOME_CREATE,
-    tip_bot_username,
+    TIP_BOT_USERNAME,
     HELP,
-    program_minimum,
-    reddit,
+    PROGRAM_MINIMUM,
+    REDDIT,
 )
 
 
@@ -53,8 +53,8 @@ def handle_percentage(message):
     # check if the user is in the database
     sql = "SELECT address FROM accounts WHERE username=%s"
     val = (username,)
-    mycursor.execute(sql, val)
-    result = mycursor.fetchall()
+    MYCURSOR.execute(sql, val)
+    result = MYCURSOR.fetchall()
     if len(result) > 0:
         # open_or_receive(result[0][0], result[0][1])
         # balance = check_balance(result[0][0])
@@ -70,8 +70,8 @@ def handle_percentage(message):
         )
         sql = "UPDATE accounts SET percentage = %s WHERE username = %s"
         val = (round(amount, 2), username)
-        mycursor.execute(sql, val)
-        mydb.commit()
+        MYCURSOR.execute(sql, val)
+        MYDB.commit()
         response = "Updating donation percentage to %s" % round(amount, 2)
         return response
     else:
@@ -102,8 +102,8 @@ def handle_balance(message):
     )
     sql = "SELECT address FROM accounts WHERE username=%s"
     val = (username,)
-    mycursor.execute(sql, val)
-    result = mycursor.fetchall()
+    MYCURSOR.execute(sql, val)
+    result = MYCURSOR.fetchall()
     if len(result) > 0:
         results = check_balance(result[0][0])
 
@@ -133,18 +133,18 @@ def handle_create(message):
     username = str(message.author)
     sql = "SELECT address FROM accounts WHERE username=%s"
     val = (username,)
-    mycursor.execute(sql, val)
-    result = mycursor.fetchall()
+    MYCURSOR.execute(sql, val)
+    result = MYCURSOR.fetchall()
     if len(result) is 0:
         address = add_new_account(username)
         response = WELCOME_CREATE % (address, address)
-        message_recipient = tip_bot_username
+        message_recipient = TIP_BOT_USERNAME
         subject = "send"
         message_text = "send 0.001 %s" % username
         sql = "INSERT INTO messages (username, subject, message) VALUES (%s, %s, %s)"
         val = (message_recipient, subject, message_text)
-        mycursor.execute(sql, val)
-        mydb.commit()
+        MYCURSOR.execute(sql, val)
+        MYDB.commit()
 
         # reddit.redditor(message_recipient).message(subject, message_text)
 
@@ -198,8 +198,8 @@ def handle_history(message):
     # check if the user is in the database
     sql = "SELECT address FROM accounts WHERE username=%s"
     val = (username,)
-    mycursor.execute(sql, val)
-    result = mycursor.fetchall()
+    MYCURSOR.execute(sql, val)
+    result = MYCURSOR.fetchall()
     if len(result) > 0:
         # open_or_receive(result[0][0], result[0][1])
         # balance = check_balance(result[0][0])
@@ -217,8 +217,8 @@ def handle_history(message):
         response = "Here are your last %s historical records:\n\n" % num_records
         sql = "SELECT reddit_time, action, amount, comment_id, notes, recipient_username, recipient_address FROM history WHERE username=%s ORDER BY id DESC limit %s"
         val = (username, num_records)
-        mycursor.execute(sql, val)
-        results = mycursor.fetchall()
+        MYCURSOR.execute(sql, val)
+        results = MYCURSOR.fetchall()
         for result in results:
             try:
                 amount = result[2]
@@ -320,18 +320,18 @@ def handle_minimum(message):
         return response
 
     # check that it's greater than 0.01
-    if nano_to_raw(amount) < nano_to_raw(program_minimum):
+    if nano_to_raw(amount) < nano_to_raw(PROGRAM_MINIMUM):
         response = (
             "Did not update. The amount you specified is below the program minimum of %s Nano."
-            % program_minimum
+            % PROGRAM_MINIMUM
         )
         return response
 
     # check if the user is in the database
     sql = "SELECT address FROM accounts WHERE username=%s"
     val = (username,)
-    mycursor.execute(sql, val)
-    result = mycursor.fetchall()
+    MYCURSOR.execute(sql, val)
+    result = MYCURSOR.fetchall()
     if len(result) > 0:
         # open_or_receive(result[0][0], result[0][1])
         # balance = check_balance(result[0][0])
@@ -347,8 +347,8 @@ def handle_minimum(message):
         )
         sql = "UPDATE accounts SET minimum = %s WHERE username = %s"
         val = (str(nano_to_raw(amount)), username)
-        mycursor.execute(sql, val)
-        mydb.commit()
+        MYCURSOR.execute(sql, val)
+        MYDB.commit()
         response = "Updating tip minimum to %s" % amount
         return response
     else:
@@ -375,8 +375,8 @@ def handle_receive(message):
     # find any accounts associated with the redditor
     sql = "SELECT address, private_key FROM accounts WHERE username=%s"
     val = (username,)
-    mycursor.execute(sql, val)
-    result = mycursor.fetchall()
+    MYCURSOR.execute(sql, val)
+    result = MYCURSOR.fetchall()
     if len(result) > 0:
         address = result[0][0]
         open_or_receive(address, result[0][1])
@@ -429,16 +429,16 @@ def handle_silence(message):
     if parsed_text[1] == "yes":
         sql = "UPDATE accounts SET silence = TRUE WHERE username = %s "
         val = (username,)
-        mycursor.execute(sql, val)
+        MYCURSOR.execute(sql, val)
         response = "Silence set to 'yes'. You will no longer receive tip notifications or be tagged by the bot."
     elif parsed_text[1] == "no":
         sql = "UPDATE accounts SET silence = FALSE WHERE username = %s"
         val = (username,)
-        mycursor.execute(sql, val)
+        MYCURSOR.execute(sql, val)
         response = "Silence set to 'no'. You will receive tip notifications and be tagged by the bot in replies."
     else:
         response = "I did not see 'no' or 'yes' after 'silence'. If you did type that, check your spacing."
-    mydb.commit()
+    MYDB.commit()
 
     return response
 
@@ -450,7 +450,7 @@ def handle_subreddit(message):
     if len(parsed_text) < 3:
         return "Your command seems to be missing something. Make sure it follow the format `subreddit <subreddit> <command> <option>.`"
     # check if the user is a moderator of the subreddit
-    if message.author not in reddit.subreddit(parsed_text[1]).moderator():
+    if message.author not in REDDIT.subreddit(parsed_text[1]).moderator():
         return "You are not a moderator of the subreddit."
 
     if parsed_text[2] == "minimum":
@@ -461,8 +461,8 @@ def handle_subreddit(message):
         try:
             sql = "DELETE FROM subreddits WHERE subreddit=%s"
             val = (parsed_text[1],)
-            mycursor.execute(sql, val)
-            mydb.commit()
+            MYCURSOR.execute(sql, val)
+            MYDB.commit()
         except:
             pass
         return (
@@ -480,13 +480,13 @@ def handle_subreddit(message):
         try:
             sql = "INSERT INTO subreddits (subreddit, reply_to_comments, footer, status) VALUES (%s, %s, %s, %s)"
             val = (parsed_text[1], True, None, status)
-            mycursor.execute(sql, val)
-            mydb.commit()
+            MYCURSOR.execute(sql, val)
+            MYDB.commit()
         except:
             sql = "UPDATE subreddits SET status = %s WHERE subreddit = %s"
             val = (status, parsed_text[1])
-            mycursor.execute(sql, val)
-            mydb.commit()
+            MYCURSOR.execute(sql, val)
+            MYDB.commit()
         return "Set the tipbot response in your Subreddit to %s" % status
 
     # only 4 word commands after this point
