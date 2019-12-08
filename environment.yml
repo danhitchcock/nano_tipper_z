@@ -2,8 +2,8 @@ name: reddit-tipbot
 channels:
   - defaults
 dependencies:
-  - python=3.7.5
-  - pandas=0.25.3
+  - python=3.7
+  - pandas=0.25
   - requests
   - pip
   - pip:
