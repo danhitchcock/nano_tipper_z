@@ -482,8 +482,9 @@ def check_inactive_transactions():
     LOGGER.info(f"Accounts on warning: {sorted(tipped_inactivated_accounts)}")
     returns = {}
     # scrolls through our inactive members and check if they have unclaimed tips
-    for result in tipped_inactivated_accounts:
+    for i, result in enumerate(tipped_inactivated_accounts):
         # send warning messages on day 31
+        LOGGER.info(f'{i}')
         sql = "SELECT * FROM history WHERE action = 'send' AND hash IS NOT NULL AND recipient_username = %s AND `sql_time` <= SUBDATE( CURRENT_DATE, INTERVAL 31 DAY) AND return_status = 'cleared'"
         val = (result,)
         MYCURSOR.execute(sql, val)
