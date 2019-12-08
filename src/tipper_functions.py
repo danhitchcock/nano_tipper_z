@@ -176,14 +176,14 @@ def handle_send_nano(message, parsed_text, comment_or_message):
     activate(message.author)
 
     # declare a few variables so I can keep track of them. They will be redeclared later
-    username = str(message.author)  # the sender
+    username = str(message.author)
+    # the sender
     private_key = ""  # the sender's private key
     user_or_address = (
         ""
     )  # either 'user' or 'address', depending on how the recipient was specified
-    recipient = (
-        ""
-    )  # could be an address or redditor. Will be renamed recipient_username or recipient_address below
+    recipient = ""
+    # could be an address or redditor. Will be renamed recipient_username or recipient_address below
     recipient_username = ""  # the recipient username, should one exist
     recipient_address = ""  # the recipient nano address
     message_time = datetime.utcfromtimestamp(
