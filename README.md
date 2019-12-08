@@ -1,19 +1,11 @@
 # Nano Tipper
-
  is a reddit tipping service to easily give Nano to your favorite redditors! [Nano](https://nano.org) is a fast and feeless cryptocurrency that can be traded at numerous exchanges. Before using Nano Tipper, please take a look at the [Terms of Service](https://github.com/danhitchcock/nano_tipper_z#terms-of-service)
-
 ### To get started with Nano Tipper, either:
-
 A) **Create an account** by [sending a message](https://reddit.com/message/compose/?to=nano_tipper&subject=command&message=create) to /u/nano_tipper with 'create' or 'register' in the message body. You will receive a Nano address, to which you can add Nano\*. You will receive a 0.001 Nano tip for registering! Also, try any of the faucets at [Nano Links](https://nanolinks.info/#faucets-free-nano) (\**Nano Tipper is in early beta! Only send small amounts of Nano*.)
-
 \-or-
-
 B) **Receive a Nano tip** from a fellow redditor, and you will automatically have an account made! be sure to activate it afterwards by [sending a message](https://reddit.com/message/compose/?to=nano_tipper&subject=command&message=create) to /u/nano_tipper.
-
 Once you have funds in your account, you can tip other redditors, or send to nano address via PM to /u/nano_tipper.
-
 # Comment Replies:
-
 Nano Tipper is intended for tipping on reddit posts and replies. On any [tracked subreddit](https://www.reddit.com/r/nano_tipper/comments/astwp6/nano_tipper_status/) you can tip and type a message like:
 
     !ntip 0.01 This is great!
@@ -25,7 +17,7 @@ This will tip a redditor 0.01 Nano. !ntip <amount> must be the first thing in yo
 Or from anywhere on reddit, you can tip a commenter by:
 
     /u/nano_tipper 0.01 This is great!
-    
+   
 or
 
     This is great! /u/nano_tipper 0.01
@@ -67,28 +59,43 @@ or send all your balance:
 
 There are many other commands.
 
-    'create' - Create a new account if one does not exist
-    'send <amount or all, optional: Currency> <user/address>' - Send Nano to a reddit user or an address
-    'withdraw <amount or all> <user/address>' - Same as send
-    'balance' or 'address' - Retrieve your account balance. Includes both pocketed and unpocketed transactions
-    'minimum <amount>' - (default 0.0001) Sets a minimum amount for receiving tips
-    'silence <yes/no>' - (default 'no') Prevents the bot from sending you tip notifications or tagging in posts
-    'percentage <percent>' - (default 10 percent) Sets a percentage of returned tips to donate to TipBot development
-    'history <optional: number of records>' - Retrieves tipbot commands. Default 10, maximum is 50.
-    'projects' - Retrives a list of NanoCenter donation projects
-    'help' - Get this help message
+```
+'balance' or 'address' - Retrieve your account balance. Includes both pocketed and unpocketed transactions
+'create' - Create a new account if one does not exist
+'help' - Get this help message
+'history <optional: number of records>' - Retrieves tipbot commands. Default 10, maximum is 50.
+'minimum <amount>' - (default 0.0001) Sets a minimum amount for receiving tips
+'send <amount or all, optional: Currency> <user/address>' - Send Nano to a reddit user or an address
+'silence <yes/no>' - (default 'no') Prevents the bot from sending you tip notifications or tagging in posts
+'percentage <percent>' - (default 10 percent) Sets a percentage of returned tips to donate to TipBot development
+'projects' - Retrives a list of NanoCenter donation projects
+'subreddit <subreddit> <'activate'/'deactivate'> <option>' - Subreddit Moderator Controls - Enabled Tipping on Your Sub (`silent`, `minimal`, `full`)
+'withdraw <amount or all> <user/address>' - Same as send
+```
+### Control TipBot Behavior On Your Subreddit
+If you are a moderator of a subreddit, and would like to tipping to your sub, use the `subreddit` command. For example, for me to activate tipping on my /r/nano_tipper subreddit, I send a PM to the bot saying:
+
+`subreddit nano_tipper activate`
+
+This will allow the bot to look for !ntip commands and respond to posts. 
+-or- If I don't want the bot to respond, but still want tips:
+
+`subreddit nano_tipper activate silent`
+
+-or- for a cleaner tipbot response:
+
+`subreddit nano_tipper activate minimal`
+
+To deactivate, simply PM
+
+`subreddit nano_tipper deactivate`
 
 ### Here's a few other great links:
 [Nano Tipper Subreddit](https://reddit.com/r/nano_tipper) -- Post any questions about Nano Tipper
-
 [Nano Tipper GitHub](https://github.com/danhitchcock/nano_tipper_z) -- This software is open source!
-
 [Nano Tipper Wiki](https://www.reddit.com/r/nano_tipper/wiki) -- The Subreddit Wiki
-
 [Nano Currency](https://nano.org) -- The Official Nano website
-
 [Nano Links](https://nanolinks.info) -- has numerous useful links to get to using Nano!
-
 [Nano Subreddit](https://www.reddit.com/r/nanocurrency) -- The official Nano Subreddit
 
 # Terms of Service

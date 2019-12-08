@@ -707,6 +707,7 @@ def check_inactive_transactions():
         val = (user, "Returned Tips", message)
         MYCURSOR.execute(sql, val)
         MYDB.commit()
+    LOGGER.info('Inactivate script complete.')
 
 
 # main loop
