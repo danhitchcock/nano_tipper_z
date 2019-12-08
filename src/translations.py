@@ -1,3 +1,4 @@
+import os
 import mysql.connector
 import configparser
 import praw
@@ -5,11 +6,15 @@ import logging
 
 LOGGER = logging.getLogger("reddit-tipbot")
 LOGGER.setLevel(logging.DEBUG)
+try:
+    os.makedirs("log", exist_ok=True)
+except:
+    pass
 fh = logging.FileHandler("log/info.log")
 fh.setLevel(logging.DEBUG)
 ch = logging.StreamHandler()
 ch.setLevel(logging.DEBUG)
-formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
 fh.setFormatter(formatter)
 ch.setFormatter(formatter)
 LOGGER.addHandler(fh)

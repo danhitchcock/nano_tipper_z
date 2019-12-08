@@ -8,7 +8,7 @@ while True:
     results = mycursor.fetchall()
     mydb.commit()
     for result in results:
-        LOGGER.info("%s %s %s"(result[1], result[2], repr(result[3])[:50]))
+        LOGGER.info("%s %s %s" % (result[1], result[2], repr(result[3])[:50]))
 
         try:
             reddit.redditor(str(result[1])).message(str(result[2]), str(result[3]))
