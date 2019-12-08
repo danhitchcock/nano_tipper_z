@@ -4,6 +4,7 @@ channels:
 dependencies:
   - python=3.7.5
   - pandas=0.25.3
+  - requests
   - pip
   - pip:
     - praw==6.4.0
