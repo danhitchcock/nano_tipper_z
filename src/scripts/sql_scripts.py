@@ -1,6 +1,6 @@
 import click
 import tipper_sql
-from tipper_sql import mycursor, mydb
+from tipper_sql import MYCURSOR, MYDB
 
 
 @click.command()
@@ -23,9 +23,9 @@ def list_subreddits():
 @click.command()
 def migrate_subreddit_status():
     sql = 'UPDATE subreddits SET status="silent" WHERE status="hostile"'
-    mycursor.execute(sql)
-    mydb.commit()
+    MYCURSOR.execute(sql)
+    MYDB.commit()
 
     sql = 'UPDATE subreddits SET status="full" WHERE status="friendly"'
-    mycursor.execute(sql)
-    mydb.commit()
+    MYCURSOR.execute(sql)
+    MYDB.commit()
