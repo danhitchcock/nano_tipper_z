@@ -179,7 +179,6 @@ def handle_history(message):
     username = str(message.author)
     parsed_text = parse_text(str(message.body))
     num_records = 10
-    # print(len(parsed_text))
     # if there are more than 2 words, one of the words is a number for the number of records
     if len(parsed_text) >= 2:
         if parsed_text[1].lower() == "nan" or ("inf" in parsed_text[1].lower()):
@@ -213,7 +212,6 @@ def handle_history(message):
             reddit_time=message_time.strftime("%Y-%m-%d %H:%M:%S"),
             comment_text=str(message.body)[:255],
         )
-        # print(num_records)
         response = "Here are your last %s historical records:\n\n" % num_records
         sql = "SELECT reddit_time, action, amount, comment_id, notes, recipient_username, recipient_address FROM history WHERE username=%s ORDER BY id DESC limit %s"
         val = (username, num_records)

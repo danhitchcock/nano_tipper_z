@@ -306,7 +306,6 @@ def open_or_receive_blocks(account, key, blocks, rep=None):
         # if it's an open block, get work from the dpow server
         if previous == 0:
             account_public_key = account_key(account)["key"]
-            print("Opening.")
             work = work_generate(account_public_key, True)["work"]
             # print(account, account_public_key, work)
 
@@ -338,7 +337,7 @@ def open_or_receive_block(account, key, sent_hash, rep=None):
     try:
         previous = get_previous_hash(account)
     except Exception as e:
-        print("It's an open block. ", e)
+        # print("It's an open block. ", e)
         # otherwise, this is an open block.
         previous = 0
 
@@ -348,7 +347,7 @@ def open_or_receive_block(account, key, sent_hash, rep=None):
     # if it's an open block, get work from the dpow server
     if previous == 0:
         account_public_key = account_key(account)["key"]
-        print("Opening.")
+        # print("Opening.")
         work = work_generate(account_public_key, True)["work"]
         # print(account, account_public_key, work)
     else:

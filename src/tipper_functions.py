@@ -11,6 +11,7 @@ from shared import (
     COMMENT_FOOTER,
     NEW_TIP,
     DONATE_COMMANDS,
+    LOGGER,
 )
 from tipper_rpc import generate_account, nano_to_raw, check_balance, validate_address
 from tipper_rpc import send_w as send
@@ -443,7 +444,6 @@ def handle_send_nano(message, parsed_text, comment_or_message):
     if user_or_address == "user":
         recipient_username = recipient
     elif parsed_text[0].lower() in DONATE_COMMANDS:
-        print("donate command, setting username to none")
         recipient_username = None
     else:
         recipient_address = recipient
@@ -518,17 +518,11 @@ def handle_send_nano(message, parsed_text, comment_or_message):
         )
         MYCURSOR.execute(sql, val)
         MYDB.commit()
-        print(
-            "Sending Nano: ",
-            address,
-            private_key,
-            amount,
-            recipient_address,
-            recipient_username,
+        LOGGER.info(
+            f"Sending Nano: {address} {private_key} {amount} {recipient_address} {recipient_username}"
         )
         t0 = time.time()
         sent = send(address, private_key, amount, recipient_address)
-        print(time.time() - t0)
         sql = "UPDATE history SET hash = %s, return_status = 'cleared' WHERE id = %s"
         val = (sent["hash"], entry_id)
         MYCURSOR.execute(sql, val)
@@ -557,8 +551,6 @@ def handle_send_nano(message, parsed_text, comment_or_message):
             MYDB.commit()
 
         if user_or_address == "user":
-            print("Amount: ", amount / 10 ** 30)
-            print("Formatted: %.4f" % (amount / 10 ** 30))
             if silence:
                 response = (
                     "Sent ```%.4g Nano``` to %s -- [Transaction on Nano Crawler](https://nanocrawler.cc/explorer/block/%s)"
@@ -619,12 +611,8 @@ def handle_send_nano(message, parsed_text, comment_or_message):
             )
             MYCURSOR.execute(sql, val)
             MYDB.commit()
-            print(
-                "Sending nanocenter address: ",
-                address,
-                private_key,
-                amount,
-                recipient_address,
+            LOGGER.info(
+                f"Sending nanocenter address: {address} {private_key} {amount} {recipient_address}"
             )
             sent = send(address, private_key, amount, recipient_address)
             sql = (
@@ -659,12 +647,8 @@ def handle_send_nano(message, parsed_text, comment_or_message):
             MYCURSOR.execute(sql, val)
             MYDB.commit()
 
-            print(
-                "Sending Unregistered Address: ",
-                address,
-                private_key,
-                amount,
-                recipient_address,
+            LOGGER.info(
+                f"Sending Unregistered Address: {address} {private_key} {amount} {recipient_address}"
             )
             sent = send(address, private_key, amount, recipient_address)
             sql = (
@@ -724,13 +708,8 @@ def handle_send_nano(message, parsed_text, comment_or_message):
         val = (sent["hash"], entry_id)
         MYCURSOR.execute(sql, val)
         MYDB.commit()
-        print(
-            "Sending New Account Address: ",
-            address,
-            private_key,
-            amount,
-            recipient_address,
-            recipient_username,
+        LOGGER.info(
+            f"Sending New Account Address: {address} {private_key} {amount} {recipient_address} {recipient_username}"
         )
         response = (
             "Creating a new account for /u/%s and "

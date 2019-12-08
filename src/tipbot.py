@@ -109,7 +109,6 @@ def stream_comments_messages():
                     yield ("comment", new_comment)
         if len(new_messages) >= 1:
             for new_message in new_messages:
-                # print(new_message, new_message.subject, new_message.body)
                 if new_message.name[:3] == "t4_":
                     yield ("message", new_message)
                 # if the message has any of these subjects and it is labeled t1_, it is a username tag
@@ -118,7 +117,6 @@ def stream_comments_messages():
                     or new_message.subject == "username mention"
                     or new_message.subject == "post reply"
                 ) and new_message.name[:3] == "t1_":
-                    # print('****username mention + comment reply')
                     yield ("username mention", new_message)
         else:
             yield None
@@ -731,12 +729,8 @@ for action_item in stream_comments_messages():
         try:
             # check if it's a command at the beginning
             if (parsed_text[0] in TIP_COMMANDS) or (parsed_text[0] in DONATE_COMMANDS):
-                print(
-                    time.strftime("%Y-%m-%d %H:%M:%S"),
-                    "Comment, beginning: ",
-                    action_item[1].author,
-                    " - ",
-                    action_item[1].body[:20],
+                LOGGER.info(
+                    f"Comment, beginning: {action_item[1].author} - {action_item[1].body[:20]}"
                 )
 
                 if allowed_request(
@@ -786,7 +780,7 @@ for action_item in stream_comments_messages():
                 ) and not message_in_database(action_item[1]):
                     if TIP_BOT_ON:
                         if str(action_item[1].subreddit).lower() == "cryptocurrency":
-                            print("ignoring cryptocurrency post")
+                            LOGGER.info("ignoring cryptocurrency post")
                         else:
                             handle_comment(action_item[1], parsed_text=parsed_text[-3:])
                     else:
