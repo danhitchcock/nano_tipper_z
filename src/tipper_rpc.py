@@ -1,12 +1,12 @@
 import json
 import qrcode
 import requests
-from shared import dpow_token, default_url
+from shared import DPOW_TOKEN, DEFAULT_URL
 
 
 def perform_curl(data=None, URL=None, timeout=30):
     if URL is None:
-        URL = default_url
+        URL = DEFAULT_URL
     r = requests.post(
         URL, headers={"Content-Type": "application/json"}, data=json.dumps(data)
     )
@@ -44,7 +44,7 @@ def work_generate(hash, dpow=False):
         # API call
         try:
             # api token will be in a separate text file
-            data = {"api_key": dpow_token, "user": "zily_reddit", "hash": hash}
+            data = {"api_key": DPOW_TOKEN, "user": "zily_reddit", "hash": hash}
             results = requests.post(
                 "https://dpow.nanocenter.org/service/", json.dumps(data), timeout=10
             )

@@ -1,9 +1,44 @@
+import sys
+import time
+import datetime
 from time import sleep
 from tipper_rpc import get_pendings, open_or_receive_block
-import sys
-from shared import TIPBOT_OWNER, TIP_COMMANDS, TIP_BOT_ON, LOGGER
-from message_functions import *
-from tipper_functions import *
+from shared import (
+    TIPBOT_OWNER,
+    TIP_COMMANDS,
+    TIP_BOT_ON,
+    LOGGER,
+    MYCURSOR,
+    MYDB,
+    REDDIT,
+    COMMENT_FOOTER,
+    WELCOME_CREATE,
+    WELCOME_TIP,
+    PROGRAM_MINIMUM,
+    HELP,
+    DONATE_COMMANDS,
+    TIP_BOT_USERNAME,
+)
+from message_functions import (
+    handle_balance,
+    handle_create,
+    handle_help,
+    handle_history,
+    handle_minimum,
+    handle_percentage,
+    handle_send,
+    handle_silence,
+    handle_subreddit,
+    add_history_record,
+)
+from tipper_functions import (
+    parse_text,
+    handle_send_nano,
+    nano_to_raw,
+    allowed_request,
+    send,
+    activate,
+)
 
 # initiate the bot and all friendly subreddits
 def get_subreddits():

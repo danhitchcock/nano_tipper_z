@@ -1,15 +1,15 @@
 import time
 from datetime import datetime
-from shared import database_name, mydb, mycursor
+from shared import DATABASE_NAME, MYDB, MYCURSOR
 
 
 def init_db():
-    mycursor.execute("CREATE DATABASE %s" % database_name)
-    mydb.commit()
+    MYCURSOR.execute("CREATE DATABASE %s" % DATABASE_NAME)
+    MYDB.commit()
 
 
 def init_history():
-    mycursor.execute(
+    MYCURSOR.execute(
         "CREATE TABLE history ("
         "id INT AUTO_INCREMENT PRIMARY KEY, "
         "username VARCHAR(255), "
@@ -28,11 +28,11 @@ def init_history():
         "return_status VARCHAR(255)"
         ")"
     )
-    mydb.commit()
+    MYDB.commit()
 
 
 def init_messages():
-    mycursor.execute(
+    MYCURSOR.execute(
         "CREATE TABLE messages ("
         "id INT AUTO_INCREMENT PRIMARY KEY, "
         "username VARCHAR(255), "
@@ -40,11 +40,11 @@ def init_messages():
         "message VARCHAR(5000) "
         ")"
     )
-    mydb.commit()
+    MYDB.commit()
 
 
 def init_accounts():
-    mycursor.execute(
+    MYCURSOR.execute(
         "CREATE TABLE accounts ("
         "username VARCHAR(255) PRIMARY KEY, "
         "address VARCHAR(255), "
@@ -58,11 +58,11 @@ def init_accounts():
         "percentage VARCHAR(255)"
         ")"
     )
-    mydb.commit()
+    MYDB.commit()
 
 
 def init_subreddits():
-    mycursor.execute(
+    MYCURSOR.execute(
         "CREATE TABLE subreddits ("
         "subreddit VARCHAR(255) PRIMARY KEY, "
         "reply_to_comments BOOL, "
@@ -70,82 +70,82 @@ def init_subreddits():
         "status VARCHAR(255) "
         ")"
     )
-    mydb.commit()
+    MYDB.commit()
 
 
 def init_projects():
-    mycursor.execute(
+    MYCURSOR.execute(
         "CREATE TABLE projects ("
         "project VARCHAR(255) PRIMARY KEY, "
         "address VARCHAR(255)"
         ")"
     )
-    mydb.commit()
+    MYDB.commit()
 
 
 def history(num_records, username=None):
-    mycursor.execute("SHOW COLUMNS FROM history")
-    myresult = mycursor.fetchall()
+    MYCURSOR.execute("SHOW COLUMNS FROM history")
+    myresult = MYCURSOR.fetchall()
     for result in myresult:
         print(result)
     if username:
-        mycursor.execute(
+        MYCURSOR.execute(
             "SELECT * FROM history WHERE username = '%s' ORDER BY id DESC limit %s"
             % (username, num_records)
         )
     else:
-        mycursor.execute(
+        MYCURSOR.execute(
             "SELECT * FROM history ORDER BY id DESC limit %s" % num_records
         )
-    myresult = mycursor.fetchall()
+    myresult = MYCURSOR.fetchall()
     for result in reversed(myresult):
         print(result)
 
 
 def messages():
-    mycursor.execute("SHOW COLUMNS FROM messages")
-    myresult = mycursor.fetchall()
+    MYCURSOR.execute("SHOW COLUMNS FROM messages")
+    myresult = MYCURSOR.fetchall()
     for result in myresult:
         print(result)
 
-    mycursor.execute("SELECT * FROM messages")
-    myresult = mycursor.fetchall()
+    MYCURSOR.execute("SELECT * FROM messages")
+    myresult = MYCURSOR.fetchall()
     for result in myresult:
         print(result)
 
 
 def accounts():
-    mycursor.execute("SHOW COLUMNS FROM accounts")
-    myresult = mycursor.fetchall()
+    MYCURSOR.execute("SHOW COLUMNS FROM accounts")
+    myresult = MYCURSOR.fetchall()
     for result in myresult:
         print(result)
 
-    mycursor.execute("SELECT * FROM accounts")
-    myresult = mycursor.fetchall()
+    MYCURSOR.execute("SELECT * FROM accounts")
+    myresult = MYCURSOR.fetchall()
     for result in myresult:
         print(result)
 
 
 def subreddits():
-    mycursor.execute("SHOW COLUMNS FROM subreddits")
-    myresult = mycursor.fetchall()
+    MYCURSOR.execute("SHOW COLUMNS FROM subreddits")
+    myresult = MYCURSOR.fetchall()
     for result in myresult:
         print(result)
 
-    mycursor.execute("SELECT * FROM subreddits")
-    myresult = mycursor.fetchall()
+    MYCURSOR.execute("SELECT * FROM subreddits")
+    myresult = MYCURSOR.fetchall()
     for result in myresult:
         print(result)
 
 
 def list_columns():
-    mycursor.execute("SHOW COLUMNS FROM history")
-    myresult = mycursor.fetchall()
+    MYCURSOR.execute("SHOW COLUMNS FROM history")
+    myresult = MYCURSOR.fetchall()
     for result in myresult:
         print(result)
     print("*****")
-    mycursor.execute("SHOW COLUMNS FROM accounts")
-    myresult = mycursor.fetchall()
+    MYCURSOR.execute("SHOW COLUMNS FROM accounts")
+    myresult = MYCURSOR.fetchall()
     for result in myresult:
         print(result)
 
@@ -159,8 +159,8 @@ def allowed_request(username, seconds=30, num_requests=5):
     """
     sql = "SELECT sql_time FROM history WHERE username=%s"
     val = (username,)
-    mycursor.execute(sql, val)
-    myresults = mycursor.fetchall()
+    MYCURSOR.execute(sql, val)
+    myresults = MYCURSOR.fetchall()
     if len(myresults) < num_requests:
         return True
     else:
@@ -174,22 +174,22 @@ def allowed_request(username, seconds=30, num_requests=5):
 def delete_user(username):
     sql = "DELETE FROM accounts WHERE username = %s"
     val = (username,)
-    mycursor.execute(sql, val)
-    mydb.commit()
+    MYCURSOR.execute(sql, val)
+    MYDB.commit()
 
 
 def add_subreddit(subreddit, reply_to_comments=True, footer="", status="friendly"):
     sql = "INSERT INTO subreddits (subreddit, reply_to_comments, footer, status) VALUES (%s, %s, %s, %s)"
     val = (subreddit, reply_to_comments, footer, status)
-    mycursor.execute(sql, val)
-    mydb.commit()
+    MYCURSOR.execute(sql, val)
+    MYDB.commit()
 
 
 def modify_subreddit(subreddit, status):
     sql = "UPDATE subreddits SET status = %s WHERE subreddit = %s"
     val = (status, subreddit)
-    mycursor.execute(sql, val)
-    mydb.commit()
+    MYCURSOR.execute(sql, val)
+    MYDB.commit()
 
 
 def add_history_record(
@@ -234,16 +234,16 @@ def add_history_record(
         return_status,
     )
 
-    mycursor.execute(sql, val)
-    mydb.commit()
-    return mycursor.lastrowid
+    MYCURSOR.execute(sql, val)
+    MYDB.commit()
+    return MYCURSOR.lastrowid
 
 
 def backup_keys():
     sql = "SELECT username, address, private_key FROM accounts"
-    mycursor.execute(sql)
-    results = mycursor.fetchall()
-    mydb.commit()
+    MYCURSOR.execute(sql)
+    results = MYCURSOR.fetchall()
+    MYDB.commit()
     with open("../backup", "w") as f:
         for result in results:
             f.write(result[0] + "," + result[1] + "," + result[2] + "\n")
@@ -251,9 +251,9 @@ def backup_keys():
 
 def backup_accounts():
     sql = "SELECT * FROM accounts"
-    mycursor.execute(sql)
-    results = mycursor.fetchall()
-    mydb.commit()
+    MYCURSOR.execute(sql)
+    results = MYCURSOR.fetchall()
+    MYDB.commit()
     with open("../backup_accounts", "w") as f:
         for result in results:
             for r in result:
@@ -263,9 +263,9 @@ def backup_accounts():
 
 def backup_history():
     sql = "SELECT * FROM history"
-    mycursor.execute(sql)
-    results = mycursor.fetchall()
-    mydb.commit()
+    MYCURSOR.execute(sql)
+    results = MYCURSOR.fetchall()
+    MYDB.commit()
     with open("../backup_history", "w") as f:
         for result in results:
             for r in result:
@@ -275,36 +275,36 @@ def backup_history():
 
 def update_percentage():
     sql = "ALTER TABLE accounts ADD percentage VARCHAR(255)"
-    mycursor.execute(sql)
+    MYCURSOR.execute(sql)
     sql = "UPDATE accounts SET percentage = 10"
-    mycursor.execute(sql)
-    mydb.commit()
+    MYCURSOR.execute(sql)
+    MYDB.commit()
 
 
 def clear_messages():
     sql = "DELETE FROM messages"
-    mycursor.execute(sql)
-    mydb.commit()
+    MYCURSOR.execute(sql)
+    MYDB.commit()
 
 
 def update_to_nano():
     sql = "UPDATE accounts SET address = REPLACE(address, 'xrb_', 'nano_')"
-    mycursor.execute(sql)
-    mydb.commit()
+    MYCURSOR.execute(sql)
+    MYDB.commit()
 
 
-if __name__ == "__main__":
-    add_subreddit("nano_tipper", True, None, "friendly")
-    # init_history()
-    # init_messages()
-    # init_projects()
-    # init_subreddits()
-    # update_to_nano()
-    # init_projects()
-    # subreddits()
-    # clear_messages()
-    # add_history_record(username='zily88', sql_time='2018-04-13 09:21:28', recipient_username='nano_tipper_z_test2', action='send', hash='test', amount = 1*10**28, return_status='cleared')
+# if __name__ == "__main__":
+#   add_subreddit("nano_tipper", True, None, "friendly")
+#   init_history()
+#   init_messages()
+#   init_projects()
+#   init_subreddits()
+#   update_to_nano()
+#   init_projects()
+#   subreddits()
+#   clear_messages()
+#   add_history_record(username='zily88', sql_time='2018-04-13 09:21:28', recipient_username='nano_tipper_z_test2', action='send', hash='test', amount = 1*10**28, return_status='cleared')
 
-    # history(100)
-    # update_percentage()
-    # accounts()
+#   history(100)
+#   update_percentage()
+#   accounts()
