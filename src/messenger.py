@@ -1,6 +1,6 @@
 import time
 from time import sleep
-from translations import mydb, mycursor, reddit, LOGGER
+from shared import mydb, mycursor, reddit, LOGGER
 
 while True:
     sql = "SELECT * FROM messages"

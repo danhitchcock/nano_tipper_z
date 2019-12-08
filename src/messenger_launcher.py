@@ -1,7 +1,6 @@
 import subprocess
 from time import sleep
-import configparser
-from translations import python_command, messenger_options
+from shared import python_command
 
 filename = "messenger.py"
 print(python_command + " " + filename)

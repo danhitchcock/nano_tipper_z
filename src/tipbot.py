@@ -1,7 +1,16 @@
 from time import sleep
 from tipper_rpc import get_pendings, open_or_receive_block
 import sys
-from translations import tipbot_owner, tip_commands, tip_bot_on, LOGGER
+from shared import (
+    tipbot_owner,
+    tip_commands,
+    tip_bot_on,
+    LOGGER,
+    WELCOME_CREATE,
+    WELCOME_TIP,
+    HELP,
+    COMMENT_FOOTER,
+)
 from message_functions import *
 from tipper_functions import *
 
@@ -136,7 +145,7 @@ def handle_comment(message, parsed_text=None):
     if (str(message.parent_id)[:3] == "t3_") and (
         subreddit_status in ["friendly", "full"]
     ):
-        message.reply(response[0] + comment_footer)
+        message.reply(response[0] + COMMENT_FOOTER)
     # otherwise, if the subreddit is friendly (and reply is not top level) or subreddit is minimal
     elif subreddit_status in ["friendly", "minimal", "full"]:
         if response[1] <= 8:
@@ -171,7 +180,7 @@ def handle_comment(message, parsed_text=None):
         if response[1] <= 8:
             message_recipient = str(message.author)
             subject = "Your Nano tip did not go through"
-            message_text = response[0] + comment_footer
+            message_text = response[0] + COMMENT_FOOTER
             sql = (
                 "INSERT INTO messages (username, subject, message) VALUES (%s, %s, %s)"
             )
@@ -182,7 +191,7 @@ def handle_comment(message, parsed_text=None):
             # if it was a new account, a PM was already sent to the recipient
             message_recipient = str(message.author)
             subject = "Successful tip!"
-            message_text = response[0] + comment_footer
+            message_text = response[0] + COMMENT_FOOTER
             sql = (
                 "INSERT INTO messages (username, subject, message) VALUES (%s, %s, %s)"
             )
@@ -198,7 +207,7 @@ def handle_comment(message, parsed_text=None):
                     "[Transaction on Nano Crawler](https://nanocrawler.cc/explorer/block/%s)\n\n"
                     'To turn off these notifications, reply with "silence yes"'
                     % (response[2], response[4], response[5])
-                    + comment_footer
+                    + COMMENT_FOOTER
                 )
 
                 sql = "INSERT INTO messages (username, subject, message) VALUES (%s, %s, %s)"
@@ -361,14 +370,14 @@ def handle_message(message):
             message = "Check for Previous Messages: %s\n" % previous_message_check
     elif parsed_text[0].lower() == "test_welcome_tipped":
         subject = "Nano Tipper - Welcome By Tip"
-        response = welcome_tipped % (
+        response = WELCOME_TIP % (
             0.01,
             "xrb_3jy9954gncxbhuieujc3pg5t1h36e7tyqfapw1y6zukn9y1g6dj5xr7r6pij",
             "xrb_3jy9954gncxbhuieujc3pg5t1h36e7tyqfapw1y6zukn9y1g6dj5xr7r6pij",
         )
     elif parsed_text[0].lower() == "test_welcome_create":
         subject = "Nano Tipper - Create"
-        response = welcome_create % (
+        response = WELCOME_CREATE % (
             "xrb_3jy9954gncxbhuieujc3pg5t1h36e7tyqfapw1y6zukn9y1g6dj5xr7r6pij",
             "xrb_3jy9954gncxbhuieujc3pg5t1h36e7tyqfapw1y6zukn9y1g6dj5xr7r6pij",
         )
@@ -382,7 +391,7 @@ def handle_message(message):
         )
         return None
     message_recipient = str(message.author)
-    message_text = response + comment_footer
+    message_text = response + COMMENT_FOOTER
     sql = "INSERT INTO messages (username, subject, message) VALUES (%s, %s, %s)"
     val = (message_recipient, subject, message_text)
     mycursor.execute(sql, val)
@@ -460,7 +469,7 @@ def check_inactive_transactions():
             message_recipient = result
             subject = "Please Activate Your Nano Tipper Account"
             message_text = "Somebody tipped you at least 30 days ago, but your account hasn't been activated yet.\n\nPlease activate your account by replying any command to this bot. If you do not, any tips 35 days or older will be returned.\n\n***\n\n"
-            message_text += help_text
+            message_text += HELP
             sql = (
                 "INSERT INTO messages (username, subject, message) VALUES (%s, %s, %s)"
             )

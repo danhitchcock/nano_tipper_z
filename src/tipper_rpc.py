@@ -1,7 +1,7 @@
 import json
 import qrcode
 import requests
-from translations import dpow_token, default_url
+from shared import dpow_token, default_url
 
 
 def perform_curl(data=None, URL=None, timeout=30):

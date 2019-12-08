@@ -1,7 +1,6 @@
 import subprocess
-import configparser
 from time import sleep
-from translations import python_command, tipper_options
+from shared import python_command
 
 filename = "tipbot.py"
 while True:

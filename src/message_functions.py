@@ -6,12 +6,12 @@ from tipper_functions import (
     handle_send_nano,
 )
 from tipper_rpc import check_balance, open_or_receive, nano_to_raw
-from translations import (
+from shared import (
     mycursor,
     mydb,
-    welcome_create,
+    WELCOME_CREATE,
     tip_bot_username,
-    help_text,
+    HELP,
     program_minimum,
     reddit,
 )
@@ -137,7 +137,7 @@ def handle_create(message):
     result = mycursor.fetchall()
     if len(result) is 0:
         address = add_new_account(username)
-        response = welcome_create % (address, address)
+        response = WELCOME_CREATE % (address, address)
         message_recipient = tip_bot_username
         subject = "send"
         message_text = "send 0.001 %s" % username
@@ -168,7 +168,7 @@ def handle_help(message):
         comment_id=message.name,
         reddit_time=message_time.strftime("%Y-%m-%d %H:%M:%S"),
     )
-    response = help_text
+    response = HELP
     return response
 
 

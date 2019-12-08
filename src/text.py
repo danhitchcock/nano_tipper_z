@@ -1,65 +1,4 @@
-import os
-import mysql.connector
-import configparser
-import praw
-import logging
-
-LOGGER = logging.getLogger("reddit-tipbot")
-LOGGER.setLevel(logging.DEBUG)
-try:
-    os.makedirs("log", exist_ok=True)
-except:
-    pass
-fh = logging.FileHandler("log/info.log")
-fh.setLevel(logging.DEBUG)
-ch = logging.StreamHandler()
-ch.setLevel(logging.DEBUG)
-formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
-fh.setFormatter(formatter)
-ch.setFormatter(formatter)
-LOGGER.addHandler(fh)
-LOGGER.addHandler(ch)
-config = configparser.ConfigParser()
-config.read("tipper.ini")
-sql_password = config["SQL"]["sql_password"]
-database_name = config["SQL"]["database_name"]
-tip_bot_on = config["BOT"]["tip_bot_on"]
-tip_bot_username = config["BOT"]["tip_bot_username"]
-program_minimum = float(config["BOT"]["program_minimum"])
-recipient_minimum = float(config["BOT"]["recipient_minimum"])
-tip_commands = config["BOT"]["tip_commands"].split(",")
-donate_commands = config["BOT"]["donate_commands"].split(",")
-tipbot_owner = config["BOT"]["tipbot_owner"]
-cmc_token = config["OTHER"]["cmc_token"]
-dpow_token = config["NODE"]["dpow_token"]
-default_url = config["NODE"]["default_url"]
-python_command = config["BOT"]["python_command"]
-tipper_options = config["BOT"]["tipper_options"]
-messenger_options = config["BOT"]["messenger_options"]
-
-# only fails if no databases have been created
-try:
-    mydb = mysql.connector.connect(
-        user="root",
-        password=sql_password,
-        host="localhost",
-        auth_plugin="mysql_native_password",
-        database=database_name,
-    )
-    mycursor = mydb.cursor()
-except mysql.connector.errors.DatabaseError:
-    mydb = mysql.connector.connect(
-        user="root",
-        password=sql_password,
-        host="localhost",
-        auth_plugin="mysql_native_password",
-    )
-    mycursor = mydb.cursor()
-
-
-reddit = praw.Reddit("bot1")
-
-comment_footer = """\n\n
+COMMENT_FOOTER = """\n\n
 ***\n\n
 [*^(Nano)*](https://nano.org)*^( | )*
 [*^(Nano Tipper)*](https://github.com/danhitchcock/nano_tipper_z)*^( | )*
@@ -67,7 +6,7 @@ comment_footer = """\n\n
 [*^(Spend Nano)*](https://usenano.org/)*^( | )*
 [*^(Nano Links)*](https://nanolinks.info/)"""
 
-help_text = """
+HELP = """
 Help from Nano Tipper! This bot was handles tips via the Nano cryptocurrency.
 [Visit us on GitHub](https://github.com/danhitchcock/nano_tipper_z), the [Wiki](http://reddit.com/r/nano_tipper/wiki/) 
 or /r/nano_tipper for more information on its use and its status. Be sure to read the 
@@ -97,7 +36,7 @@ If you wanted to send 0.01 Nano to zily88, reply:\n
     send 0.01 zily88\n
 If you have any questions or bug fixes, please contact /u/zily88."""
 
-welcome_create = """
+WELCOME_CREATE = """
 Welcome to Nano Tipper, a reddit tip bot which allows you to tip and send the Nano Currency to your favorite redditors! 
 Your account is **active** and your Nano address is %s. By using this service, you agree 
 to the [Terms of Service](https://github.com/danhitchcock/nano_tipper_z#terms-of-service).\n\n
@@ -125,7 +64,7 @@ View your account on (the block explorer)[https://nanocrawler.cc/explorer/accoun
 If you have any questions, please post at /r/nano_tipper
 """
 
-welcome_tipped = """
+WELCOME_TIP = """
 Welcome to Nano Tipper, a reddit tip bot which allows you to tip and send the Nano Currency to your favorite redditors! 
 You have just received a Nano tip in the amount of ```%.4g Nano``` at your address %s.\n\n
 By using this service, you agree to the [Terms of Service](https://github.com/danhitchcock/nano_tipper_z#terms-of-service). Please activate your account by 
@@ -152,194 +91,10 @@ View your account on Nano Crawler: https://nanocrawler.cc/explorer/account/%s\n\
 If you have any questions, please post at /r/nano_tipper
 """
 
-new_tip = """
+NEW_TIP = """
 Somebody just tipped you %.4g Nano at your address %s. Your new account balance is:\n\n
 Available: %s Nano\n\n
 Unpocketed: %s Nano\n\n  
 Unpocketed Nanos will be pocketed automatically. [Transaction on Nano Crawler](https://nanocrawler.cc/explorer/block/%s)\n\n
 To turn off these notifications, reply with "silence yes".
 """
-
-excluded_redditors = [
-    "nano",
-    "nanos",
-    "btc",
-    "xrb",
-    "eth",
-    "xrp",
-    "eos",
-    "ltc",
-    "bch",
-    "xlm",
-    "etc",
-    "neo",
-    "bat",
-    "aed",
-    "afn",
-    "all",
-    "amd",
-    "ang",
-    "aoa",
-    "ars",
-    "aud",
-    "awg",
-    "azn",
-    "bam",
-    "bbd",
-    "bdt",
-    "bgn",
-    "bhd",
-    "bif",
-    "bmd",
-    "bnd",
-    "bob",
-    "bov",
-    "brl",
-    "bsd",
-    "btn",
-    "bwp",
-    "byr",
-    "bzd",
-    "cad",
-    "cdf",
-    "che",
-    "chf",
-    "chw",
-    "clf",
-    "clp",
-    "cny",
-    "cop",
-    "cou",
-    "crc",
-    "cuc",
-    "cup",
-    "cve",
-    "czk",
-    "djf",
-    "dkk",
-    "dop",
-    "dzd",
-    "egp",
-    "ern",
-    "etb",
-    "eur",
-    "fjd",
-    "fkp",
-    "gbp",
-    "gel",
-    "ghs",
-    "gip",
-    "gmd",
-    "gnf",
-    "gtq",
-    "gyd",
-    "hkd",
-    "hnl",
-    "hrk",
-    "htg",
-    "huf",
-    "idr",
-    "ils",
-    "inr",
-    "iqd",
-    "irr",
-    "isk",
-    "jmd",
-    "jod",
-    "jpy",
-    "kes",
-    "kgs",
-    "khr",
-    "kmf",
-    "kpw",
-    "krw",
-    "kwd",
-    "kyd",
-    "kzt",
-    "lak",
-    "lbp",
-    "lkr",
-    "lrd",
-    "lsl",
-    "lyd",
-    "mad",
-    "mdl",
-    "mga",
-    "mkd",
-    "mmk",
-    "mnt",
-    "mop",
-    "mru",
-    "mur",
-    "mvr",
-    "mwk",
-    "mxn",
-    "mxv",
-    "myr",
-    "mzn",
-    "nad",
-    "ngn",
-    "nio",
-    "nok",
-    "npr",
-    "nzd",
-    "omr",
-    "pab",
-    "pen",
-    "pgk",
-    "php",
-    "pkr",
-    "pln",
-    "pyg",
-    "qar",
-    "ron",
-    "rsd",
-    "rub",
-    "rwf",
-    "sar",
-    "sbd",
-    "scr",
-    "sdg",
-    "sek",
-    "sgd",
-    "shp",
-    "sll",
-    "sos",
-    "srd",
-    "ssp",
-    "stn",
-    "svc",
-    "syp",
-    "szl",
-    "thb",
-    "tjs",
-    "tmt",
-    "tnd",
-    "top",
-    "try",
-    "ttd",
-    "twd",
-    "tzs",
-    "uah",
-    "ugx",
-    "usd",
-    "usn",
-    "uyi",
-    "uyu",
-    "uzs",
-    "vef",
-    "vnd",
-    "vuv",
-    "wst",
-    "xaf",
-    "xcd",
-    "xdr",
-    "xof",
-    "xpf",
-    "xsu",
-    "xua",
-    "yer",
-    "zar",
-    "zmw",
-    "zwl",
-]

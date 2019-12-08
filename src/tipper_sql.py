@@ -1,6 +1,6 @@
 import time
 from datetime import datetime
-from translations import database_name, mydb, mycursor
+from shared import database_name, mydb, mycursor
 
 
 def init_db():

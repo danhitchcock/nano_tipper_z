@@ -1,15 +1,15 @@
 import time
 from datetime import datetime
-from translations import (
+from shared import (
     mycursor,
     mydb,
-    welcome_tipped,
+    WELCOME_TIP,
     recipient_minimum,
     reddit,
     excluded_redditors,
     program_minimum,
-    comment_footer,
-    new_tip,
+    COMMENT_FOOTER,
+    NEW_TIP,
     donate_commands,
 )
 from tipper_rpc import generate_account, nano_to_raw, check_balance, validate_address
@@ -538,7 +538,7 @@ def handle_send_nano(message, parsed_text, comment_or_message):
             message_recipient = str(recipient_username)
             subject = "You just received a new Nano tip!"
             message_text = (
-                new_tip
+                NEW_TIP
                 % (
                     amount / 10 ** 30,
                     recipient_address,
@@ -546,7 +546,7 @@ def handle_send_nano(message, parsed_text, comment_or_message):
                     (receiving_new_balance[1] / 10 ** 30 + amount / 10 ** 30),
                     sent["hash"],
                 )
-                + comment_footer
+                + COMMENT_FOOTER
             )
 
             sql = (
@@ -697,8 +697,8 @@ def handle_send_nano(message, parsed_text, comment_or_message):
         message_recipient = str(recipient_username)
         subject = "Congrats on receiving your first Nano Tip!"
         message_text = (
-            welcome_tipped % (amount / 10 ** 30, recipient_address, recipient_address)
-            + comment_footer
+            WELCOME_TIP % (amount / 10 ** 30, recipient_address, recipient_address)
+            + COMMENT_FOOTER
         )
 
         sql = "INSERT INTO messages (username, subject, message) VALUES (%s, %s, %s)"
