@@ -374,8 +374,8 @@ def handle_message(message):
             response += "%s %s  \n" % (result[0], result[1])
 
     # a few administrative tasks
-    elif parsed_text[0].lower() == "restart":
-        if str(message.author) == TIPBOT_OWNER:
+    elif parsed_text[0].lower() in ["restart", "stop", "disable", "deactivate"]:
+        if str(message.author).lower() in [TIPBOT_OWNER, "rockmsockmjesus"]: #, "shanecorry", "joohansson"]:
             add_history_record(
                 username=str(message.author),
                 action="restart",
@@ -484,7 +484,6 @@ def check_inactive_transactions():
     # scrolls through our inactive members and check if they have unclaimed tips
     for i, result in enumerate(tipped_inactivated_accounts):
         # send warning messages on day 31
-        LOGGER.info(f'{i}')
         sql = "SELECT * FROM history WHERE action = 'send' AND hash IS NOT NULL AND recipient_username = %s AND `sql_time` <= SUBDATE( CURRENT_DATE, INTERVAL 31 DAY) AND return_status = 'cleared'"
         val = (result,)
         MYCURSOR.execute(sql, val)
@@ -708,7 +707,7 @@ def check_inactive_transactions():
         val = (user, "Returned Tips", message)
         MYCURSOR.execute(sql, val)
         MYDB.commit()
-    LOGGER.info('Inactivate script complete.')
+    LOGGER.info('Inactivated script complete.')
 
 
 # main loop
