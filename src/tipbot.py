@@ -375,7 +375,10 @@ def handle_message(message):
 
     # a few administrative tasks
     elif parsed_text[0].lower() in ["restart", "stop", "disable", "deactivate"]:
-        if str(message.author).lower() in [TIPBOT_OWNER, "rockmsockmjesus"]: #, "shanecorry", "joohansson"]:
+        if str(message.author).lower() in [
+            TIPBOT_OWNER,
+            "rockmsockmjesus",
+        ]:  # "joohansson"]:
             add_history_record(
                 username=str(message.author),
                 action="restart",
@@ -707,7 +710,7 @@ def check_inactive_transactions():
         val = (user, "Returned Tips", message)
         MYCURSOR.execute(sql, val)
         MYDB.commit()
-    LOGGER.info('Inactivated script complete.')
+    LOGGER.info("Inactivated script complete.")
 
 
 # main loop
