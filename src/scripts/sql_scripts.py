@@ -1,6 +1,7 @@
 import click
 import tipper_sql
 from tipper_sql import MYCURSOR, MYDB
+from shared import LOGGER
 
 
 @click.command()
@@ -29,3 +30,30 @@ def migrate_subreddit_status():
     sql = 'UPDATE subreddits SET status="full" WHERE status="friendly"'
     MYCURSOR.execute(sql)
     MYDB.commit()
+
+
+@click.command()
+@click.option("-u", default=None)
+@click.option("-n", default=10)
+def pull_history(u, n):
+    """
+    Pulls n number of records for username u
+    :param u:
+    :param n:
+    :return:
+    """
+    sql = "SELECT username, reddit_time, action, amount, comment_id, notes, recipient_username, recipient_address, comment_text FROM history WHERE username=%s ORDER BY id DESC limit %s"
+    val = (u, n)
+    if u is None:
+        sql = "SELECT username, reddit_time, action, amount, comment_id, notes, recipient_username, recipient_address, comment_text FROM history ORDER BY id DESC limit %s"
+        val = (n,)
+    MYCURSOR.execute(sql, val)
+    results = MYCURSOR.fetchall()
+    if len(results) == 0:
+        LOGGER.info("Username %s not found." % u)
+    MYDB.commit()
+    LOGGER.info(
+        "Printing results: Username, Datetime, action, amount, comment_id, notes_recipient_username, recipient_address"
+    )
+    for result in results:
+        LOGGER.info(result)
