@@ -240,8 +240,9 @@ def handle_send_nano(message, parsed_text, comment_or_message):
         else:
             response = 'You do not have a tip bot account yet. PM me "create".'
             return [response, 2, None, None, None, None]
-    # check if there is a currency code in the amount; if so, get the conversion
+
     else:
+        # check if there is a currency code in the amount; if so, get the conversion
         if parsed_text[1][-3:].lower() in EXCLUDED_REDDITORS:
             currency = parsed_text[1][-3:].upper()
             url = "https://min-api.cryptocompare.com/data/price?fsym={}&tsyms={}".format(
