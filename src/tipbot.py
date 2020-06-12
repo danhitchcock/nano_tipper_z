@@ -108,8 +108,15 @@ def handle_comment(message, parsed_text=None):
     :param parsed_text
     :return:
     """
+    # Pull the relevant text for the actual command
     if parsed_text is None:
         parsed_text = parse_text(str(message.body))
+    # check if it's a donate command at the end
+    if parsed_text[-3] in DONATE_COMMANDS:
+        parsed_text = parsed_text[-3:]
+    # check if it's a send command at the end
+    if parsed_text[-2] in TIP_COMMANDS:
+        parsed_text = parsed_text[-2:]
 
     # attempt to parse the message, send the Nano, and record responses
     # response is a 6-member list with some info
