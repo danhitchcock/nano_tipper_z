@@ -63,10 +63,39 @@ def add_history_record(
     return MYCURSOR.lastrowid
 
 
+def make_graceful(func):
+    def wrapper(*args, **kwargs):
+        res = func(*args, **kwargs)
+        if isinstance(res, list):
+            return GracefulList(func(*args, **kwargs))
+        else:
+            return res
+
+    return wrapper
+
+
+class GracefulList(list):
+    """
+    GracefulList is a list that returns None if there is an index error.
+    """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def __getitem__(self, name):
+        try:
+            return super().__getitem__(name)
+        except IndexError:
+            return None
+
+    @make_graceful
+    def __add__(self, other):
+        return super().__add__(other)
+
+
 def parse_text(text):
-    if text[0] == " ":
-        text = text[1:]
-    return text.lower().replace("\\", "").replace("\n", " ").split(" ")
+    text = text.strip(" ")
+    return GracefulList(text.lower().replace("\\", "").replace("\n", " ").split(" "))
 
 
 def add_new_account(username):
@@ -180,8 +209,8 @@ def handle_send_nano(message, parsed_text, comment_or_message):
     # the sender
     private_key = ""  # the sender's private key
     user_or_address = (
-        ""
-    )  # either 'user' or 'address', depending on how the recipient was specified
+        ""  # either 'user' or 'address', depending on how the recipient was specified
+    )
     recipient = ""
     # could be an address or redditor. Will be renamed recipient_username or recipient_address below
     recipient_username = ""  # the recipient username, should one exist

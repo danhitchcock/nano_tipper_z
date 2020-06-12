@@ -6,6 +6,7 @@ dependencies:
   - pandas=0.25
   - requests
   - pip
+  - pytest
   - pip:
     - praw==6.4.0
     - qrcode==6.1

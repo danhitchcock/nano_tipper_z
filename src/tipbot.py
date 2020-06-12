@@ -40,6 +40,7 @@ from tipper_functions import (
     activate,
 )
 
+CYCLE_TIME = 6
 # initiate the bot and all friendly subreddits
 def get_subreddits():
     MYCURSOR.execute("SELECT subreddit FROM subreddits")
@@ -55,43 +56,34 @@ def get_subreddits():
     return REDDIT.subreddit(subreddits)
 
 
-try:
-    subreddits = get_subreddits()
-except:
-    subreddits
+SUBREDDITS = get_subreddits()
 
 
 # a few globals.
 toggle_receive = True
 
 
-# generator to stream comments and messages to the main loop at the bottom, and contains the auto_receive functionality.
-# Maybe this wasn't necessary, but I never get to use generators.
-# To check for new messages and comments, the function scans the subreddits and inbox every 6 seconds and builds a
-# set of current message. I compare the old set with the new set.
 def stream_comments_messages():
+    """
+    # generator to stream comments and messages to the main loop at the bottom, and contains the auto_receive functionality.
+    # Maybe this wasn't necessary, but I never get to use generators.
+    # To check for new messages and comments, the function scans the subreddits and inbox every 6 seconds and builds a
+    # set of current message. I compare the old set with the new set.
+    :return:
+    """
     previous_time = time.time()
-    if subreddits is not None:
-        previous_comments = {comment for comment in subreddits.comments()}
-    else:
-        previous_comments = set()
+    previous_comments = {comment for comment in SUBREDDITS.comments()}
     previous_messages = {message for message in REDDIT.inbox.all(limit=25)}
-    global toggle_receive
+
     while True:
-        if toggle_receive and TIP_BOT_ON:
-            auto_receive()
-        toggle_receive = not toggle_receive
-
-        delay = 6 - (time.time() - previous_time)
-
-        if delay <= 0:
-            delay = 0
-        sleep(delay)
+        try:
+            sleep(CYCLE_TIME - (time.time() - previous_time))
+        except ValueError:
+            pass
         previous_time = time.time()
-        if subreddits is not None:
-            updated_comments = {comment for comment in subreddits.comments()}
-        else:
-            updated_comments = set()
+
+        # check for new comments
+        updated_comments = {comment for comment in SUBREDDITS.comments()}
         new_comments = updated_comments - previous_comments
         previous_comments = updated_comments
 
@@ -100,24 +92,10 @@ def stream_comments_messages():
         new_messages = updated_messages - previous_messages
         previous_messages = updated_messages
 
-        # send anything new to our main program
-        # also, check the message type. this will prevent posts from being seen as messages
-        if len(new_comments) >= 1:
-            for new_comment in new_comments:
-                # if new_comment starts with 't1_, it's just a regular comment'
-                if new_comment.name[:3] == "t1_":
-                    yield ("comment", new_comment)
-        if len(new_messages) >= 1:
-            for new_message in new_messages:
-                if new_message.name[:3] == "t4_":
-                    yield ("message", new_message)
-                # if the message has any of these subjects and it is labeled t1_, it is a username tag
-                elif (
-                    new_message.subject == "comment reply"
-                    or new_message.subject == "username mention"
-                    or new_message.subject == "post reply"
-                ) and new_message.name[:3] == "t1_":
-                    yield ("username mention", new_message)
+        total_new = new_comments.union(new_messages)
+        if len(total_new) >= 1:
+            for item in total_new:
+                yield item
         else:
             yield None
 
@@ -332,7 +310,7 @@ def handle_message(message):
         LOGGER.info(subreddits)
 
     # nanocenter donation commands
-    elif parsed_text[0].lower() == "project" or parsed_text[0].lower() == "projects":
+    elif parsed_text[0].lower() in ("project", "projects"):
         if (
             (str(message.author) == TIPBOT_OWNER)
             or (str(message.author).lower() == "rockmsockmjesus")
@@ -372,7 +350,6 @@ def handle_message(message):
         results = MYCURSOR.fetchall()
         for result in results:
             response += "%s %s  \n" % (result[0], result[1])
-
     # a few administrative tasks
     elif parsed_text[0].lower() in ["restart", "stop", "disable", "deactivate"]:
         if str(message.author).lower() in [
@@ -713,174 +690,77 @@ def check_inactive_transactions():
     LOGGER.info("Inactivated script complete.")
 
 
-# main loop
-t0 = time.time()
-check_inactive_transactions()
-for action_item in stream_comments_messages():
-    # our 'stream_comments_messages()' generator will give us either a comment/reply, message, or username mention
-    # (t1 = comment, t4 = message)
-    # The bot handles these differently
-    if action_item is None:
-        # if we have nothing after the poll, pass
-        pass
+def main_loop():
+    actions = {
+        "message": handle_message,
+        "comment": handle_comment,
+        "username_mention": handle_comment,
+        "faucet_tip": handle_message,
+        "ignore": lambda x: None,
+        "replay": lambda x: None,
+        None: lambda x: None,
+    }
+    inactive_timer = time.time()
+    receive_timer = time.time()
+    check_inactive_transactions()
+    for action_item in stream_comments_messages():
+        action = parse_action(action_item)
+        actions[action](action_item)
 
-    elif message_in_database(action_item[1]):
-        # if a message was already handled, pass
-        pass
+        # run the inactive script at the end of the loop; every 12 hours
+        if time.time() - inactive_timer > 43200:
+            inactive_timer = time.time()
+            check_inactive_transactions()
 
-    elif action_item[0] == "comment":
-        parsed_text = parse_text(str(action_item[1].body))
-        try:
-            # check if it's a command at the beginning
-            if (parsed_text[0] in TIP_COMMANDS) or (parsed_text[0] in DONATE_COMMANDS):
+        # run the receive script every 20 seconds
+        if time.time() - receive_timer > 20:
+            receive_timer = time.time()
+            auto_receive()
+
+
+def parse_action(action_item):
+    if action_item is not None:
+        parsed_text = parse_text(str(action_item.body))
+    else:
+        return None
+    if message_in_database(action_item):
+        return "prevented replay"
+    elif not allowed_request(action_item.author, 30, 5):
+        return "spam prevention"
+    # check if it's a non-username post and if it has a tip or donate command
+    elif action_item.name.startswith("t1_") and bool(
+        {parsed_text[0], parsed_text[-2], parsed_text[-3]}
+        & set(TIP_COMMANDS + DONATE_COMMANDS)
+    ):
+        LOGGER.info(f"Comment: {action_item.author} - " f"{action_item.body[:20]}")
+        return "comment"
+    # otherwise, lets parse the message. t4 means either a message or username mention
+    elif action_item.name.startswith("t4_"):
+        # check if it is a message from the bot.
+        if action_item.author == TIP_BOT_USERNAME:
+            # check if its a send, otherwise ignore
+            if action_item.body.startswith("send 0.001 "):
                 LOGGER.info(
-                    f"Comment, beginning: {action_item[1].author} - {action_item[1].body[:20]}"
+                    f"Faucet Tip: {action_item.author} - {action_item.body[:20]}"
                 )
-
-                if allowed_request(
-                    action_item[1].author, 30, 5
-                ) and not message_in_database(action_item[1]):
-                    if TIP_BOT_ON:
-                        handle_comment(action_item[1])
-                    else:
-                        REDDIT.redditor(str(action_item[1].author)).message(
-                            "Nano Tipper Currently Disabled",
-                            "[^(Nano Tipper is currently disabled)](https://www.reddit.com/r/nano_tipper/comments/astwp6/nano_tipper_status/)",
-                        )
-                else:
-                    LOGGER.info(f"Too many requests for{action_item[1].author}")
-            # check if it's a tip command at the end of the message
-            elif parsed_text[-2] in TIP_COMMANDS:
-                LOGGER.info(
-                    f"Comment, end: {action_item[1].author} - {action_item[1].body[:20]}"
-                )
-
-                if allowed_request(
-                    action_item[1].author, 30, 5
-                ) and not message_in_database(action_item[1]):
-                    if TIP_BOT_ON:
-                        if str(action_item[1].subreddit).lower() == "cryptocurrency":
-                            LOGGER.info("ignoring cryptocurrency post")
-                        else:
-                            handle_comment(action_item[1], parsed_text=parsed_text[-2:])
-                    else:
-                        REDDIT.redditor(str(action_item[1].author)).message(
-                            "Nano Tipper Currently Disabled",
-                            "[^(Nano Tipper is currently disabled)](https://www.reddit.com/r/nano_tipper/comments/astwp6/nano_tipper_status/)",
-                        )
-                else:
-                    LOGGER.info("Too many requests for %s" % action_item[1].author)
-            # check if it's a donate command at the end of the message
-            elif parsed_text[-3] in DONATE_COMMANDS:
-                LOGGER.info(
-                    'Donate command."%s", %s' % (parsed_text[-3], DONATE_COMMANDS)
-                )
-                LOGGER.info(
-                    f"Comment, end: {action_item[1].author} - {action_item[1].body[:20]}"
-                )
-
-                if allowed_request(
-                    action_item[1].author, 30, 5
-                ) and not message_in_database(action_item[1]):
-                    if TIP_BOT_ON:
-                        if str(action_item[1].subreddit).lower() == "cryptocurrency":
-                            LOGGER.info("ignoring cryptocurrency post")
-                        else:
-                            handle_comment(action_item[1], parsed_text=parsed_text[-3:])
-                    else:
-                        REDDIT.redditor(str(action_item[1].author)).message(
-                            "Nano Tipper Currently Disabled",
-                            "[^(Nano Tipper is currently disabled)](https://www.reddit.com/r/nano_tipper/comments/astwp6/nano_tipper_status/)",
-                        )
-                else:
-                    LOGGER.info("Too many requests for %s" % action_item[1].author)
-
-        except IndexError:
-            pass
-
-    elif action_item[0] == "message":
-        # if it's from the tipbot itself
-        if action_item[1].author == TIP_BOT_USERNAME:
-            if (
-                (action_item[1].name[:3] == "t4_")
-                and (action_item[1].body[:11] == "send 0.001 ")
-                and not message_in_database(action_item[1])
-            ):
-                LOGGER.info(
-                    f"Faucet Tip: {action_item[1].author} - {action_item[1].body[:20]}"
-                )
-                handle_message(action_item[1])
+                return "faucet_tip"
             else:
-                LOGGER.info("ignoring nano_tipper message")
-        # if the user isn't spamming
-        elif not allowed_request(action_item[1].author, 30, 5):
-            LOGGER.info("Too many requests for %s" % action_item[1].author)
+                return "ignore"
+        # otherwise, check if it's a username mention
+        elif bool(
+            {parsed_text[0], parsed_text[-2]}
+            & {"/u/%s" % TIP_BOT_USERNAME, "u/%s" % TIP_BOT_USERNAME}
+        ):
+            LOGGER.info(
+                f"Username Mention: {action_item.author} - {action_item.body[:20]}"
+            )
+            return "username_mention"
+        # otherwise, it's a normal message
         else:
-            if TIP_BOT_ON:
-                # handle the message finally
-                if action_item[1].name[:3] == "t4_" and not message_in_database(
-                    action_item[1]
-                ):
+            LOGGER.info(f"Comment: {action_item.author} - " f"{action_item.body[:20]}")
+            return "message"
+    return None
 
-                    LOGGER.info(
-                        f"Message: {action_item[1].author} - {action_item[1].body[:20]}"
-                    )
-                    handle_message(action_item[1])
 
-            else:
-                action_item[1].reply(
-                    "[^(Nano Tipper is currently disabled)](https://www.reddit.com/r/nano_tipper/comments/astwp6/nano_tipper_status/)"
-                )
-
-    elif action_item[0] == "username mention":
-        parsed_text = parse_text(str(action_item[1].body))
-
-        try:
-            if (parsed_text[0] == "/u/%s" % TIP_BOT_USERNAME) or (
-                parsed_text[0] == "u/%s" % TIP_BOT_USERNAME
-            ):
-
-                LOGGER.info(
-                    f"Username Mention: { action_item[1].author} - {action_item[1].body[:20]}"
-                )
-                if allowed_request(
-                    action_item[1].author, 30, 5
-                ) and not message_in_database(action_item[1]):
-                    if TIP_BOT_ON:
-                        handle_comment(action_item[1])
-                        pass
-                    else:
-                        REDDIT.redditor(str(action_item[1].author)).message(
-                            "Nano Tipper Currently Disabled",
-                            "[^(Nano Tipper is currently disabled)](https://www.reddit.com/r/nano_tipper/comments/astwp6/nano_tipper_status/)",
-                        )
-                else:
-                    LOGGER.info("Too many requests for %s" % action_item[1].author)
-
-            elif (parsed_text[-2] == "/u/%s" % TIP_BOT_USERNAME) or (
-                parsed_text[-2] == "u/%s" % TIP_BOT_USERNAME
-            ):
-
-                LOGGER.info(
-                    f"Username Mention: f{action_item[1].author} - {action_item[1].body[:20]}"
-                )
-                if allowed_request(
-                    action_item[1].author, 30, 5
-                ) and not message_in_database(action_item[1]):
-                    if TIP_BOT_ON:
-                        handle_comment(action_item[1], parsed_text=parsed_text[-2:])
-                    else:
-                        REDDIT.redditor(str(action_item[1].author)).message(
-                            "Nano Tipper Currently Disabled",
-                            "[^(Nano Tipper is currently disabled)](https://www.reddit.com/r/nano_tipper/comments/astwp6/nano_tipper_status/)",
-                        )
-                else:
-                    LOGGER.info("Too many requests for %s" % action_item[1].author)
-
-        except IndexError:
-            pass
-
-    # run the inactive script at the end of the loop; every 12 hours
-    if time.time() - t0 > 43200:
-        t0 = time.time()
-        check_inactive_transactions()
+if __name__ == "__main__":
+    main_loop()
