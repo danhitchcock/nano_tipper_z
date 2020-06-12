@@ -108,12 +108,8 @@ def handle_comment(message, parsed_text=None):
     :param parsed_text
     :return:
     """
-    # remove an annoying extra space that might be in the front
     if parsed_text is None:
-        if message.body[0] == " ":
-            parsed_text = parse_text(str(message.body[1:]))
-        else:
-            parsed_text = parse_text(str(message.body))
+        parsed_text = parse_text(str(message.body))
 
     # attempt to parse the message, send the Nano, and record responses
     # response is a 6-member list with some info
