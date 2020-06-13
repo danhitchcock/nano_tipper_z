@@ -74,6 +74,16 @@ def make_graceful(func):
     return wrapper
 
 
+class TipError(Exception):
+    """
+    General tiperror exception
+    """
+
+    def __init__(self, sql_text, response):
+        self.sql_text = sql_text
+        self.response = response
+
+
 class GracefulList(list):
     """
     GracefulList is a list that returns None if there is an index error.
@@ -244,78 +254,10 @@ def handle_send_nano(message, parsed_text, comment_or_message):
         MYDB.commit()
         response = "Could not read your tip command."
         return [response, 0, None, None, None, None]
-
-    # check if there was an attempt to send via a currency conversion
-    if len(parsed_text) >= 3:
-        if parsed_text[2].lower() in EXCLUDED_REDDITORS:
-            sql = "UPDATE history SET notes = %s WHERE id = %s"
-            val = ("conversion syntax error", entry_id)
-            MYCURSOR.execute(sql, val)
-            MYDB.commit()
-            response = "It wasn't clear if you were trying to perform a currency conversion or not. If so, be sure there is no space between the amount and currency. Example: '!ntip 0.5USD'"
-            return [response, 1, None, None, None, None]
-
-    conversion = 1
-    # check if the amount is 'all'. This will convert it to the proper int
-    if parsed_text[1].lower() == "all":
-        sql = "SELECT address FROM accounts WHERE username = %s"
-        val = (username,)
-        MYCURSOR.execute(sql, val)
-        result = MYCURSOR.fetchall()
-        if len(result) > 0:
-            address = result[0][0]
-            balance = check_balance(address)
-            amount = balance[0]
-        else:
-            response = 'You do not have a tip bot account yet. PM me "create".'
-            return [response, 2, None, None, None, None]
-
-    else:
-        # check if there is a currency code in the amount; if so, get the conversion
-        if parsed_text[1][-3:].lower() in EXCLUDED_REDDITORS:
-            currency = parsed_text[1][-3:].upper()
-            url = "https://min-api.cryptocompare.com/data/price?fsym={}&tsyms={}".format(
-                "NANO", currency
-            )
-            try:
-                results = requests.get(url, timeout=1)
-                results = json.loads(results.text)
-
-                conversion = float(results[currency])
-                amount = parsed_text[1][:-3].lower()
-
-            except requests.exceptions.Timeout:
-                amount = "Could not reach conversion server. Tip not sent."
-            except:
-                amount = "Currency [%s] not supported. Tip not sent." % currency.upper()
-        else:
-            amount = parsed_text[1].lower()
-        # before converting to a number, make sure the amount doesn't have nan or inf in it
-        if amount == "nan" or ("inf" in amount):
-            sql = "UPDATE history SET notes = %s WHERE id = %s"
-            val = ("could not parse amount", entry_id)
-            MYCURSOR.execute(sql, val)
-            MYDB.commit()
-            response = (
-                "Could not read your tip or send amount. Is '%s' a number?"
-                % parsed_text[1]
-            )
-            return [response, 1, None, None, None, None]
-        else:
-            try:
-                amount = nano_to_raw(float(amount) / conversion)
-            except:
-                sql = "UPDATE history SET notes = %s WHERE id = %s"
-                val = ("could not parse amount", entry_id)
-                MYCURSOR.execute(sql, val)
-                MYDB.commit()
-                response = (
-                    "Could not read your tip or send amount. Is '%s' a number, or is the "
-                    "currency code valid? If you are trying to send Nano directly, omit "
-                    "'Nano' from the amount (I will fix this in a future update)."
-                    % amount
-                )
-                return [response, 1, None, None, None, None]
+    try:
+        amount = parse_raw_amount(parsed_text)
+    except TipError as err:
+        print("Do something with err!", err)
 
     if amount < nano_to_raw(PROGRAM_MINIMUM):
         sql = "UPDATE history SET notes = %s WHERE id = %s"
@@ -754,3 +696,77 @@ def handle_send_nano(message, parsed_text, comment_or_message):
             recipient_address,
             sent["hash"],
         ]
+
+
+def parse_raw_amount(parsed_text, username=None):
+    """
+    Given some parsed command text, converts the units to Raw nano
+    :param parsed_text:
+    :param username: required if amount is 'all'
+    :return:
+    """
+    # check if there was a mistyped currency conversion i.e. "send 1 USD zily88" or
+    # "!ntip 1 USD great jorb"
+    if len(parsed_text) >= 3:
+        if parsed_text[2].lower() in EXCLUDED_REDDITORS:
+            raise TipError(
+                "conversion syntax error",
+                "It wasn't clear if you were trying to perform a currency conversion or not. If so, be sure there is no space between the amount and currency. Example: '!ntip 0.5USD'",
+            )
+    conversion = 1
+    # check if the amount is 'all'. This will convert it to the proper int
+    if parsed_text[1].lower() == "all":
+        sql = "SELECT address FROM accounts WHERE username = %s"
+        val = (username,)
+        MYCURSOR.execute(sql, val)
+        result = MYCURSOR.fetchall()
+        if len(result) > 0:
+            address = result[0][0]
+            balance = check_balance(address)
+            return balance[0]
+        else:
+            raise (
+                TipError(None, 'You do not have a tip bot account yet. PM me "create".')
+            )
+
+    # check if there is a currency code in the amount; if so, get the conversion
+    if parsed_text[1][-3:].lower() in EXCLUDED_REDDITORS:
+        currency = parsed_text[1][-3:].upper()
+        url = "https://min-api.cryptocompare.com/data/price?fsym={}&tsyms={}".format(
+            "NANO", currency
+        )
+        try:
+            results = requests.get(url, timeout=1)
+            results = json.loads(results.text)
+            conversion = float(results[currency])
+            amount = parsed_text[1][:-3].lower()
+        except requests.exceptions.Timeout:
+            raise TipError(
+                "Could not reach conversion server.",
+                "Could not reach conversion server. Tip not sent.",
+            )
+        except:
+            raise TipError(
+                "Could not reach conversion server.",
+                f"Currency {currency.upper()} not supported. Tip not sent.",
+            )
+    else:
+        amount = parsed_text[1].lower()
+
+    # before converting to a number, make sure the amount doesn't have nan or inf in it
+    if amount == "nan" or ("inf" in amount):
+        raise TipError(
+            None,
+            f"Could not read your tip or send amount. Is '{parsed_text[1]}' a number?",
+        )
+    else:
+        try:
+            amount = nano_to_raw(float(amount) / conversion)
+        except:
+            raise TipError(
+                None,
+                f"Could not read your tip or send amount. Is '{amount}' a number, or is the "
+                "currency code valid? If you are trying to send Nano directly, omit "
+                "'Nano' from the amount (I will fix this in a future update).",
+            )
+    return amount
