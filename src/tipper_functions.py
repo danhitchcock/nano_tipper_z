@@ -257,7 +257,11 @@ def handle_send_nano(message, parsed_text, comment_or_message):
     try:
         amount = parse_raw_amount(parsed_text)
     except TipError as err:
-        print("Do something with err!", err)
+        sql = "UPDATE history SET notes = %s WHERE id = %s"
+        val = (err.sql_text, entry_id)
+        MYCURSOR.execute(sql, val)
+        MYDB.commit()
+        return [err.response, 1, None, None, None, None]
 
     if amount < nano_to_raw(PROGRAM_MINIMUM):
         sql = "UPDATE history SET notes = %s WHERE id = %s"
