@@ -10,6 +10,7 @@ from tipper_functions import (
     parse_raw_amount,
     validate_address,
     send,
+    send_pm,
 )
 from tipper_rpc import check_balance, open_or_receive, nano_to_raw
 from shared import (
@@ -593,20 +594,19 @@ def handle_send(message):
         return response
 
     sent = send(sender["address"], sender["private_key"], amount, recipient["address"])
-
     if "username" not in recipient.keys():
-        notes = "sent to address"
         sql = (
             "UPDATE history SET notes = %s, address = %s, username = %s, recipient_username = %s, "
-            "recipient_address = %s, amount = %s WHERE id = %s"
+            "recipient_address = %s, amount = %s, return_status = %s WHERE id = %s"
         )
         val = (
-            notes,
+            "send to address",
             sender["address"],
-            username,
+            sender["username"],
             None,
             recipient["address"],
             str(amount),
+            "cleared",
             entry_id,
         )
         MYCURSOR.execute(sql, val)
@@ -625,18 +625,19 @@ def handle_send(message):
             )
         )
 
-    #
+    # Update the sql and send the PMs
     sql = (
         "UPDATE history SET notes = %s, address = %s, username = %s, recipient_username = %s, "
-        "recipient_address = %s, amount = %s WHERE id = %s"
+        "recipient_address = %s, amount = %s, return_status = %s WHERE id = %s"
     )
     val = (
         "sent to user",
         sender["address"],
-        username,
+        sender["username"],
         recipient["username"],
         recipient["address"],
         str(amount),
+        "cleared",
         entry_id,
     )
     MYCURSOR.execute(sql, val)
@@ -652,11 +653,8 @@ def handle_send(message):
             % (amount / 10 ** 30, recipient["address"], recipient["address"])
             + COMMENT_FOOTER
         )
+        send_pm(recipient["username"], subject, message_text)
 
-        sql = "INSERT INTO messages (username, subject, message) VALUES (%s, %s, %s)"
-        val = (recipient["username"], subject, message_text)
-        MYCURSOR.execute(sql, val)
-        MYDB.commit()
         return (
             "Creating a new account for /u/%s and "
             "sending ```%.4g Nano```. [Transaction on Nano Crawler](https://nanocrawler.cc/explorer/block/%s)"
@@ -668,6 +666,7 @@ def handle_send(message):
             % (amount / 10 ** 30, recipient["username"], sent["hash"])
         )
     else:
+
         receiving_new_balance = check_balance(recipient["address"])
         subject = "You just received a new Nano tip!"
         message_text = (
@@ -681,11 +680,7 @@ def handle_send(message):
             )
             + COMMENT_FOOTER
         )
-
-        sql = "INSERT INTO messages (username, subject, message) VALUES (%s, %s, %s)"
-        val = (recipient["username"], subject, message_text)
-        MYCURSOR.execute(sql, val)
-        MYDB.commit()
+        send_pm(recipient["username"], subject, message_text)
         return (
             "Sent ```%.4g Nano``` to /u/%s -- [Transaction on Nano Crawler](https://nanocrawler.cc/explorer/block/%s)"
             % (amount / 10 ** 30, recipient["username"], sent["hash"])

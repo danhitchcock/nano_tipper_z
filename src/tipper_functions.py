@@ -781,3 +781,10 @@ def update_history_notes(entry_id, text):
     val = (text, entry_id)
     MYCURSOR.execute(sql, val)
     MYDB.commit()
+
+
+def send_pm(recipient, subject, body):
+    sql = "INSERT INTO messages (username, subject, message) VALUES (%s, %s, %s)"
+    val = (recipient, subject, body)
+    MYCURSOR.execute(sql, val)
+    MYDB.commit()
