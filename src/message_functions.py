@@ -1,9 +1,15 @@
 from datetime import datetime
+import tipper_functions
 from tipper_functions import (
     parse_text,
     add_history_record,
     add_new_account,
-    handle_send_nano,
+    TipError,
+    account_info,
+    update_history_notes,
+    parse_raw_amount,
+    validate_address,
+    send,
 )
 from tipper_rpc import check_balance, open_or_receive, nano_to_raw
 from shared import (
@@ -14,6 +20,11 @@ from shared import (
     HELP,
     PROGRAM_MINIMUM,
     REDDIT,
+    EXCLUDED_REDDITORS,
+    LOGGER,
+    WELCOME_TIP,
+    COMMENT_FOOTER,
+    NEW_TIP,
 )
 
 
@@ -498,7 +509,222 @@ def handle_send(message):
     :param message:
     :return:
     """
+    new_account = True
     parsed_text = parse_text(str(message.body))
-    response = handle_send_nano(message, parsed_text, "message")
-    response = response[0]
-    return response
+    username = str(message.author)
+    message_time = datetime.utcfromtimestamp(
+        message.created_utc
+    )  # time the reddit message was created
+    entry_id = add_history_record(
+        username=username,
+        action="send",
+        comment_or_message="message",
+        comment_id=message.name,
+        reddit_time=message_time.strftime("%Y-%m-%d %H:%M:%S"),
+        comment_text=str(message.body)[:255],
+    )
+    # check that there are enough fields (i.e. a username)
+    if len(parsed_text) == 2:
+        update_history_notes(entry_id, "no recipient specified")
+        response = "You must specify an amount and a user."
+        return response
+
+    # pull sender account info
+    try:
+        sender = tipper_functions.account_info(username=username)
+    except TipError as err:
+        update_history_notes(entry_id, err.sql_text)
+        return err.response
+
+    # parse the amount
+    try:
+        amount = parse_raw_amount(parsed_text)
+    except TipError as err:
+        update_history_notes(entry_id, err.sql_text)
+        return err.response
+
+    # check if it's above the program minimum
+    if amount < nano_to_raw(PROGRAM_MINIMUM):
+        update_history_notes(entry_id, "amount below program limit")
+        response = "Program minimum is %s Nano." % PROGRAM_MINIMUM
+        return response
+
+    # check the user's balance
+    if amount > sender["balance"]:
+        update_history_notes(entry_id, "insufficient funds")
+        response = "You have insufficient funds. Please check your balance."
+        return response
+
+    recipient_text = parsed_text[2]
+
+    try:
+        recipient = parse_recipient_username(recipient_text)
+    except TipError as err:
+        update_history_notes(entry_id, err.sql_text)
+        return err.response
+
+    # if we have a username, pull their info
+    try:
+        recipient = account_info(recipient["username"])
+    except TipError:
+        # user does not exist, create
+        recipient = new_account(recipient["username"])
+    except KeyError:
+        # otherwise, just use the address. Everything is None except address
+        recipient = account_info(recipient["address"])
+
+    # check that it wasn't a mistyped currency code or something
+    if recipient["username"] in EXCLUDED_REDDITORS:
+        response = (
+            "Sorry, the redditor '%s' is in the list of excluded addresses. More than likely you didn't intend to send to that user."
+            % (recipient["username"])
+        )
+        return response
+
+    # check the send amount is above the user minimum, if a username is provided
+    # if it was just an address, this would be -1
+    if amount >= recipient["minimum"]:
+        update_history_notes(entry_id, "below user minimum")
+        response = (
+            "Sorry, the user has set a tip minimum of %s. "
+            "Your tip of %s is below this amount."
+            % (recipient["minimum"] / 10 ** 30, amount / 10 ** 30)
+        )
+        return response
+
+    sent = send(sender["address"], sender["private_key"], amount, recipient["address"])
+
+    if "username" not in recipient.keys():
+        notes = "sent to address"
+        sql = (
+            "UPDATE history SET notes = %s, address = %s, username = %s, recipient_username = %s, "
+            "recipient_address = %s, amount = %s WHERE id = %s"
+        )
+        val = (
+            notes,
+            sender["address"],
+            username,
+            None,
+            recipient["address"],
+            str(amount),
+            entry_id,
+        )
+        MYCURSOR.execute(sql, val)
+        MYDB.commit()
+        LOGGER.info(
+            f"Sending Nano: {sender['address']} {sender['private_key']} {amount} {recipient['address']} {recipient['username']}"
+        )
+        return (
+            "Sent ```%.4g Nano``` to [%s](https://nanocrawler.cc/explorer/account/%s) -- "
+            "[Transaction on Nano Crawler](https://nanocrawler.cc/explorer/block/%s)"
+            % (
+                amount / 10 ** 30,
+                recipient["address"],
+                recipient["address"],
+                sent["hash"],
+            )
+        )
+
+    #
+    sql = (
+        "UPDATE history SET notes = %s, address = %s, username = %s, recipient_username = %s, "
+        "recipient_address = %s, amount = %s WHERE id = %s"
+    )
+    val = (
+        "sent to user",
+        sender["address"],
+        username,
+        recipient["username"],
+        recipient["address"],
+        str(amount),
+        entry_id,
+    )
+    MYCURSOR.execute(sql, val)
+    MYDB.commit()
+    LOGGER.info(
+        f"Sending Nano: {sender['address']} {sender['private_key']} {amount} {recipient['address']} {recipient['username']}"
+    )
+
+    if new_account:
+        subject = "Congrats on receiving your first Nano Tip!"
+        message_text = (
+            WELCOME_TIP
+            % (amount / 10 ** 30, recipient["address"], recipient["address"])
+            + COMMENT_FOOTER
+        )
+
+        sql = "INSERT INTO messages (username, subject, message) VALUES (%s, %s, %s)"
+        val = (recipient["username"], subject, message_text)
+        MYCURSOR.execute(sql, val)
+        MYDB.commit()
+        return (
+            "Creating a new account for /u/%s and "
+            "sending ```%.4g Nano```. [Transaction on Nano Crawler](https://nanocrawler.cc/explorer/block/%s)"
+            % (recipient["username"], amount / 10 ** 30, sent["hash"])
+        )
+    elif recipient["silence"]:
+        return (
+            "Sent ```%.4g Nano``` to /u/%s -- [Transaction on Nano Crawler](https://nanocrawler.cc/explorer/block/%s)"
+            % (amount / 10 ** 30, recipient["username"], sent["hash"])
+        )
+    else:
+        receiving_new_balance = check_balance(recipient["address"])
+        subject = "You just received a new Nano tip!"
+        message_text = (
+            NEW_TIP
+            % (
+                amount / 10 ** 30,
+                recipient["address"],
+                receiving_new_balance[0] / 10 ** 30,
+                (receiving_new_balance[1] / 10 ** 30 + amount / 10 ** 30),
+                sent["hash"],
+            )
+            + COMMENT_FOOTER
+        )
+
+        sql = "INSERT INTO messages (username, subject, message) VALUES (%s, %s, %s)"
+        val = (recipient["username"], subject, message_text)
+        MYCURSOR.execute(sql, val)
+        MYDB.commit()
+        return (
+            "Sent ```%.4g Nano``` to /u/%s -- [Transaction on Nano Crawler](https://nanocrawler.cc/explorer/block/%s)"
+            % (amount / 10 ** 30, recipient["username"], sent["hash"])
+        )
+
+
+def parse_recipient_username(recipient_text):
+    # remove the /u/ or u/
+    if recipient_text[:3].lower() == "/u/":
+        recipient_text = recipient_text[3:]
+    elif recipient_text[:2].lower() == "u/":
+        recipient_text = recipient_text[2:]
+
+    if (recipient_text[:5].lower() == "nano_") or (
+        recipient_text[:4].lower() == "xrb_"
+    ):
+        # check valid address
+        success = validate_address(recipient_text)
+        if success["valid"] == "1":
+            return {"address": recipient_text}
+        # if not, check if it is a redditor disguised as an address (e.g.
+        # nano_is_awesome, nano_tipper_z)
+        else:
+            try:
+                _ = getattr(REDDIT.redditor(recipient_text), "is_suspended", False)
+                recipient = {"username": recipient_text}
+            except:
+                raise TipError(
+                    "invalid address or address-like redditor does not exist",
+                    "%s is neither a valid address nor a redditor" % recipient,
+                )
+    else:
+        # a username was specified
+        try:
+            _ = getattr(REDDIT.redditor(recipient_text), "is_suspended", False)
+            return {"username": recipient_text}
+        except:
+            raise TipError(
+                "redditor does not exist",
+                "Could not find redditor %s. Make sure you aren't writing or "
+                "copy/pasting markdown." % recipient_text,
+            )

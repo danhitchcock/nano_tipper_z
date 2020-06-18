@@ -158,19 +158,18 @@ def check_registered_by_address(address):
     address = address.split("_")[1]
 
     sql = "SELECT username FROM accounts WHERE address=%s"
-    val = ("xrb_" + address,)
-    MYCURSOR.execute(sql, val)
-    result = MYCURSOR.fetchall()
-    if len(result) > 0:
-        return result[0][0]
-
-    sql = "SELECT username FROM accounts WHERE address=%s"
     val = ("nano_" + address,)
     MYCURSOR.execute(sql, val)
     result = MYCURSOR.fetchall()
     if len(result) > 0:
         return result[0][0]
 
+    sql = "SELECT username FROM accounts WHERE address=%s"
+    val = ("xrb_" + address,)
+    MYCURSOR.execute(sql, val)
+    result = MYCURSOR.fetchall()
+    if len(result) > 0:
+        return result[0][0]
     return None
 
 
@@ -193,11 +192,17 @@ def get_user_settings(recipient_username, recipient_address=""):
             silence = myresult[0][2]
             if not recipient_address:
                 recipient_address = myresult[0][1]
-    return user_minimum, recipient_address, silence
+    return {
+        "name": recipient_username,
+        "minimum": user_minimum,
+        "address": recipient_address,
+        "silence": silence,
+    }
 
 
 def handle_send_nano(message, parsed_text, comment_or_message):
     """
+
     parses tip amount and users from a reddit !nano_tip or PM Send command and performs the transaction. Returns a list
     with status information
     :param message: reddit comment or message object
@@ -205,26 +210,8 @@ def handle_send_nano(message, parsed_text, comment_or_message):
     :param comment_or_message: str
     :return: list [str, int, float, str, str, str]
     """
-    # the parsed list is the first line comment body in lowercase with slashes removed and split at spaces
-    # i.e. parsed_text = str(message.body).lower().replace('\\', '').split('\n')[0].split(' ')
-    # for example -- ['!nano_tip', '0.1', 'zily88']
-    # handle_send_nano will return a list
-    # [message, status_code, tip_amount, recipient_username, recipient_address, hash]
-
-    # set the account to activated it if it was a new one
-    activate(message.author)
-
-    # declare a few variables so I can keep track of them. They will be redeclared later
     username = str(message.author)
     # the sender
-    private_key = ""  # the sender's private key
-    user_or_address = (
-        ""  # either 'user' or 'address', depending on how the recipient was specified
-    )
-    recipient = ""
-    # could be an address or redditor. Will be renamed recipient_username or recipient_address below
-    recipient_username = ""  # the recipient username, should one exist
-    recipient_address = ""  # the recipient nano address
     message_time = datetime.utcfromtimestamp(
         message.created_utc
     )  # time the reddit message was created
@@ -239,40 +226,25 @@ def handle_send_nano(message, parsed_text, comment_or_message):
         comment_text=str(message.body)[:255],
     )
 
-    # check if the message body was parsed into 2 or 3 words. If it wasn't, update the history db
-    # with a failure and return the message. If the length is 2 (meaning recipient is parent message author) we will
-    # check that after tip amounts to limit API requests
-    if len(parsed_text) >= 3:
-        recipient = parsed_text[2]
-    elif len(parsed_text) == 2:
-        # parse the user info in a later block of code to minimize API requests
-        pass
-    else:
-        sql = "UPDATE history SET notes = %s WHERE id = %s"
-        val = ("could not find tip amount", entry_id)
-        MYCURSOR.execute(sql, val)
-        MYDB.commit()
-        response = "Could not read your tip command."
-        return [response, 0, None, None, None, None]
+    try:
+        sender = account_info(username)
+    except TipError as err:
+        update_history_notes(entry_id, err.sql_text)
+        return [err.response, 2, None, None, None, None]
+
     try:
         amount = parse_raw_amount(parsed_text)
     except TipError as err:
-        sql = "UPDATE history SET notes = %s WHERE id = %s"
-        val = (err.sql_text, entry_id)
-        MYCURSOR.execute(sql, val)
-        MYDB.commit()
+        update_history_notes(entry_id, err.sql_text)
         return [err.response, 1, None, None, None, None]
 
     if amount < nano_to_raw(PROGRAM_MINIMUM):
-        sql = "UPDATE history SET notes = %s WHERE id = %s"
-        val = ("amount below program limit", entry_id)
-        MYCURSOR.execute(sql, val)
-        MYDB.commit()
+        update_history_notes(entry_id, "amount below program limit")
         response = "Program minimum is %s Nano." % PROGRAM_MINIMUM
         return [response, 3, amount / 10 ** 30, None, None, None]
 
-    # check to see if it is a friendly subreddit
-    if comment_or_message == "comment":
+    # check if it is above the subreddit minimum
+    if message.hasattribute == "comment":
         sql = "SELECT status FROM subreddits WHERE subreddit=%s"
         val = (str(message.subreddit).lower(),)
         MYCURSOR.execute(sql, val)
@@ -281,47 +253,28 @@ def handle_send_nano(message, parsed_text, comment_or_message):
             subreddit_status = "silent"
         else:
             subreddit_status = results[0][0]
-        if subreddit_status not in ["friendly", "full", "minimal"]:
-            if amount < nano_to_raw(1):
-                response = (
-                    "To tip in unfamiliar subreddits, the tip amount must be 1 Nano or more. You attempted to tip %s Nano"
-                    % (amount / 10 ** 30)
-                )
-                return [response, 3, None, None, None, None]
+        if subreddit_status not in [
+            "friendly",
+            "full",
+            "minimal",
+        ] and amount < nano_to_raw(1):
+            response = (
+                "To tip in unfamiliar subreddits, the tip amount must be 1 Nano or more. You attempted to tip %s Nano"
+                % (amount / 10 ** 30)
+            )
+            return [response, 3, None, None, None, None]
 
-    # check if author has an account, and if they have enough funds
-    sql = "SELECT address, private_key FROM accounts WHERE username=%s"
-    val = (username,)
-    MYCURSOR.execute(sql, val)
-    result = MYCURSOR.fetchall()
-    if len(result) < 1:
-        sql = "UPDATE history SET notes = %s WHERE id = %s"
-        val = ("sender does not have an account", entry_id)
-        MYCURSOR.execute(sql, val)
-        MYDB.commit()
-        response = 'You do not have a tip bot account yet. PM me "create".'
-        return [response, 2, amount / 10 ** 30, None, None, None]
-    else:
-        address = result[0][0]
-        private_key = result[0][1]
-        results = check_balance(result[0][0])
-        if amount > results[0]:
-            sql = "UPDATE history SET notes = %s WHERE id = %s"
-            val = ("insufficient funds", entry_id)
-            MYCURSOR.execute(sql, val)
-            MYDB.commit()
-            response = "You have insufficient funds. Please check your balance."
-            return [response, 4, amount / 10 ** 30, None, None, None]
+    if amount > sender["balance"]:
+        update_history_notes(entry_id, "insufficient funds")
+        response = "You have insufficient funds. Please check your balance."
+        return [response, 4, amount / 10 ** 30, None, None, None]
 
     # if the command was from a PM, extract the recipient username or address
     # otherwise it was a comment, and extract the parent author
     # or if it was a public nanocenter donation, extract the project name
-    if comment_or_message == "message":
+    if not message.hasattribute == "comment":
         if len(parsed_text) == 2:
-            sql = "UPDATE history SET notes = %s WHERE id = %s"
-            val = ("no recipient specified", entry_id)
-            MYCURSOR.execute(sql, val)
-            MYDB.commit()
+            update_history_notes(entry_id, "no recipient specified")
             response = "You must specify an amount and a user."
             return [response, 5, amount / 10 ** 30, None, None, None]
         # remove the /u/ or u/
@@ -427,6 +380,11 @@ def handle_send_nano(message, parsed_text, comment_or_message):
 
     # if there is a recipient_username, check their minimum
     # also pull the address
+    try:
+        recipient = account_info(recipient_username)
+    except TipError:
+        recipient = {"name": recipient_username, "minimum": 0.1}
+
     user_minimum, recipient_address, silence = get_user_settings(
         recipient_username, recipient_address
     )
@@ -439,6 +397,7 @@ def handle_send_nano(message, parsed_text, comment_or_message):
     #   send to the address
     # else
     #   create a new address for the redditor and send
+
     if recipient_username in EXCLUDED_REDDITORS:
         response = (
             "Sorry, the redditor '%s' is in the list of excluded addresses. More than likely you didn't intend to send to that user."
@@ -774,3 +733,51 @@ def parse_raw_amount(parsed_text, username=None):
                 "'Nano' from the amount (I will fix this in a future update).",
             )
     return amount
+
+
+def account_info(username=None, address=None):
+    """
+    Pulls the address, private key and balance from a user
+    :param username: string - redditors username
+    :return: dict - name, address, private_key, balance
+    """
+    if username:
+        sql = "SELECT address, private_key, minimum, silence FROM accounts WHERE username=%s"
+        val = (username,)
+    elif address:
+        sql = "SELECT address, private_key, minimum, silence FROM accounts WHERE address=%s"
+        val = (address,)
+    else:
+        raise UserWarning("You must specify a username or an address.")
+    MYCURSOR.execute(sql, val)
+    result = MYCURSOR.fetchall()
+    if len(result) < 1:
+        if username:
+            raise TipError("user does not exist", "user does not exist")
+        else:
+            return {
+                "username": None,
+                "address": address,
+                "private_key": None,
+                "minimum": -1,
+                "silence": False,
+                "balance": None,
+                "account_exists": False,
+            }
+    else:
+        return {
+            "username": username,
+            "address": result[0][0],
+            "private_key": result[0][1],
+            "minimum": result[0][2],
+            "silence": result[0][3],
+            "balance": check_balance(result[0][0])[0],
+            "account_exists": True,
+        }
+
+
+def update_history_notes(entry_id, text):
+    sql = "UPDATE history SET notes = %s WHERE id = %s"
+    val = (text, entry_id)
+    MYCURSOR.execute(sql, val)
+    MYDB.commit()
