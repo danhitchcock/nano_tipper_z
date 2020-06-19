@@ -8,11 +8,15 @@ from tipper_functions import (
     account_info,
     update_history_notes,
     parse_raw_amount,
-    validate_address,
-    send,
     send_pm,
 )
-from tipper_rpc import check_balance, open_or_receive, nano_to_raw
+from tipper_rpc import (
+    check_balance,
+    open_or_receive,
+    nano_to_raw,
+    validate_address,
+    send,
+)
 from shared import (
     MYCURSOR,
     MYDB,
@@ -95,7 +99,10 @@ def handle_percentage(message):
             comment_id=message.name,
             comment_text=str(message.body)[:255],
         )
-        response = "You do not currently have an account open. To create one, respond with the text 'create' in the message body."
+        response = (
+            "You do not currently have an account open. To create one, "
+            "respond with the text 'create' in the message body."
+        )
         return response
 
 
@@ -120,7 +127,9 @@ def handle_balance(message):
         results = check_balance(result[0][0])
 
         response = (
-            "At address %s:\n\nAvailable: %s Nano\n\nUnpocketed: %s Nano\n\nNano will be pocketed automatically unless the transaction is below 0.0001 Nano."
+            "At address %s:\n\nAvailable: %s Nano\n\nUnpocketed: %s Nano\n\nNano "
+            "will be pocketed automatically unless the transaction is below "
+            "0.0001 Nano."
             "\n\nhttps://nanocrawler.cc/explorer/account/%s"
             % (result[0][0], results[0] / 10 ** 30, results[1] / 10 ** 30, result[0][0])
         )
@@ -162,7 +171,8 @@ def handle_create(message):
 
     else:
         response = (
-            "It looks like you already have an account. In any case it is now **active**. Your Nano address is %s."
+            "It looks like you already have an account. In any case it is now "
+            "**active**. Your Nano address is %s."
             "\n\nhttps://nanocrawler.cc/explorer/account/%s"
             % (result[0][0], result[0][0])
         )
@@ -194,12 +204,18 @@ def handle_history(message):
     # if there are more than 2 words, one of the words is a number for the number of records
     if len(parsed_text) >= 2:
         if parsed_text[1].lower() == "nan" or ("inf" in parsed_text[1].lower()):
-            response = "'%s' didn't look like a number to me. If it is blank, there might be extra spaces in the command."
+            response = (
+                "'%s' didn't look like a number to me. If it is blank, "
+                "there might be extra spaces in the command."
+            )
             return response
         try:
             num_records = int(parsed_text[1])
         except:
-            response = "'%s' didn't look like a number to me. If it is blank, there might be extra spaces in the command."
+            response = (
+                "'%s' didn't look like a number to me. If it is blank, "
+                "there might be extra spaces in the command."
+            )
             return response
 
     # check that it's greater than 50
@@ -225,7 +241,11 @@ def handle_history(message):
             comment_text=str(message.body)[:255],
         )
         response = "Here are your last %s historical records:\n\n" % num_records
-        sql = "SELECT reddit_time, action, amount, comment_id, notes, recipient_username, recipient_address FROM history WHERE username=%s ORDER BY id DESC limit %s"
+        sql = (
+            "SELECT reddit_time, action, amount, comment_id, notes, recipient_"
+            "username, recipient_address FROM history WHERE username=%s ORDER BY "
+            "id DESC limit %s"
+        )
         val = (username, num_records)
         MYCURSOR.execute(sql, val)
         results = MYCURSOR.fetchall()
@@ -289,7 +309,10 @@ def handle_history(message):
                         result[4],
                     )
             except:
-                response += "Unparsed Record: Nothing is wrong, I just didn't parse this record properly.\n\n"
+                response += (
+                    "Unparsed Record: Nothing is wrong, I just didn't "
+                    "parse this record properly.\n\n"
+                )
 
         return response
     else:
@@ -301,7 +324,10 @@ def handle_history(message):
             comment_id=message.name,
             comment_text=str(message.body)[:255],
         )
-        response = "You do not currently have an account open. To create one, respond with the text 'create' in the message body."
+        response = (
+            "You do not currently have an account open. To create one, "
+            "respond with the text 'create' in the message body."
+        )
         return response
 
 
@@ -316,24 +342,33 @@ def handle_minimum(message):
 
     # there should be at least 2 words, a minimum and an amount.
     if len(parsed_text) < 2:
-        response = "I couldn't parse your command. I was expecting 'minimum <amount>'. Be sure to check your spacing."
+        response = (
+            "I couldn't parse your command. I was expecting 'minimum "
+            "<amount>'. Be sure to check your spacing."
+        )
         return response
     # check that the minimum is a number
 
     if parsed_text[1].lower() == "nan" or ("inf" in parsed_text[1].lower()):
-        response = "'%s' didn't look like a number to me. If it is blank, there might be extra spaces in the command."
+        response = (
+            "'%s' didn't look like a number to me. If it is blank, "
+            "there might be extra spaces in the command."
+        )
         return response
     try:
         amount = float(parsed_text[1])
     except:
-        response = "'%s' didn't look like a number to me. If it is blank, there might be extra spaces in the command."
+        response = (
+            "'%s' didn't look like a number to me. If it is blank, "
+            "there might be extra spaces in the command."
+        )
         return response
 
     # check that it's greater than 0.01
     if nano_to_raw(amount) < nano_to_raw(PROGRAM_MINIMUM):
         response = (
-            "Did not update. The amount you specified is below the program minimum of %s Nano."
-            % PROGRAM_MINIMUM
+            "Did not update. The amount you specified is below the program minimum "
+            "of %s Nano." % PROGRAM_MINIMUM
         )
         return response
 
@@ -370,7 +405,10 @@ def handle_minimum(message):
             comment_id=message.name,
             comment_text=str(message.body)[:255],
         )
-        response = "You do not currently have an account open. To create one, respond with the text 'create' in the message body."
+        response = (
+            "You do not currently have an account open. To create one, "
+            "respond with the text 'create' in the message body."
+        )
         return response
 
 
@@ -400,8 +438,10 @@ def handle_receive(message):
             comment_or_message="message",
         )
         response = (
-            "At address %s, you currently have %s Nano available, and %s Nano unpocketed. If you have any unpocketed, create a new "
-            "message containing the word 'receive'\n\nhttps://nanocrawler.cc/explorer/account/%s"
+            "At address %s, you currently have %s Nano available, and %s Nano "
+            "unpocketed. If you have any unpocketed, create a new "
+            "message containing the word "
+            "'receive'\n\nhttps://nanocrawler.cc/explorer/account/%s"
             % (address, balance[0] / 10 ** 30, balance[1] / 10 ** 30, address)
         )
         return response
@@ -413,7 +453,10 @@ def handle_receive(message):
             comment_id=message.name,
             comment_or_message="message",
         )
-        response = "You do not currently have an account open. To create one, respond with the text 'create' in the message body."
+        response = (
+            "You do not currently have an account open. To create one, "
+            "respond with the text 'create' in the message body."
+        )
         return response
 
 
@@ -433,21 +476,33 @@ def handle_silence(message):
     parsed_text = parse_text(str(message.body))
 
     if len(parsed_text) < 2:
-        response = "I couldn't parse your command. I was expecting 'silence <yes/no>'. Be sure to check your spacing."
+        response = (
+            "I couldn't parse your command. I was expecting 'silence "
+            "<yes/no>'. Be sure to check your spacing."
+        )
         return response
 
     if parsed_text[1] == "yes":
         sql = "UPDATE accounts SET silence = TRUE WHERE username = %s "
         val = (username,)
         MYCURSOR.execute(sql, val)
-        response = "Silence set to 'yes'. You will no longer receive tip notifications or be tagged by the bot."
+        response = (
+            "Silence set to 'yes'. You will no longer receive tip "
+            "notifications or be tagged by the bot."
+        )
     elif parsed_text[1] == "no":
         sql = "UPDATE accounts SET silence = FALSE WHERE username = %s"
         val = (username,)
         MYCURSOR.execute(sql, val)
-        response = "Silence set to 'no'. You will receive tip notifications and be tagged by the bot in replies."
+        response = (
+            "Silence set to 'no'. You will receive tip notifications and be "
+            "tagged by the bot in replies."
+        )
     else:
-        response = "I did not see 'no' or 'yes' after 'silence'. If you did type that, check your spacing."
+        response = (
+            "I did not see 'no' or 'yes' after 'silence'. If you did type "
+            "that, check your spacing."
+        )
     MYDB.commit()
 
     return response
@@ -566,10 +621,11 @@ def handle_send(message):
 
     # if we have a username, pull their info
     try:
+        new_account = False
         recipient = account_info(recipient["username"])
     except TipError:
         # user does not exist, create
-        recipient = new_account(recipient["username"])
+        recipient = add_new_account(recipient["username"])
     except KeyError:
         # otherwise, just use the address. Everything is None except address
         recipient = account_info(recipient["address"])
@@ -660,27 +716,22 @@ def handle_send(message):
             "sending ```%.4g Nano```. [Transaction on Nano Crawler](https://nanocrawler.cc/explorer/block/%s)"
             % (recipient["username"], amount / 10 ** 30, sent["hash"])
         )
-    elif recipient["silence"]:
-        return (
-            "Sent ```%.4g Nano``` to /u/%s -- [Transaction on Nano Crawler](https://nanocrawler.cc/explorer/block/%s)"
-            % (amount / 10 ** 30, recipient["username"], sent["hash"])
-        )
     else:
-
-        receiving_new_balance = check_balance(recipient["address"])
-        subject = "You just received a new Nano tip!"
-        message_text = (
-            NEW_TIP
-            % (
-                amount / 10 ** 30,
-                recipient["address"],
-                receiving_new_balance[0] / 10 ** 30,
-                (receiving_new_balance[1] / 10 ** 30 + amount / 10 ** 30),
-                sent["hash"],
+        if not recipient_text["silence"]:
+            receiving_new_balance = check_balance(recipient["address"])
+            subject = "You just received a new Nano tip!"
+            message_text = (
+                NEW_TIP
+                % (
+                    amount / 10 ** 30,
+                    recipient["address"],
+                    receiving_new_balance[0] / 10 ** 30,
+                    (receiving_new_balance[1] / 10 ** 30 + amount / 10 ** 30),
+                    sent["hash"],
+                )
+                + COMMENT_FOOTER
             )
-            + COMMENT_FOOTER
-        )
-        send_pm(recipient["username"], subject, message_text)
+            send_pm(recipient["username"], subject, message_text)
         return (
             "Sent ```%.4g Nano``` to /u/%s -- [Transaction on Nano Crawler](https://nanocrawler.cc/explorer/block/%s)"
             % (amount / 10 ** 30, recipient["username"], sent["hash"])

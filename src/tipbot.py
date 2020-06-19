@@ -2,11 +2,11 @@ import sys
 import time
 import datetime
 from time import sleep
-from tipper_rpc import get_pendings, open_or_receive_block
+from tipper_rpc import get_pendings, open_or_receive_block, send
+import tipper_functions
 from shared import (
     TIPBOT_OWNER,
     TIP_COMMANDS,
-    TIP_BOT_ON,
     LOGGER,
     MYCURSOR,
     MYDB,
@@ -18,6 +18,7 @@ from shared import (
     HELP,
     DONATE_COMMANDS,
     TIP_BOT_USERNAME,
+    NEW_TIP,
 )
 from message_functions import (
     handle_balance,
@@ -32,12 +33,17 @@ from message_functions import (
     add_history_record,
 )
 from tipper_functions import (
+    check_balance,
     parse_text,
-    handle_send_nano,
+    send_pm,
     nano_to_raw,
     allowed_request,
-    send,
     activate,
+    TipError,
+    update_history_notes,
+    account_info,
+    add_new_account,
+    parse_raw_amount,
 )
 
 CYCLE_TIME = 6
@@ -101,33 +107,14 @@ def stream_comments_messages():
 
 
 # handles tip commands on subreddits
-def handle_comment(message, parsed_text=None):
-    """
-    Prepares a reddit comment starting with !nano_tip to send nano if everything goes well
-    :param message:
-    :param parsed_text
-    :return:
-    """
-    # Pull the relevant text for the actual command
-    if parsed_text is None:
-        parsed_text = parse_text(str(message.body))
-    # check if it's a donate command at the end
-    if parsed_text[-3] in DONATE_COMMANDS:
-        parsed_text = parsed_text[-3:]
-    # check if it's a send command at the end
-    if parsed_text[-2] in TIP_COMMANDS:
-        parsed_text = parsed_text[-2:]
+def handle_comment(message):
 
-    # attempt to parse the message, send the Nano, and record responses
-    # response is a 6-member list with some info
-    # response[0] - message to the tip sender
-    # response[1] - a status code
-    # response[2] - Tip amount in 'Nano'
-    # response[3] - reddit username
-    # response[4] - reddit address
-    # response[5] - transaction hash
-    # If the recipient is new, it will automatically send a welcome greeting.
-    response = handle_send_nano(message, parsed_text, "comment")
+    response = send_from_comment(message)
+    # now figure out what to do with the response
+    # find the subreddit status.
+    # If friendly, post the response.
+    # If not friendly, send a PM to the sender
+    pass
 
     # apply the subreddit rules to our response message
     # potential statuses:
@@ -223,6 +210,129 @@ def handle_comment(message, parsed_text=None):
     elif subreddit_status == "custom":
         # not sure what to do with this yet.
         pass
+
+
+def send_from_comment(message):
+    """
+        Extracts send command information from a PM command
+        :param message:
+        :return: response string
+        """
+    new_account = True
+    parsed_text = parse_text(str(message.body))
+
+    # check if it's a donate command at the end
+    if parsed_text[-3] in DONATE_COMMANDS:
+        parsed_text = parsed_text[-3:]
+    # check if it's a send command at the end
+    if parsed_text[-2] in TIP_COMMANDS:
+        parsed_text = parsed_text[-2:]
+    username = str(message.author)
+
+    message_time = datetime.utcfromtimestamp(
+        message.created_utc
+    )  # time the reddit message was created
+    entry_id = add_history_record(
+        username=username,
+        action="send",
+        comment_or_message="comment",
+        comment_id=message.name,
+        reddit_time=message_time.strftime("%Y-%m-%d %H:%M:%S"),
+        comment_text=str(message.body)[:255],
+    )
+
+    # pull sender account info
+    try:
+        sender = tipper_functions.account_info(username=username)
+    except TipError as err:
+        update_history_notes(entry_id, err.sql_text)
+        return err.response
+
+    # parse the amount
+    try:
+        amount = parse_raw_amount(parsed_text)
+    except TipError as err:
+        update_history_notes(entry_id, err.sql_text)
+        return err.response
+
+    # check if it's above the program minimum
+    if amount < nano_to_raw(PROGRAM_MINIMUM):
+        update_history_notes(entry_id, "amount below program limit")
+        response = "Program minimum is %s Nano." % PROGRAM_MINIMUM
+        return response
+
+    # check the user's balance
+    if amount > sender["balance"]:
+        update_history_notes(entry_id, "insufficient funds")
+        response = "You have insufficient funds. Please check your balance."
+        return response
+
+    # if it's a normal send, pull the account author
+    # we will distinguish users from donations by the presence of a private key
+    if parsed_text[0] in TIP_COMMANDS:
+        try:
+            recipient = account_info(str(message.author))
+            new_account = False
+        except TipError:
+            recipient = add_new_account(recipient["username"])
+            new_account = True
+    elif parsed_text[0] in DONATE_COMMANDS:
+        recipient_text = parsed_text[2]
+        # todo get the nanocenter donation address
+    else:
+        return "Something strange happened."
+
+    # check the send amount is above the user minimum, if a username is provided
+    # if it was just an address, this would be -1
+    if amount >= recipient["minimum"]:
+        update_history_notes(entry_id, "below user minimum")
+        response = (
+            "Sorry, the user has set a tip minimum of %s. "
+            "Your tip of %s is below this amount."
+            % (recipient["minimum"] / 10 ** 30, amount / 10 ** 30)
+        )
+        return response
+
+    # send the nanos!!
+    sent = send(sender["address"], sender["private_key"], amount, recipient["address"])
+
+    # Update the sql and send the PMs if needed
+    if "private_key" not in recipient.keys():
+        # todo fill out donation logic
+        pass
+    elif new_account:
+        subject = "Congrats on receiving your first Nano Tip!"
+        message_text = (
+            WELCOME_TIP
+            % (amount / 10 ** 30, recipient["address"], recipient["address"])
+            + COMMENT_FOOTER
+        )
+        send_pm(recipient["username"], subject, message_text)
+        return (
+            "Creating a new account for /u/%s and "
+            "sending ```%.4g Nano```. [Transaction on Nano Crawler](https://nanocrawler.cc/explorer/block/%s)"
+            % (recipient["username"], amount / 10 ** 30, sent["hash"])
+        )
+    else:
+        if not recipient_text["silence"]:
+            receiving_new_balance = check_balance(recipient["address"])
+            subject = "You just received a new Nano tip!"
+            message_text = (
+                NEW_TIP
+                % (
+                    amount / 10 ** 30,
+                    recipient["address"],
+                    receiving_new_balance[0] / 10 ** 30,
+                    (receiving_new_balance[1] / 10 ** 30 + amount / 10 ** 30),
+                    sent["hash"],
+                )
+                + COMMENT_FOOTER
+            )
+            send_pm(recipient["username"], subject, message_text)
+        return (
+            "Sent ```%.4g Nano``` to /u/%s -- [Transaction on Nano Crawler](https://nanocrawler.cc/explorer/block/%s)"
+            % (amount / 10 ** 30, recipient["username"], sent["hash"])
+        )
 
 
 # These functions below handle the various messages the bot will receive
