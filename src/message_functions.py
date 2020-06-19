@@ -1,3 +1,4 @@
+import sys
 from datetime import datetime
 import tipper_functions
 from tipper_functions import (
@@ -9,6 +10,7 @@ from tipper_functions import (
     update_history_notes,
     parse_raw_amount,
     send_pm,
+    activate,
 )
 from tipper_rpc import (
     check_balance,
@@ -30,7 +32,137 @@ from shared import (
     WELCOME_TIP,
     COMMENT_FOOTER,
     NEW_TIP,
+    TIPBOT_OWNER,
 )
+
+
+def handle_message(message):
+    # activate the account
+    activate(message.author)
+    response = "not activated"
+    parsed_text = parse_text(str(message.body))
+
+    # standard things
+    if (parsed_text[0].lower() == "help") or (parsed_text[0].lower() == "!help"):
+        LOGGER.info("Helping")
+        subject = "Nano Tipper - Help"
+        response = handle_help(message)
+    elif (parsed_text[0].lower() == "balance") or (parsed_text[0].lower() == "address"):
+        LOGGER.info("balance")
+        subject = "Nano Tipper - Account Balance"
+        response = handle_balance(message)
+    elif parsed_text[0].lower() == "minimum":
+        LOGGER.info("Setting Minimum")
+        subject = "Nano Tipper - Tip Minimum"
+        response = handle_minimum(message)
+    elif parsed_text[0].lower() == "percentage" or parsed_text[0].lower() == "percent":
+        LOGGER.info("Setting Percentage")
+        subject = "Nano Tipper - Returned Tip Percentage for Donation"
+        response = handle_percentage(message)
+    elif (parsed_text[0].lower() == "create") or parsed_text[0].lower() == "register":
+        LOGGER.info("Creating")
+        subject = "Nano Tipper - Create"
+        response = handle_create(message)
+    elif (parsed_text[0].lower() == "send") or (parsed_text[0].lower() == "withdraw"):
+        subject = "Nano Tipper - Send"
+        LOGGER.info("send via PM")
+        response = handle_send(message)
+    elif parsed_text[0].lower() == "history":
+        LOGGER.info("history")
+        subject = "Nano Tipper - History"
+        response = handle_history(message)
+    elif parsed_text[0].lower() == "silence":
+        LOGGER.info("silencing")
+        subject = "Nano Tipper - Silence"
+        response = handle_silence(message)
+    elif parsed_text[0].lower() == "subreddit":
+        LOGGER.info("subredditing")
+        subject = "Nano Tipper - Subreddit"
+        response = handle_subreddit(message)
+
+    # nanocenter donation commands
+    elif parsed_text[0].lower() in ("project", "projects"):
+        if (
+            (str(message.author) == TIPBOT_OWNER)
+            or (str(message.author).lower() == "rockmsockmjesus")
+        ) and len(parsed_text) > 2:
+            sql = "INSERT INTO projects (project, address) VALUES(%s, %s) ON DUPLICATE KEY UPDATE address=%s"
+            val = (parsed_text[1], parsed_text[2], parsed_text[2])
+            MYCURSOR.execute(sql, val)
+            MYDB.commit()
+        add_history_record(
+            username=str(message.author),
+            action="project",
+            comment_text=str(message.body)[:255],
+            comment_or_message="message",
+            comment_id=message.name,
+        )
+
+        response = "Current NanoCenter Donation Projects: \n\n"
+        subject = "Nanocenter Projects"
+        sql = "SELECT project, address FROM projects"
+        MYCURSOR.execute(sql)
+        results = MYCURSOR.fetchall()
+        for result in results:
+            response += "%s %s  \n" % (result[0], result[1])
+    elif parsed_text[0].lower() == "delete_project":
+        if (
+            (str(message.author) == TIPBOT_OWNER)
+            or (str(message.author).lower() == "rockmsockmjesus")
+        ) and len(parsed_text) > 1:
+            sql = "DELETE FROM projects WHERE project=%s"
+            val = (parsed_text[1],)
+            MYCURSOR.execute(sql, val)
+            MYDB.commit()
+        response = "Current NanoCenter Donation Projects: \n\n"
+        subject = "Nanocenter Projects"
+        sql = "SELECT project, address FROM projects"
+        MYCURSOR.execute(sql)
+        results = MYCURSOR.fetchall()
+        for result in results:
+            response += "%s %s  \n" % (result[0], result[1])
+    # a few administrative tasks
+    elif parsed_text[0].lower() in ["restart", "stop", "disable", "deactivate"]:
+        if str(message.author).lower() in [
+            TIPBOT_OWNER,
+            "rockmsockmjesus",
+        ]:  # "joohansson"]:
+            add_history_record(
+                username=str(message.author),
+                action="restart",
+                comment_text=str(message.body)[:255],
+                comment_or_message="message",
+                comment_id=message.name,
+            )
+            sys.exit()
+    elif parsed_text[0].lower() == "test_welcome_tipped":
+        subject = "Nano Tipper - Welcome By Tip"
+        response = WELCOME_TIP % (
+            0.01,
+            "xrb_3jy9954gncxbhuieujc3pg5t1h36e7tyqfapw1y6zukn9y1g6dj5xr7r6pij",
+            "xrb_3jy9954gncxbhuieujc3pg5t1h36e7tyqfapw1y6zukn9y1g6dj5xr7r6pij",
+        )
+    elif parsed_text[0].lower() == "test_welcome_create":
+        subject = "Nano Tipper - Create"
+        response = WELCOME_CREATE % (
+            "xrb_3jy9954gncxbhuieujc3pg5t1h36e7tyqfapw1y6zukn9y1g6dj5xr7r6pij",
+            "xrb_3jy9954gncxbhuieujc3pg5t1h36e7tyqfapw1y6zukn9y1g6dj5xr7r6pij",
+        )
+
+    else:
+        add_history_record(
+            username=str(message.author),
+            comment_text=str(message.body)[:255],
+            comment_or_message="message",
+            comment_id=message.name,
+        )
+        return None
+    message_recipient = str(message.author)
+    message_text = response + COMMENT_FOOTER
+    sql = "INSERT INTO messages (username, subject, message) VALUES (%s, %s, %s)"
+    val = (message_recipient, subject, message_text)
+    MYCURSOR.execute(sql, val)
+    MYDB.commit()
 
 
 def handle_percentage(message):
