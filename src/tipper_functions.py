@@ -226,7 +226,7 @@ def account_info(username=None, address=None):
             "username": username,
             "address": result[0][0],
             "private_key": result[0][1],
-            "minimum": result[0][2],
+            "minimum": int(result[0][2]),
             "silence": result[0][3],
             "balance": check_balance(result[0][0])[0],
             "account_exists": True,

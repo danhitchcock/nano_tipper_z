@@ -1,4 +1,3 @@
-import sys
 import time
 import datetime
 from time import sleep
@@ -44,7 +43,7 @@ def get_subreddits():
     MYDB.commit()
     if len(results) == 0:
         return None
-    subreddits = "+".join(results)
+    subreddits = "+".join(result[0] for result in results)
     return REDDIT.subreddit(subreddits)
 
 
@@ -146,7 +145,7 @@ def send_from_comment(message):
         parsed_text = parsed_text[-2:]
     username = str(message.author)
 
-    message_time = datetime.utcfromtimestamp(
+    message_time = datetime.datetime.utcfromtimestamp(
         message.created_utc
     )  # time the reddit message was created
     entry_id = add_history_record(
@@ -179,10 +178,10 @@ def send_from_comment(message):
         return response
 
     # check if amount is above subreddit minimum
-
-    sql = "SELECT status FROM subreddits WHERE subreddit = %s"
-    val = str(message.subreddit())
-    results = MYCURSOR.execute(sql, val)
+    sql = "SELECT status FROM subreddits WHERE subreddit=%s"
+    val = (str(message.subreddit).lower(),)
+    MYCURSOR.execute(sql, val)
+    results = MYCURSOR.fetchall()
     MYDB.commit()
     if len(results) == 0:
         subreddit_minimum = 1

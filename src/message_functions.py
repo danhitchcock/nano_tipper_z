@@ -648,7 +648,7 @@ def handle_subreddit(message):
         return "Your command seems to be missing something. Make sure it follow the format `subreddit <subreddit> <command> <option>.`"
     # check if the user is a moderator of the subreddit
     if message.author not in REDDIT.subreddit(parsed_text[1]).moderator():
-        return "You are not a moderator of the subreddit."
+        return "You are not a moderator of /r/%s." % parsed_text[1]
 
     if parsed_text[2] == "minimum":
         return "Subreddit-specific minimums aren't enabled yet. Check back soon!"
@@ -663,7 +663,7 @@ def handle_subreddit(message):
         except:
             pass
         return (
-            "Tipping via !ntip has been deactivated in your subreddit %s"
+            "Within 5 minutes, tipping will be deactivated in your subreddit %s."
             % parsed_text[1]
         )
 
@@ -684,7 +684,10 @@ def handle_subreddit(message):
             val = (status, parsed_text[1])
             MYCURSOR.execute(sql, val)
             MYDB.commit()
-        return "Set the tipbot response in your Subreddit to %s" % status
+        return (
+            "Within 5 minutes, the tipbot response in your Subreddit will be set to %s."
+            % status
+        )
 
     # only 4 word commands after this point
     if len(parsed_text) < 4:
@@ -772,7 +775,7 @@ def handle_send(message):
 
     # check the send amount is above the user minimum, if a username is provided
     # if it was just an address, this would be -1
-    if amount >= recipient["minimum"]:
+    if amount < recipient["minimum"]:
         update_history_notes(entry_id, "below user minimum")
         response = (
             "Sorry, the user has set a tip minimum of %s. "
@@ -849,7 +852,7 @@ def handle_send(message):
             % (recipient["username"], amount / 10 ** 30, sent["hash"])
         )
     else:
-        if not recipient_text["silence"]:
+        if not recipient["silence"]:
             receiving_new_balance = check_balance(recipient["address"])
             subject = "You just received a new Nano tip!"
             message_text = (
