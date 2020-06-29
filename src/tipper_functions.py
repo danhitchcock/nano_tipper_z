@@ -2,7 +2,16 @@ import time
 import requests
 import json
 from datetime import datetime
-from shared import MYCURSOR, MYDB, RECIPIENT_MINIMUM, EXCLUDED_REDDITORS
+from shared import (
+    MYCURSOR,
+    MYDB,
+    RECIPIENT_MINIMUM,
+    EXCLUDED_REDDITORS,
+    TIP_BOT_USERNAME,
+    LOGGER,
+    TIP_COMMANDS,
+    DONATE_COMMANDS,
+)
 from tipper_rpc import generate_account, nano_to_raw, check_balance
 
 
@@ -86,7 +95,9 @@ class GracefulList(list):
 
     def __getitem__(self, name):
         try:
-            return super().__getitem__(name)
+            if isinstance(name, int):
+                return super().__getitem__(name)
+            return GracefulList(super().__getitem__(name))
         except IndexError:
             return None
 
@@ -117,7 +128,15 @@ def add_new_account(username):
     )
     MYCURSOR.execute(sql, val)
     MYDB.commit()
-    return address
+    return {
+        "username": username,
+        "address": address,
+        "private_key": private,
+        "minimum": nano_to_raw(RECIPIENT_MINIMUM),
+        "silence": False,
+        "balance": 0,
+        "account_exists": True,
+    }
 
 
 def activate(author):
@@ -258,8 +277,7 @@ def parse_raw_amount(parsed_text, username=None):
     # "!ntip 1 USD great jorb"
     # regardless of it being a message or a donate command, the actual amount will
     # always be at [1]
-
-    if parsed_text[2].lower() in EXCLUDED_REDDITORS:
+    if (parsed_text[2]) and parsed_text[2].lower() in EXCLUDED_REDDITORS:
         raise TipError(
             "conversion syntax error",
             "It wasn't clear if you were trying to perform a currency conversion or not. If so, be sure there is no space between the amount and currency. Example: '!ntip 0.5USD'",
@@ -321,3 +339,79 @@ def parse_raw_amount(parsed_text, username=None):
                 "'Nano' from the amount (I will fix this in a future update).",
             )
     return amount
+
+
+def parse_action(action_item):
+    if action_item is not None:
+        parsed_text = parse_text(str(action_item.body))
+    else:
+        return None
+    if message_in_database(action_item):
+        return "prevented replay"
+    elif not allowed_request(action_item.author, 30, 5):
+        return "spam prevention"
+    # check if it's a non-username post and if it has a tip or donate command
+    elif action_item.name.startswith("t1_") and bool(
+        {parsed_text[0], parsed_text[-2], parsed_text[-3]}
+        & set(TIP_COMMANDS + DONATE_COMMANDS)
+    ):
+        LOGGER.info(f"Comment: {action_item.author} - " f"{action_item.body[:20]}")
+        return "comment"
+    # otherwise, lets parse the message. t4 means either a message or username mention
+    elif action_item.name.startswith("t4_"):
+        # check if it is a message from the bot.
+        if action_item.author == TIP_BOT_USERNAME:
+            # check if its a send, otherwise ignore
+            if action_item.body.startswith("send 0.001 "):
+                LOGGER.info(
+                    f"Faucet Tip: {action_item.author} - {action_item.body[:20]}"
+                )
+                return "faucet_tip"
+            else:
+                return "ignore"
+        # otherwise, check if it's a username mention
+        elif bool(
+            {parsed_text[0], parsed_text[-2]}
+            & {"/u/%s" % TIP_BOT_USERNAME, "u/%s" % TIP_BOT_USERNAME}
+        ):
+            LOGGER.info(
+                f"Username Mention: {action_item.author} - {action_item.body[:20]}"
+            )
+            return "username_mention"
+        # otherwise, it's a normal message
+        else:
+            LOGGER.info(f"Comment: {action_item.author} - " f"{action_item.body[:20]}")
+            return "message"
+    return None
+
+
+def message_in_database(message):
+    sql = "SELECT * FROM history WHERE comment_id = %s"
+    val = (message.name,)
+    print("this is a tipper message in database")
+    MYCURSOR.execute(sql, val)
+    results = MYCURSOR.fetchall()
+    if len(results) > 0:
+        LOGGER.info("Found previous messages: ")
+        for result in results:
+            LOGGER.info(result)
+        return True
+    return False
+
+
+def exec_sql(sql, val):
+    """
+    Makes sql stuff easier to mock, rather than mocking execute and fetchall
+    :param sql:
+    :param val:
+    :return:
+    """
+    MYCURSOR.execute(sql, val)
+    MYDB.commit()
+
+
+def query_sql(sql, val):
+    MYCURSOR.execute(sql, val)
+    results = MYCURSOR.fetchall()
+    MYDB.commit()
+    return results

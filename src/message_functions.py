@@ -4,9 +4,7 @@ import tipper_functions
 from tipper_functions import (
     parse_text,
     add_history_record,
-    add_new_account,
     TipError,
-    account_info,
     update_history_notes,
     parse_raw_amount,
     send_pm,
@@ -289,7 +287,7 @@ def handle_create(message):
     MYCURSOR.execute(sql, val)
     result = MYCURSOR.fetchall()
     if len(result) is 0:
-        address = add_new_account(username)
+        address = tipper_functions.add_new_account(username)
         response = WELCOME_CREATE % (address, address)
         message_recipient = TIP_BOT_USERNAME
         subject = "send"
@@ -753,23 +751,23 @@ def handle_send(message):
     except TipError as err:
         update_history_notes(entry_id, err.sql_text)
         return err.response
-
     # if we have a username, pull their info
     try:
+        recipient = tipper_functions.account_info(recipient["username"])
         new_account = False
-        recipient = account_info(recipient["username"])
     except TipError:
-        # user does not exist, create
-        recipient = add_new_account(recipient["username"])
+        # user does not exist, create and get the address
+        recipient = tipper_functions.add_new_account(recipient["username"])
+        new_account = True
     except KeyError:
         # otherwise, just use the address. Everything is None except address
-        recipient = account_info(recipient["address"])
+        recipient = tipper_functions.account_info(recipient["address"])
 
     # check that it wasn't a mistyped currency code or something
     if recipient["username"] in EXCLUDED_REDDITORS:
         response = (
-            "Sorry, the redditor '%s' is in the list of excluded addresses. More than likely you didn't intend to send to that user."
-            % (recipient["username"])
+            "Sorry, the redditor '%s' is in the list of excluded addresses. More than "
+            "likely you didn't intend to send to that user." % (recipient["username"])
         )
         return response
 
@@ -785,7 +783,8 @@ def handle_send(message):
         return response
 
     sent = send(sender["address"], sender["private_key"], amount, recipient["address"])
-    if "username" not in recipient.keys():
+    # if it was an address, just send to the address
+    if not recipient["username"]:
         sql = (
             "UPDATE history SET notes = %s, address = %s, username = %s, recipient_username = %s, "
             "recipient_address = %s, amount = %s, return_status = %s WHERE id = %s"
@@ -800,8 +799,7 @@ def handle_send(message):
             "cleared",
             entry_id,
         )
-        MYCURSOR.execute(sql, val)
-        MYDB.commit()
+        tipper_functions.exec_sql(sql, val)
         LOGGER.info(
             f"Sending Nano: {sender['address']} {sender['private_key']} {amount} {recipient['address']} {recipient['username']}"
         )
@@ -831,8 +829,7 @@ def handle_send(message):
         "cleared",
         entry_id,
     )
-    MYCURSOR.execute(sql, val)
-    MYDB.commit()
+    tipper_functions.exec_sql(sql, val)
     LOGGER.info(
         f"Sending Nano: {sender['address']} {sender['private_key']} {amount} {recipient['address']} {recipient['username']}"
     )
@@ -874,6 +871,11 @@ def handle_send(message):
 
 
 def parse_recipient_username(recipient_text):
+    """
+    Determines if a specified recipient is a nano address or a redditor
+    :param recipient_text:
+    :return:
+    """
     # remove the /u/ or u/
     if recipient_text[:3].lower() == "/u/":
         recipient_text = recipient_text[3:]
@@ -892,11 +894,11 @@ def parse_recipient_username(recipient_text):
         else:
             try:
                 _ = getattr(REDDIT.redditor(recipient_text), "is_suspended", False)
-                recipient = {"username": recipient_text}
+                return {"username": recipient_text}
             except:
                 raise TipError(
                     "invalid address or address-like redditor does not exist",
-                    "%s is neither a valid address nor a redditor" % recipient,
+                    "%s is neither a valid address nor a redditor" % recipient_text,
                 )
     else:
         # a username was specified

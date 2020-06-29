@@ -3,7 +3,7 @@ import mysql.connector
 import configparser
 import praw
 import logging
-from text import COMMENT_FOOTER, HELP, WELCOME_CREATE, WELCOME_TIP, NEW_TIP
+from text import *
 
 
 LOGGER = logging.getLogger("reddit-tipbot")

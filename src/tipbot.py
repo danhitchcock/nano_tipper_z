@@ -1,40 +1,27 @@
 import time
-import datetime
+
 from time import sleep
 from tipper_rpc import get_pendings, open_or_receive_block, send
-import tipper_functions
+
 from shared import (
-    TIP_COMMANDS,
     LOGGER,
     MYCURSOR,
     MYDB,
     REDDIT,
-    COMMENT_FOOTER,
-    WELCOME_TIP,
     PROGRAM_MINIMUM,
-    HELP,
-    DONATE_COMMANDS,
-    TIP_BOT_USERNAME,
-    NEW_TIP,
 )
+
+from text import HELP
 from message_functions import (
     handle_message,
     add_history_record,
 )
 from tipper_functions import (
-    check_balance,
-    parse_text,
-    send_pm,
     nano_to_raw,
-    allowed_request,
-    TipError,
-    update_history_notes,
-    account_info,
-    add_new_account,
-    parse_raw_amount,
+    parse_action,
 )
+from comment_functions import handle_comment
 
-CYCLE_TIME = 6
 # initiate the bot and all friendly subreddits
 def get_subreddits():
     MYCURSOR.execute("SELECT subreddit FROM subreddits")
@@ -50,8 +37,8 @@ def get_subreddits():
 SUBREDDITS = get_subreddits()
 
 
-# a few globals.
-toggle_receive = True
+# how often we poll for new transactions
+CYCLE_TIME = 6
 
 
 def stream_comments_messages():
@@ -91,246 +78,6 @@ def stream_comments_messages():
             yield None
 
 
-# handles tip commands on subreddits
-def handle_comment(message):
-
-    response = send_from_comment(message)
-
-    sql = "SELECT status FROM subreddits WHERE subreddit=%s"
-    val = (str(message.subreddit).lower(),)
-    MYCURSOR.execute(sql, val)
-    results = MYCURSOR.fetchall()
-
-    if len(results) == 0:
-        subreddit_status = "silent"
-    else:
-        subreddit_status = results[0][0]
-
-    # if it is a top level reply and the subreddit is friendly
-    if (str(message.parent_id)[:3] == "t3_") and (
-        subreddit_status in ["friendly", "full"]
-    ):
-        message.reply(response + COMMENT_FOOTER)
-    # otherwise, if the subreddit is friendly (and reply is not top level) or subreddit is minimal
-    elif subreddit_status in ["friendly", "minimal", "full"]:
-        message.reply(response + COMMENT_FOOTER)
-    elif subreddit_status in ["hostile", "silent"]:
-        # it's a hostile place, no posts allowed. Will need to PM users
-        message_recipient = str(message.author)
-        subject = "Your Nano Tip Status"
-        message_text = response + COMMENT_FOOTER
-        sql = "INSERT INTO messages (username, subject, message) VALUES (%s, %s, %s)"
-        val = (message_recipient, subject, message_text)
-        MYCURSOR.execute(sql, val)
-        MYDB.commit()
-    elif subreddit_status == "custom":
-        # not sure what to do with this yet.
-        pass
-
-
-def send_from_comment(message):
-    """
-        Extracts send command information from a PM command
-        :param message:
-        :return: response string
-        """
-    new_account = True
-    parsed_text = parse_text(str(message.body))
-
-    # check if it's a donate command at the end
-    if parsed_text[-3] in DONATE_COMMANDS:
-        parsed_text = parsed_text[-3:]
-    # check if it's a send command at the end
-    if parsed_text[-2] in TIP_COMMANDS:
-        parsed_text = parsed_text[-2:]
-    username = str(message.author)
-
-    message_time = datetime.datetime.utcfromtimestamp(
-        message.created_utc
-    )  # time the reddit message was created
-    entry_id = add_history_record(
-        username=username,
-        action="send",
-        comment_or_message="comment",
-        comment_id=message.name,
-        reddit_time=message_time.strftime("%Y-%m-%d %H:%M:%S"),
-        comment_text=str(message.body)[:255],
-    )
-
-    # pull sender account info
-    try:
-        sender = tipper_functions.account_info(username=username)
-    except TipError as err:
-        update_history_notes(entry_id, err.sql_text)
-        return err.response
-
-    # parse the amount
-    try:
-        amount = parse_raw_amount(parsed_text)
-    except TipError as err:
-        update_history_notes(entry_id, err.sql_text)
-        return err.response
-
-    # check if it's above the program minimum
-    if amount < nano_to_raw(PROGRAM_MINIMUM):
-        update_history_notes(entry_id, "amount below program limit")
-        response = "Program minimum is %s Nano." % PROGRAM_MINIMUM
-        return response
-
-    # check if amount is above subreddit minimum
-    sql = "SELECT status FROM subreddits WHERE subreddit=%s"
-    val = (str(message.subreddit).lower(),)
-    MYCURSOR.execute(sql, val)
-    results = MYCURSOR.fetchall()
-    MYDB.commit()
-    if len(results) == 0:
-        subreddit_minimum = 1
-    elif results[0][0] in ["friendly", "minimal", "silent"]:
-        subreddit_minimum = 0
-    else:
-        subreddit_minimum = 1
-    if amount < nano_to_raw(subreddit_minimum):
-        update_history_notes(entry_id, "amount below subreddit minimum")
-        response = (
-            "To tip in unfamiliar subreddits, the tip amount must be 1 Nano or more. You attempted to tip %s Nano"
-            % (amount / 10 ** 30)
-        )
-        return response
-
-    # check the user's balance
-    if amount > sender["balance"]:
-        update_history_notes(entry_id, "insufficient funds")
-        response = "You have insufficient funds. Please check your balance."
-        return response
-
-    # if it's a normal send, pull the account author
-    # we will distinguish users from donations by the presence of a private key
-    if parsed_text[0] in TIP_COMMANDS:
-        try:
-            recipient = account_info(str(message.author))
-            new_account = False
-        except TipError:
-            recipient = add_new_account(recipient["username"])
-            new_account = True
-    elif parsed_text[0] in DONATE_COMMANDS:
-        results = MYCURSOR.execute(
-            "FROM projects SELECT address WHERE project = %s", (parsed_text[2],)
-        )
-        if len(results) <= 0:
-            return "No Nanocenter project named %s was found." % parsed_text[2]
-        recipient = {
-            "username": parsed_text[2],
-            "address": results[0][0],
-            "minimum": -1,
-        }
-    else:
-        return "Something strange happened."
-
-    # check the send amount is above the user minimum, if a username is provided
-    # if it was just an address, this would be -1
-    if amount >= recipient["minimum"]:
-        update_history_notes(entry_id, "below user minimum")
-        response = (
-            "Sorry, the user has set a tip minimum of %s. "
-            "Your tip of %s is below this amount."
-            % (recipient["minimum"] / 10 ** 30, amount / 10 ** 30)
-        )
-        return response
-
-    # send the nanos!!
-    sent = send(sender["address"], sender["private_key"], amount, recipient["address"])
-
-    # Update the sql and send the PMs
-    sql = (
-        "UPDATE history SET notes = %s, address = %s, username = %s, recipient_username = %s, "
-        "recipient_address = %s, amount = %s, return_status = %s WHERE id = %s"
-    )
-    val = (
-        "sent to user",
-        sender["address"],
-        sender["username"],
-        recipient["username"],
-        recipient["address"],
-        str(amount),
-        "cleared",
-        entry_id,
-    )
-    MYCURSOR.execute(sql, val)
-    MYDB.commit()
-    LOGGER.info(
-        f"Sending Nano: {sender['address']} {sender['private_key']} {amount} {recipient['address']} {recipient['username']}"
-    )
-
-    # Update the sql and send the PMs if needed
-    if "private_key" not in recipient.keys():
-        sql = "UPDATE history SET notes = %s, address = %s, username = %s, recipient_address = %s, amount = %s WHERE id = %s"
-        val = (
-            "sent to nanocenter address",
-            sender["address"],
-            username,
-            recipient["address"],
-            str(amount),
-            entry_id,
-        )
-        MYCURSOR.execute(sql, val)
-        MYDB.commit()
-        return (
-            "Donated ```%.4g Nano``` to Nanocenter Project %s -- [Transaction on Nano Crawler](https://nanocrawler.cc/explorer/block/%s)"
-            % (amount / 10 ** 30, recipient["username"], sent["hash"])
-        )
-
-    # update the sql database and send
-    sql = (
-        "UPDATE history SET notes = %s, address = %s, username = %s, recipient_username = %s, "
-        "recipient_address = %s, amount = %s, return_status = %s WHERE id = %s"
-    )
-    val = (
-        "sent to user",
-        sender["address"],
-        sender["username"],
-        recipient["username"],
-        recipient["address"],
-        str(amount),
-        "cleared",
-        entry_id,
-    )
-    MYCURSOR.execute(sql, val)
-    MYDB.commit()
-    if new_account:
-        subject = "Congrats on receiving your first Nano Tip!"
-        message_text = (
-            WELCOME_TIP
-            % (amount / 10 ** 30, recipient["address"], recipient["address"])
-            + COMMENT_FOOTER
-        )
-        send_pm(recipient["username"], subject, message_text)
-        return (
-            "Creating a new account for /u/%s and "
-            "sending ```%.4g Nano```. [Transaction on Nano Crawler](https://nanocrawler.cc/explorer/block/%s)"
-            % (recipient["username"], amount / 10 ** 30, sent["hash"])
-        )
-    else:
-        if not recipient["silence"]:
-            receiving_new_balance = check_balance(recipient["address"])
-            subject = "You just received a new Nano tip!"
-            message_text = (
-                NEW_TIP
-                % (
-                    amount / 10 ** 30,
-                    recipient["address"],
-                    receiving_new_balance[0] / 10 ** 30,
-                    (receiving_new_balance[1] / 10 ** 30 + amount / 10 ** 30),
-                    sent["hash"],
-                )
-                + COMMENT_FOOTER
-            )
-            send_pm(recipient["username"], subject, message_text)
-        return (
-            "Sent ```%.4g Nano``` to /u/%s -- [Transaction on Nano Crawler](https://nanocrawler.cc/explorer/block/%s)"
-            % (amount / 10 ** 30, recipient["username"], sent["hash"])
-        )
-
-
 def auto_receive():
     count = 0
     MYCURSOR.execute("SELECT username, address, private_key FROM accounts")
@@ -359,19 +106,6 @@ def auto_receive():
             pass
         except Exception as e:
             print(e)
-
-
-def message_in_database(message):
-    sql = "SELECT * FROM history WHERE comment_id = %s"
-    val = (message.name,)
-    MYCURSOR.execute(sql, val)
-    results = MYCURSOR.fetchall()
-    if len(results) > 0:
-        LOGGER.info("Found previous messages: ")
-        for result in results:
-            LOGGER.info(result)
-        return True
-    return False
 
 
 def check_inactive_transactions():
@@ -620,7 +354,7 @@ def check_inactive_transactions():
 
 
 def main_loop():
-
+    global SUBREDDITS
     actions = {
         "message": handle_message,
         "comment": handle_comment,
@@ -650,53 +384,8 @@ def main_loop():
 
         # refresh subreddit status every 5 minutes
         if time.time() - subreddit_timer > 300:
-            global SUBREDDITS
             subreddit_timer = time.time()
             SUBREDDITS = get_subreddits()
-
-
-def parse_action(action_item):
-    if action_item is not None:
-        parsed_text = parse_text(str(action_item.body))
-    else:
-        return None
-    if message_in_database(action_item):
-        return "prevented replay"
-    elif not allowed_request(action_item.author, 30, 5):
-        return "spam prevention"
-    # check if it's a non-username post and if it has a tip or donate command
-    elif action_item.name.startswith("t1_") and bool(
-        {parsed_text[0], parsed_text[-2], parsed_text[-3]}
-        & set(TIP_COMMANDS + DONATE_COMMANDS)
-    ):
-        LOGGER.info(f"Comment: {action_item.author} - " f"{action_item.body[:20]}")
-        return "comment"
-    # otherwise, lets parse the message. t4 means either a message or username mention
-    elif action_item.name.startswith("t4_"):
-        # check if it is a message from the bot.
-        if action_item.author == TIP_BOT_USERNAME:
-            # check if its a send, otherwise ignore
-            if action_item.body.startswith("send 0.001 "):
-                LOGGER.info(
-                    f"Faucet Tip: {action_item.author} - {action_item.body[:20]}"
-                )
-                return "faucet_tip"
-            else:
-                return "ignore"
-        # otherwise, check if it's a username mention
-        elif bool(
-            {parsed_text[0], parsed_text[-2]}
-            & {"/u/%s" % TIP_BOT_USERNAME, "u/%s" % TIP_BOT_USERNAME}
-        ):
-            LOGGER.info(
-                f"Username Mention: {action_item.author} - {action_item.body[:20]}"
-            )
-            return "username_mention"
-        # otherwise, it's a normal message
-        else:
-            LOGGER.info(f"Comment: {action_item.author} - " f"{action_item.body[:20]}")
-            return "message"
-    return None
 
 
 if __name__ == "__main__":
