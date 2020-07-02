@@ -712,97 +712,125 @@ def handle_send(message):
         reddit_time=message_time.strftime("%Y-%m-%d %H:%M:%S"),
         comment_text=str(message.body)[:255],
     )
+    response = {"username": username}
+
     # check that there are enough fields (i.e. a username)
-    if len(parsed_text) == 2:
-        update_history_notes(entry_id, "no recipient specified")
-        response = "You must specify an amount and a user."
+    if len(parsed_text) <= 2:
+        update_history_notes(entry_id, "no recipient or amount specified")
+        response["status"] = 110
         return response
+        response = "You must specify an amount and a user, e.g. `send 1 nano_tipper`."
 
     # pull sender account info
-    try:
-        sender = tipper_functions.account_info(username=username)
-    except TipError as err:
-        update_history_notes(entry_id, err.sql_text)
-        return err.response
-
-    # parse the amount
-    try:
-        amount = parse_raw_amount(parsed_text)
-    except TipError as err:
-        update_history_notes(entry_id, err.sql_text)
-        return err.response
-
-    # check if it's above the program minimum
-    if amount < nano_to_raw(PROGRAM_MINIMUM):
-        update_history_notes(entry_id, "amount below program limit")
-        response = "Program minimum is %s Nano." % PROGRAM_MINIMUM
+    sender_info = tipper_functions.account_info(username)
+    if not sender_info:
+        update_history_notes(entry_id, "user does not exist")
+        response["status"] = 100
         return response
-
-    # check the user's balance
-    if amount > sender["balance"]:
-        update_history_notes(entry_id, "insufficient funds")
-        response = "You have insufficient funds. Please check your balance."
-        return response
-
-    recipient_text = parsed_text[2]
-
-    try:
-        recipient = parse_recipient_username(recipient_text)
-    except TipError as err:
-        update_history_notes(entry_id, err.sql_text)
-        return err.response
-    # if we have a username, pull their info
-    try:
-        recipient = tipper_functions.account_info(recipient["username"])
-        new_account = False
-    except TipError:
-        # user does not exist, create and get the address
-        recipient = tipper_functions.add_new_account(recipient["username"])
-        new_account = True
-    except KeyError:
-        # otherwise, just use the address. Everything is None except address
-        recipient = tipper_functions.account_info(recipient["address"])
 
     # check that it wasn't a mistyped currency code or something
-    if recipient["username"] in EXCLUDED_REDDITORS:
+    if parsed_text[2] in EXCLUDED_REDDITORS:
+        response["status"] = 140
+        return response
         response = (
-            "Sorry, the redditor '%s' is in the list of excluded addresses. More than "
-            "likely you didn't intend to send to that user." % (recipient["username"])
+            "It wasn't clear if you were trying to perform a currency conversion or "
+            "not. If so, be sure there is no space between the amount and currency. "
+            "Example: '!ntip 0.5USD'"
         )
         return response
 
+    # parse the amount
+    try:
+        response["amount"] = parse_raw_amount(parsed_text)
+    except TipError as err:
+        print(err)
+        response["status"] = 120
+        response["amount"] = parsed_text[1]
+        update_history_notes(entry_id, err.sql_text)
+        return response
+
+    # check if it's above the program minimum
+    if response["amount"] < nano_to_raw(PROGRAM_MINIMUM):
+        update_history_notes(entry_id, "amount below program limit")
+        response["status"] = 130
+        return response
+        response = "Program minimum is %s Nano." % PROGRAM_MINIMUM
+
+    # check the user's balance
+    if response["amount"] > sender_info["balance"]:
+        update_history_notes(entry_id, "insufficient funds")
+        response["status"] = 160
+        return response
+        response = "You have insufficient funds. Please check your balance."
+
+    recipient_text = parsed_text[2]
+
+    # catch invalid redditor AND address
+    try:
+        recipient_info = parse_recipient_username(recipient_text)
+    except TipError as err:
+        response["recipient"] = recipient_text
+        response["status"] = 170
+        return response
+        update_history_notes(entry_id, err.sql_text)
+        return err.response
+
+    # if we have a username, pull their info
+    if "username" in recipient_info.keys():
+        response["recipient"] = recipient_info["username"]
+        recipient_name = recipient_info["username"]
+        recipient_info = tipper_functions.account_info(recipient_name)
+        response["status"] = 10
+        if recipient_info is None:
+            recipient_info = tipper_functions.add_new_account(response["recipient"])
+            response["status"] = 20
+    # check if it's an address
+    else:
+        # otherwise, just use the address. Everything is None except address
+        recipient_info["minimum"] = 0
+        response["recipient"] = recipient_info["address"]
+        response["status"] = 30
+
     # check the send amount is above the user minimum, if a username is provided
     # if it was just an address, this would be -1
-    if amount < recipient["minimum"]:
+    if response["amount"] < recipient_info["minimum"]:
         update_history_notes(entry_id, "below user minimum")
+        response["status"] = 180
+        response["minimum"] = recipient_info["minimum"]
+        return response
         response = (
             "Sorry, the user has set a tip minimum of %s. "
             "Your tip of %s is below this amount."
             % (recipient["minimum"] / 10 ** 30, amount / 10 ** 30)
         )
-        return response
 
-    sent = send(sender["address"], sender["private_key"], amount, recipient["address"])
+    sent = send(
+        sender_info["address"],
+        sender_info["private_key"],
+        response["amount"],
+        recipient_info["address"],
+    )
     # if it was an address, just send to the address
-    if not recipient["username"]:
+    if "username" not in recipient_info.keys():
         sql = (
             "UPDATE history SET notes = %s, address = %s, username = %s, recipient_username = %s, "
             "recipient_address = %s, amount = %s, return_status = %s WHERE id = %s"
         )
         val = (
             "send to address",
-            sender["address"],
-            sender["username"],
+            sender_info["address"],
+            sender_info["username"],
             None,
-            recipient["address"],
-            str(amount),
+            recipient_info["address"],
+            str(response["amount"]),
             "cleared",
             entry_id,
         )
         tipper_functions.exec_sql(sql, val)
         LOGGER.info(
-            f"Sending Nano: {sender['address']} {sender['private_key']} {amount} {recipient['address']} {recipient['username']}"
+            f"Sending Nano: {sender_info['address']} {sender_info['private_key']} {response['amount']} {recipient_info['address']}"
         )
+        return response
         return (
             "Sent ```%.4g Nano``` to [%s](https://nanocrawler.cc/explorer/account/%s) -- "
             "[Transaction on Nano Crawler](https://nanocrawler.cc/explorer/block/%s)"
@@ -821,36 +849,40 @@ def handle_send(message):
     )
     val = (
         "sent to user",
-        sender["address"],
-        sender["username"],
-        recipient["username"],
-        recipient["address"],
-        str(amount),
+        sender_info["address"],
+        sender_info["username"],
+        recipient_info["username"],
+        recipient_info["address"],
+        str(response["amount"]),
         "cleared",
         entry_id,
     )
     tipper_functions.exec_sql(sql, val)
     LOGGER.info(
-        f"Sending Nano: {sender['address']} {sender['private_key']} {amount} {recipient['address']} {recipient['username']}"
+        f"Sending Nano: {sender_info['address']} {sender_info['private_key']} {response['amount']} {recipient_info['address']} {recipient_info['username']}"
     )
 
     if new_account:
         subject = "Congrats on receiving your first Nano Tip!"
         message_text = (
             WELCOME_TIP
-            % (amount / 10 ** 30, recipient["address"], recipient["address"])
+            % (
+                response["amount"] / 10 ** 30,
+                recipient_info["address"],
+                recipient_info["address"],
+            )
             + COMMENT_FOOTER
         )
-        send_pm(recipient["username"], subject, message_text)
-
+        send_pm(recipient_info["username"], subject, message_text)
+        return response
         return (
             "Creating a new account for /u/%s and "
             "sending ```%.4g Nano```. [Transaction on Nano Crawler](https://nanocrawler.cc/explorer/block/%s)"
             % (recipient["username"], amount / 10 ** 30, sent["hash"])
         )
     else:
-        if not recipient["silence"]:
-            receiving_new_balance = check_balance(recipient["address"])
+        if not recipient_info["silence"]:
+            receiving_new_balance = check_balance(recipient_info["address"])
             subject = "You just received a new Nano tip!"
             message_text = (
                 NEW_TIP
@@ -863,10 +895,11 @@ def handle_send(message):
                 )
                 + COMMENT_FOOTER
             )
-            send_pm(recipient["username"], subject, message_text)
+            send_pm(recipient_info["username"], subject, message_text)
+        return response
         return (
             "Sent ```%.4g Nano``` to /u/%s -- [Transaction on Nano Crawler](https://nanocrawler.cc/explorer/block/%s)"
-            % (amount / 10 ** 30, recipient["username"], sent["hash"])
+            % (response["amount"] / 10 ** 30, recipient["username"], sent["hash"])
         )
 
 
@@ -874,7 +907,7 @@ def parse_recipient_username(recipient_text):
     """
     Determines if a specified recipient is a nano address or a redditor
     :param recipient_text:
-    :return:
+    :return: either {address: valid_address} or {username: user}
     """
     # remove the /u/ or u/
     if recipient_text[:3].lower() == "/u/":

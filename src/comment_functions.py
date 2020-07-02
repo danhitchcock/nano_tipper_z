@@ -10,6 +10,7 @@ from shared import (
     NEW_TIP,
     LOGGER,
     TIP_BOT_USERNAME,
+    EXCLUDED_REDDITORS,
 )
 from tipper_functions import (
     nano_to_raw,
@@ -63,11 +64,33 @@ def handle_comment(message):
 
 def send_from_comment(message):
     """
-        Extracts send command information from a PM command
-        :param message:
-        :return: response string
-        """
-    new_account = True
+    Error codes:
+    Success
+    10 - sent to existing user
+    20 - sent to new user
+    30 - sent to address
+    40 - donated to nanocenter project
+    Tip not sent
+    100 - sender account does not exist
+    110 - Amount and/or recipient not specified
+    120 - could not parse send amount
+    130 - below program minimum
+    140 - currency code issue
+    150 - below 1 nano for untracked sub
+    160 - insufficient funds
+    170 - invalid address / recipient
+    180 - below recipient minimum
+    200 - No Nanocenter Project specified
+    210 - Nanocenter Project does not exist
+
+
+
+    Extracts send command information from a PM command
+    :param message:
+    :return: response string
+    """
+
+    new_account = False
     parsed_text = parse_text(str(message.body))
 
     # check if it's a donate command at the end
@@ -76,6 +99,14 @@ def send_from_comment(message):
     # check if it's a send command at the end
     if parsed_text[-2] in TIP_COMMANDS:
         parsed_text = parsed_text[-2:]
+        # check that it wasn't a mistyped currency code or something
+    if parsed_text[2] in EXCLUDED_REDDITORS:
+        response = (
+            "It wasn't clear if you were trying to perform a currency conversion or "
+            "not. If so, be sure there is no space between the amount and currency. "
+            "Example: '!ntip 0.5USD'"
+        )
+        return response
     username = str(message.author)
 
     message_time = datetime.datetime.utcfromtimestamp(
@@ -90,12 +121,21 @@ def send_from_comment(message):
         comment_text=str(message.body)[:255],
     )
 
+    if parsed_text[0] in TIP_COMMANDS and len(parsed_text) <= 1:
+        update_history_notes(entry_id, "no recipient or amount specified")
+        response = "You must specify an amount and a user, e.g. `send 1 nano_tipper`."
+        return response
+
+    if parsed_text[0] in DONATE_COMMANDS and len(parsed_text) <= 2:
+        update_history_notes(entry_id, "no recipient or amount specified")
+        response = "You must specify an amount and a project, e.g. `!nanocenter 1 nano_tipper`."
+        return response
+
     # pull sender account info
-    try:
-        sender = tipper_functions.account_info(username=username)
-    except TipError as err:
-        update_history_notes(entry_id, err.sql_text)
-        return err.response
+    sender = tipper_functions.account_info(username)
+    if not sender:
+        update_history_notes(entry_id, "user does not exist")
+        return "user does not exist"
 
     # parse the amount
     try:
@@ -140,12 +180,10 @@ def send_from_comment(message):
     if parsed_text[0] in (
         TIP_COMMANDS + [f"/u/{TIP_BOT_USERNAME}", f"u/{TIP_BOT_USERNAME}"]
     ):
-        recipient = {"username": str(message.parent.author)}
-        try:
-            recipient = tipper_functions.account_info(recipient["username"])
-            new_account = False
-        except TipError:
-            recipient = tipper_functions.add_new_account(recipient["username"])
+        parent_author = str(message.parent.author)
+        recipient = tipper_functions.account_info(parent_author)
+        if not recipient:
+            recipient = tipper_functions.add_new_account(parent_author)
             new_account = True
 
     elif parsed_text[0] in DONATE_COMMANDS:

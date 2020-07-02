@@ -211,45 +211,29 @@ def get_user_settings(recipient_username, recipient_address=""):
     }
 
 
-def account_info(username=None, address=None):
+def account_info(key, by_address=False):
     """
     Pulls the address, private key and balance from a user
     :param username: string - redditors username
     :return: dict - name, address, private_key, balance
     """
-    if username:
-        sql = "SELECT address, private_key, minimum, silence FROM accounts WHERE username=%s"
-        val = (username,)
-    elif address:
-        sql = "SELECT address, private_key, minimum, silence FROM accounts WHERE address=%s"
-        val = (address,)
+    if not by_address:
+        sql = "SELECT username, address, private_key, minimum, silence FROM accounts WHERE username=%s"
     else:
-        raise UserWarning("You must specify a username or an address.")
-    MYCURSOR.execute(sql, val)
-    result = MYCURSOR.fetchall()
+        sql = "SELECT username, address, private_key, minimum, silence FROM accounts WHERE address=%s"
+    val = (key,)
+    result = query_sql(sql, val)
     if len(result) < 1:
-        if username:
-            raise TipError("user does not exist", "user does not exist")
-        else:
-            return {
-                "username": None,
-                "address": address,
-                "private_key": None,
-                "minimum": -1,
-                "silence": False,
-                "balance": None,
-                "account_exists": False,
-            }
-    else:
         return {
-            "username": username,
-            "address": result[0][0],
-            "private_key": result[0][1],
-            "minimum": int(result[0][2]),
-            "silence": result[0][3],
+            "username": result[0][0],
+            "address": result[0][1],
+            "private_key": result[0][2],
+            "minimum": int(result[0][3]),
+            "silence": result[0][4],
             "balance": check_balance(result[0][0])[0],
             "account_exists": True,
         }
+    return None
 
 
 def update_history_notes(entry_id, text):
@@ -273,15 +257,6 @@ def parse_raw_amount(parsed_text, username=None):
     :param username: required if amount is 'all'
     :return:
     """
-    # check if there was a mistyped currency conversion i.e. "send 1 USD zily88" or
-    # "!ntip 1 USD great jorb"
-    # regardless of it being a message or a donate command, the actual amount will
-    # always be at [1]
-    if (parsed_text[2]) and parsed_text[2].lower() in EXCLUDED_REDDITORS:
-        raise TipError(
-            "conversion syntax error",
-            "It wasn't clear if you were trying to perform a currency conversion or not. If so, be sure there is no space between the amount and currency. Example: '!ntip 0.5USD'",
-        )
     conversion = 1
     # check if the amount is 'all'. This will convert it to the proper int
     if parsed_text[1].lower() == "all":
