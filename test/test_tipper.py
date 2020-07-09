@@ -351,111 +351,142 @@ def handle_send_from_comment_mocks(monkeypatch):
 
 
 def test_handle_send_from_comment(handle_send_from_comment_mocks):
+    """
+        Error codes:
+        Success
+        10 - sent to existing user
+        20 - sent to new user
+        30 - sent to address
+        40 - donated to nanocenter project
+        Tip not sent
+        100 - sender account does not exist
+        110 - Amount and/or recipient not specified
+        120 - could not parse send amount
+        130 - below program minimum
+        140 - currency code issue
+        150 - below 1 nano for untracked sub
+        160 - insufficient funds
+        170 - invalid address / recipient
+        180 - below recipient minimum
+        200 - No Nanocenter Project specified
+        210 - Nanocenter Project does not exist
+        """
+
     # sender has no account
     message1 = RedditMessage(
         "t4_5", "DNE", "", f"{TIP_COMMANDS[0]} 0.01", subreddit="nano_tipper_z"
     )
-    assert send_from_comment(message1) == "user does not exist"
+    assert send_from_comment(message1) == {"status": 100, "username": "DNE"}
 
     # no amount specified
     message1 = RedditMessage(
         "t4_5", "rich", "", f"{TIP_COMMANDS[0]}", subreddit="nano_tipper_z"
     )
-    assert (
-        send_from_comment(message1)
-        == "You must specify an amount and a user, e.g. `send 1 nano_tipper`."
-    )
+    assert send_from_comment(message1) == {"status": 110, "username": "rich"}
 
     # could not parse the amount
     message1 = RedditMessage(
         "t4_5", "rich", "", f"{TIP_COMMANDS[0]} 0.0sdf1", subreddit="nano_tipper_z"
     )
-    assert (
-        send_from_comment(message1)
-        == "Could not read your tip or send amount. Is '0.0sdf1' a number, or "
-        "is the currency code valid? If you are trying to send Nano directly, "
-        "omit 'Nano' from the amount (I will fix this in a future update)."
-    )
+    assert send_from_comment(message1) == {
+        "status": 120,
+        "username": "rich",
+        "amount": "0.0sdf1",
+    }
 
     # send below program limit
     message1 = RedditMessage("t4_5", "rich", "", f"{TIP_COMMANDS[0]} 0.00001")
-    assert send_from_comment(message1) == "Program minimum is 0.0001 Nano."
+    assert send_from_comment(message1) == {
+        "amount": 10000000000000000000000000,
+        "status": 130,
+        "username": "rich",
+    }
 
     # send to an Excluded redditor (i.e. a currency code)
     message1 = RedditMessage("t4_5", "rich", "", f"{TIP_COMMANDS[0]} 0.01 USD")
-    assert (
-        send_from_comment(message1)
-        == "It wasn't clear if you were trying to perform a currency conversion or "
-        "not. If so, be sure there is no space between the amount and currency. "
-        "Example: '!ntip 0.5USD'"
-    )
+    assert send_from_comment(message1) == {"status": 140, "username": "rich"}
 
     # subreddit is not tracked
     message1 = RedditMessage(
         "t4_5", "rich", "", f"/u/{TIP_BOT_USERNAME} 0.01", subreddit="not_tracked_sub"
     )
-    assert (
-        send_from_comment(message1)
-        == "To tip in unfamiliar subreddits, the tip amount must be 1 Nano or more. You attempted to tip 0.01 Nano"
-    )
+    assert send_from_comment(message1) == {
+        "status": 150,
+        "amount": 10000000000000000000000000000,
+        "subreddit_minimum": 1,
+        "username": "rich",
+        "subreddit": "not_tracked_sub",
+    }
 
     # subreddit is hostile
     message1 = RedditMessage(
         "t4_5", "rich", "", f"{TIP_COMMANDS[0]} 0.01", subreddit="hostile_sub"
     )
-    assert (
-        send_from_comment(message1)
-        == "To tip in unfamiliar subreddits, the tip amount must be 1 Nano or more. You attempted to tip 0.01 Nano"
-    )
+    assert send_from_comment(message1) == {
+        "status": 150,
+        "amount": 10000000000000000000000000000,
+        "subreddit_minimum": 1,
+        "username": "rich",
+        "subreddit": "hostile_sub",
+    }
 
     # send greater than sender balance
     message1 = RedditMessage(
         "t4_5", "poor", "", f"{TIP_COMMANDS[0]} 0.01", subreddit="friendly_sub"
     )
-    assert (
-        send_from_comment(message1)
-        == "You have insufficient funds. Please check your balance."
-    )
+    assert send_from_comment(message1) == {
+        "amount": 10000000000000000000000000000,
+        "status": 160,
+        "username": "poor",
+    }
 
     # send less than recipient minimum
     message1 = RedditMessage(
         "t4_5", "rich", "", f"{TIP_COMMANDS[0]} 0.01", subreddit="friendly_sub"
     )
     message1.set_parent_author("high_min")
-    assert (
-        send_from_comment(message1)
-        == "Sorry, the user has set a tip minimum of 100.0. Your tip of "
-        "0.01 is below this amount."
-    )
+    assert send_from_comment(message1) == {
+        "amount": 10000000000000000000000000000,
+        "minimum": 100000000000000000000000000000000,
+        "status": 180,
+        "subreddit": "friendly_sub",
+        "subreddit_minimum": 0,
+        "username": "rich",
+    }
 
     # send to new user
     message1 = RedditMessage(
         "t4_5", "rich", "", f"{TIP_COMMANDS[0]} 0.01", subreddit="friendly_sub"
     )
     message1.set_parent_author("dne")
-    assert (
-        send_from_comment(message1)
-        == "Creating a new account for /u/dne and sending ```0.01 Nano```. [Transaction on Nano Crawler](https://nanocrawler.cc/explorer/block/success!)"
-    )
+    assert send_from_comment(message1) == {
+        "amount": 10000000000000000000000000000,
+        "status": 20,
+        "subreddit": "friendly_sub",
+        "subreddit_minimum": 0,
+        "username": "rich",
+        "hash": "success!",
+    }
 
     # send to new user
     message1 = RedditMessage(
         "t4_5", "rich", "", f"{TIP_COMMANDS[0]} 0.01", subreddit="friendly_sub"
     )
     message1.set_parent_author("poor")
-    assert (
-        send_from_comment(message1)
-        == "Sent ```0.01 Nano``` to /u/poor -- [Transaction on Nano Crawler](https://nanocrawler.cc/explorer/block/success!)"
-    )
+    assert send_from_comment(message1) == {
+        "amount": 10000000000000000000000000000,
+        "status": 10,
+        "subreddit": "friendly_sub",
+        "subreddit_minimum": 0,
+        "username": "rich",
+        "hash": "success!",
+    }
 
     # no amount specified
     message1 = RedditMessage(
         "t4_5", "rich", "", f"{DONATE_COMMANDS[0]} 1", subreddit="friendly_sub"
     )
-    assert (
-        send_from_comment(message1)
-        == "You must specify an amount and a project, e.g. `!nanocenter 1 nano_tipper`."
-    )
+    assert send_from_comment(message1) == {"status": 110, "username": "rich"}
 
     # send to non-existent nanocenter project
     message1 = RedditMessage(
@@ -478,10 +509,14 @@ def test_handle_send_from_comment(handle_send_from_comment_mocks):
         f"{DONATE_COMMANDS[0]} 0.01 project_exists",
         subreddit="friendly_sub",
     )
-    assert (
-        send_from_comment(message1)
-        == "Donated ```0.01 Nano``` to Nanocenter Project project_exists -- [Transaction on Nano Crawler](https://nanocrawler.cc/explorer/block/success!)"
-    )
+    assert send_from_comment(message1) == {
+        "amount": 10000000000000000000000000000,
+        "hash": "success!",
+        "status": 40,
+        "subreddit": "friendly_sub",
+        "subreddit_minimum": 0,
+        "username": "rich",
+    }
 
 
 def test_parse_recipient_username():

@@ -53,7 +53,7 @@ def add_history_record(
         reddit_time,
         comment_text,
     )
-
+    # todo make sure the rowid is atomic
     MYCURSOR.execute(sql, val)
     MYDB.commit()
     return MYCURSOR.lastrowid

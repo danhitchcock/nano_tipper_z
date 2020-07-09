@@ -721,13 +721,6 @@ def handle_send(message):
         return response
         response = "You must specify an amount and a user, e.g. `send 1 nano_tipper`."
 
-    # pull sender account info
-    sender_info = tipper_functions.account_info(username)
-    if not sender_info:
-        update_history_notes(entry_id, "user does not exist")
-        response["status"] = 100
-        return response
-
     # check that it wasn't a mistyped currency code or something
     if parsed_text[2] in EXCLUDED_REDDITORS:
         response["status"] = 140
@@ -737,6 +730,13 @@ def handle_send(message):
             "not. If so, be sure there is no space between the amount and currency. "
             "Example: '!ntip 0.5USD'"
         )
+        return response
+
+    # pull sender account info
+    sender_info = tipper_functions.account_info(response["username"])
+    if not sender_info:
+        update_history_notes(entry_id, "user does not exist")
+        response["status"] = 100
         return response
 
     # parse the amount
@@ -831,16 +831,6 @@ def handle_send(message):
             f"Sending Nano: {sender_info['address']} {sender_info['private_key']} {response['amount']} {recipient_info['address']}"
         )
         return response
-        return (
-            "Sent ```%.4g Nano``` to [%s](https://nanocrawler.cc/explorer/account/%s) -- "
-            "[Transaction on Nano Crawler](https://nanocrawler.cc/explorer/block/%s)"
-            % (
-                amount / 10 ** 30,
-                recipient["address"],
-                recipient["address"],
-                sent["hash"],
-            )
-        )
 
     # Update the sql and send the PMs
     sql = (
