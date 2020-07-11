@@ -12,7 +12,8 @@ from shared import (
     TIP_COMMANDS,
     DONATE_COMMANDS,
 )
-from tipper_rpc import generate_account, nano_to_raw, check_balance
+from tipper_rpc import generate_account, nano_to_raw, check_balance, raw_to_nano
+import text
 
 
 def add_history_record(

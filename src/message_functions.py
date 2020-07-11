@@ -1,6 +1,7 @@
 import sys
 from datetime import datetime
 import tipper_functions
+import text
 from tipper_functions import (
     parse_text,
     add_history_record,
@@ -17,19 +18,15 @@ from tipper_rpc import (
     validate_address,
     send,
 )
+from text import WELCOME_CREATE, HELP, WELCOME_TIP, COMMENT_FOOTER, NEW_TIP
 from shared import (
     MYCURSOR,
     MYDB,
-    WELCOME_CREATE,
     TIP_BOT_USERNAME,
-    HELP,
     PROGRAM_MINIMUM,
     REDDIT,
     EXCLUDED_REDDITORS,
     LOGGER,
-    WELCOME_TIP,
-    COMMENT_FOOTER,
-    NEW_TIP,
     TIPBOT_OWNER,
 )
 
@@ -65,6 +62,7 @@ def handle_message(message):
         subject = "Nano Tipper - Send"
         LOGGER.info("send via PM")
         response = handle_send(message)
+        response = text.make_response_text(response)
     elif parsed_text[0].lower() == "history":
         LOGGER.info("history")
         subject = "Nano Tipper - History"
@@ -719,17 +717,10 @@ def handle_send(message):
         update_history_notes(entry_id, "no recipient or amount specified")
         response["status"] = 110
         return response
-        response = "You must specify an amount and a user, e.g. `send 1 nano_tipper`."
 
     # check that it wasn't a mistyped currency code or something
     if parsed_text[2] in EXCLUDED_REDDITORS:
         response["status"] = 140
-        return response
-        response = (
-            "It wasn't clear if you were trying to perform a currency conversion or "
-            "not. If so, be sure there is no space between the amount and currency. "
-            "Example: '!ntip 0.5USD'"
-        )
         return response
 
     # pull sender account info
@@ -754,14 +745,12 @@ def handle_send(message):
         update_history_notes(entry_id, "amount below program limit")
         response["status"] = 130
         return response
-        response = "Program minimum is %s Nano." % PROGRAM_MINIMUM
 
     # check the user's balance
     if response["amount"] > sender_info["balance"]:
         update_history_notes(entry_id, "insufficient funds")
         response["status"] = 160
         return response
-        response = "You have insufficient funds. Please check your balance."
 
     recipient_text = parsed_text[2]
 
@@ -769,11 +758,10 @@ def handle_send(message):
     try:
         recipient_info = parse_recipient_username(recipient_text)
     except TipError as err:
+        update_history_notes(entry_id, err.sql_text)
         response["recipient"] = recipient_text
         response["status"] = 170
         return response
-        update_history_notes(entry_id, err.sql_text)
-        return err.response
 
     # if we have a username, pull their info
     if "username" in recipient_info.keys():
@@ -798,18 +786,13 @@ def handle_send(message):
         response["status"] = 180
         response["minimum"] = recipient_info["minimum"]
         return response
-        response = (
-            "Sorry, the user has set a tip minimum of %s. "
-            "Your tip of %s is below this amount."
-            % (recipient["minimum"] / 10 ** 30, amount / 10 ** 30)
-        )
 
-    sent = send(
+    response["hash"] = send(
         sender_info["address"],
         sender_info["private_key"],
         response["amount"],
         recipient_info["address"],
-    )
+    )["hash"]
     # if it was an address, just send to the address
     if "username" not in recipient_info.keys():
         sql = (
@@ -865,11 +848,6 @@ def handle_send(message):
         )
         send_pm(recipient_info["username"], subject, message_text)
         return response
-        return (
-            "Creating a new account for /u/%s and "
-            "sending ```%.4g Nano```. [Transaction on Nano Crawler](https://nanocrawler.cc/explorer/block/%s)"
-            % (recipient["username"], amount / 10 ** 30, sent["hash"])
-        )
     else:
         if not recipient_info["silence"]:
             receiving_new_balance = check_balance(recipient_info["address"])
@@ -877,20 +855,19 @@ def handle_send(message):
             message_text = (
                 NEW_TIP
                 % (
-                    amount / 10 ** 30,
-                    recipient["address"],
+                    response["amount"] / 10 ** 30,
+                    recipient_info["address"],
                     receiving_new_balance[0] / 10 ** 30,
-                    (receiving_new_balance[1] / 10 ** 30 + amount / 10 ** 30),
-                    sent["hash"],
+                    (
+                        receiving_new_balance[1] / 10 ** 30
+                        + response["amount"] / 10 ** 30
+                    ),
+                    response["hash"],
                 )
                 + COMMENT_FOOTER
             )
             send_pm(recipient_info["username"], subject, message_text)
         return response
-        return (
-            "Sent ```%.4g Nano``` to /u/%s -- [Transaction on Nano Crawler](https://nanocrawler.cc/explorer/block/%s)"
-            % (response["amount"] / 10 ** 30, recipient["username"], sent["hash"])
-        )
 
 
 def parse_recipient_username(recipient_text):

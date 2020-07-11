@@ -1,3 +1,7 @@
+from tipper_rpc import nano_to_raw, raw_to_nano
+
+import shared
+
 COMMENT_FOOTER = """\n\n
 ***\n\n
 [*^(Nano)*](https://nano.org)*^( | )*
@@ -98,3 +102,139 @@ Unpocketed: %s Nano\n\n
 Unpocketed Nanos will be pocketed automatically. [Transaction on Nano Crawler](https://nanocrawler.cc/explorer/block/%s)\n\n
 To turn off these notifications, reply with "silence yes".
 """
+"""
+Codes
+Sent
+10 - sent to existing user
+11 - sent to existing *silent* user
+20 - sent to new user
+30 - sent to address
+40 - donated to nanocenter project
+Not sent
+100 - sender account does not exist
+110 - Amount and/or recipient not specified
+120 - could not parse send amount
+130 - below program minimum
+140 - currency code issue
+150 - below 1 nano for untracked sub
+160 - insufficient funds
+170 - invalid address / recipient
+180 - below recipient minimum
+200 - No Nanocenter Project specified
+210 - Nanocenter Project does not exist
+
+
+
+Extracts send command information from a PM command
+:param message:
+:return: response string
+    """
+# full responses
+SEND_TEXT = {
+    10: (
+        "Sent ```%.4g Nano``` to /u/%s -- [Transaction on Nano Crawler](https://nanoc"
+        "rawler.cc/explorer/block/%s)"
+    ),
+    11: (
+        "Sent ```%.4g Nano``` to %s -- [Transaction on Nano Crawler](https://nanoc"
+        "rawler.cc/explorer/block/%s)"
+    ),
+    20: (
+        "Creating a new account for /u/%s and "
+        "sending ```%.4g Nano```. [Transaction on Nano Crawler](https://nanocrawler.cc"
+        "/explorer/block/%s)"
+    ),
+    30: "Sent ```%.4g Nano``` to address %s -- [Transaction on Nano Crawler](https://na"
+    "nocrawler.cc/explorer/block/%s)",
+    40: (
+        "Donated ```%.4g Nano``` to Nanocenter Project %s -- [Transaction on Nano Craw"
+        "ler](https://nanocrawler.cc/explorer/block/%s)"
+    ),
+    100: (
+        "You don't have an account yet. Please PM me with `create` in the body to "
+        "make an account."
+    ),
+    110: "You must specify an amount and a user, e.g. `send 1 nano_tipper`.",
+    120: "I could not read the amount. Is '%s' a number?",
+    130: "Program minimum is %s Nano.",
+    140: (
+        "It wasn't clear if you were trying to perform a currency conversion or "
+        "not. If so, be sure there is no space between the amount and currency. "
+        "Example: '!ntip 0.5USD'"
+    ),
+    150: "Your tip is below the minimum for an unfamiliar sub.",
+    160: "You have insufficient funds. Please check your balance.",
+    170: "'%s' is neither a redditor nor a valid address.",
+    180: (
+        "Sorry, the user has set a tip minimum of %s. "
+        "Your tip of %s is below this amount."
+    ),
+    200: "Please specify a Nanocenter project, e.g. `nanocenter 1 reddit_tipbot`",
+    210: "No Nanocenter project named %s was found.",
+}
+
+# for subreddits who like minimal response, or 2nd level responses
+SEND_TEXT_MIN = {
+    10: (
+        "^[Sent](https://nanocrawler.cc/explorer/block/%s) ^%s ^Nano ^to ^(/u/%s) ^- "
+        "[^(Nano Tipper)](https://github.com/danhitchcock/nano_tipper_z)"
+    ),
+    11: (
+        "^[Sent](https://nanocrawler.cc/explorer/block/%s) ^%s ^Nano ^to ^%s ^- [^(Na"
+        "no Tipper)](https://github.com/danhitchcock/nano_tipper_z)"
+    ),
+    20: (
+        "^[Sent](https://nanocrawler.cc/explorer/block/%s) ^(%s Nano to NanoCenter Pro"
+        "ject %s)"
+    ),
+    100: (
+        "^(Tip not sent. Error code )^[%s](https://github.com/danhitchcock/nano_tipp"
+        "er_z#error-codes) ^- [^(Nano Tipper)](https://github.com/danhitchcock/nano_"
+        "tipper_z)"
+    ),
+}
+
+
+def make_response_text(message, response):
+
+    # make a minimal response if (subreddit is tracked) AND (level 2+ or minimal)
+    if ("subreddit_status" in response.keys()) and (
+        response["subreddit_status"] == "minimal"
+        or (str(message.parent_id)[:3] != "t3_")
+    ):
+        if response["status"] < 100:
+            return SEND_TEXT_MIN[response["status"]] % (
+                response["hash"],
+                raw_to_nano(response["amount"]),
+                response["recipient"],
+            )
+        else:
+            return SEND_TEXT_MIN[100] % response["status"]
+
+    # otherwise, it will be a full response. Even if hostile/silent (we'll send PMs)
+    if response["status"] == 20:
+        print(response)
+        return SEND_TEXT[response["status"]] % (
+            response["recipient"],
+            raw_to_nano(response["amount"]),
+            response["hash"],
+        )
+    if response["status"] < 100:
+        return SEND_TEXT[response["status"]] % (
+            raw_to_nano(response["amount"]),
+            response["recipient"],
+            response["hash"],
+        )
+    if response["status"] in [100, 110, 140, 150, 160, 200]:
+        return SEND_TEXT[response["status"]]
+    if response["status"] == 120:
+        return SEND_TEXT[response["status"]] % response["amount"]
+    if response["status"] == 130:
+        return SEND_TEXT[response["status"]] % shared.PROGRAM_MINIMUM
+    if response["status"] in [170, 210]:
+        return SEND_TEXT[response["status"]] % response["recipient"]
+    if response["status"] == 180:
+        return SEND_TEXT[response["status"]] % (
+            raw_to_nano(response["minimum"]),
+            raw_to_nano(response["amount"]),
+        )

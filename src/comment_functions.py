@@ -1,13 +1,11 @@
 import datetime
+import text
 from shared import (
     MYDB,
     MYCURSOR,
-    COMMENT_FOOTER,
     DONATE_COMMANDS,
     TIP_COMMANDS,
     PROGRAM_MINIMUM,
-    WELCOME_TIP,
-    NEW_TIP,
     LOGGER,
     TIP_BOT_USERNAME,
     EXCLUDED_REDDITORS,
@@ -29,37 +27,22 @@ import tipper_functions
 def handle_comment(message):
 
     response = send_from_comment(message)
+    response_text = text.make_response_text(response)
 
-    sql = "SELECT status FROM subreddits WHERE subreddit=%s"
-    val = (str(message.subreddit).lower(),)
-    MYCURSOR.execute(sql, val)
-    results = MYCURSOR.fetchall()
-
-    if len(results) == 0:
-        subreddit_status = "silent"
-    else:
-        subreddit_status = results[0][0]
-
-    # if it is a top level reply and the subreddit is friendly
-    if (str(message.parent_id)[:3] == "t3_") and (
-        subreddit_status in ["friendly", "full"]
-    ):
-        message.reply(response + COMMENT_FOOTER)
-    # otherwise, if the subreddit is friendly (and reply is not top level) or subreddit is minimal
-    elif subreddit_status in ["friendly", "minimal", "full"]:
-        message.reply(response + COMMENT_FOOTER)
-    elif subreddit_status in ["hostile", "silent"]:
-        # it's a hostile place, no posts allowed. Will need to PM users
+    # check if subreddit is untracked or silent. If so, PM the users.
+    if response["subreddit_status"] in ["silent", "hostile"]:
         message_recipient = str(message.author)
-        subject = "Your Nano Tip Status"
-        message_text = response + COMMENT_FOOTER
+        if response["status"] < 100:
+            subject = "Your Tip Was Successful"
+        else:
+            subject = "You Tip Did Not Go Through"
+        message_text = response_text + text.COMMENT_FOOTER
         sql = "INSERT INTO messages (username, subject, message) VALUES (%s, %s, %s)"
         val = (message_recipient, subject, message_text)
         MYCURSOR.execute(sql, val)
         MYDB.commit()
-    elif subreddit_status == "custom":
-        # not sure what to do with this yet.
-        pass
+    else:
+        message.reply(response_text + text.COMMENT_FOOTER)
 
 
 def send_from_comment(message):
@@ -176,20 +159,26 @@ def send_from_comment(message):
     if parsed_text[0] in (
         TIP_COMMANDS + [f"/u/{TIP_BOT_USERNAME}", f"u/{TIP_BOT_USERNAME}"]
     ):
+
         response["status"] = 10
-        parent_author = str(message.parent.author)
-        recipient_info = tipper_functions.account_info(parent_author)
+        response["recipient"] = str(message.parent.author)
+        recipient_info = tipper_functions.account_info(response["recipient"])
         if not recipient_info:
             response["status"] = 20
-            recipient_info = tipper_functions.add_new_account(parent_author)
+            recipient_info = tipper_functions.add_new_account(response["recipient"])
             new_account = True
+        elif recipient_info["silence"]:
+            response["status"] = 11
 
     elif parsed_text[0] in DONATE_COMMANDS:
+        response["recipient"] = parsed_text[2]
         results = tipper_functions.query_sql(
             "FROM projects SELECT address WHERE project = %s", (parsed_text[2],)
         )
         if len(results) <= 0:
-            return "No Nanocenter project named %s was found." % parsed_text[2]
+            response["status"] = 210
+            return response
+
         recipient_info = {
             "username": parsed_text[2],
             "address": results[0][0],
@@ -197,7 +186,8 @@ def send_from_comment(message):
         }
         response["status"] = 40
     else:
-        return "Something strange happened."
+        response["status"] = 999
+        return response
 
     # check the send amount is above the user minimum, if a username is provided
     # if it was just an address, this would be -1
@@ -250,10 +240,6 @@ def send_from_comment(message):
         tipper_functions.exec_sql(sql, val)
         response["status"] = 40
         return response
-        return (
-            "Donated ```%.4g Nano``` to Nanocenter Project %s -- [Transaction on Nano Crawler](https://nanocrawler.cc/explorer/block/%s)"
-            % (response["amount"] / 10 ** 30, recipient_info["username"], sent)
-        )
 
     # update the sql database and send
     sql = (
@@ -275,29 +261,24 @@ def send_from_comment(message):
     if new_account:
         subject = "Congrats on receiving your first Nano Tip!"
         message_text = (
-            WELCOME_TIP
+            text.WELCOME_TIP
             % (
                 response["amount"] / 10 ** 30,
                 recipient_info["address"],
                 recipient_info["address"],
             )
-            + COMMENT_FOOTER
+            + text.COMMENT_FOOTER
         )
         send_pm(recipient_info["username"], subject, message_text)
         response["status"] = 20
         return response
-        return (
-            "Creating a new account for /u/%s and "
-            "sending ```%.4g Nano```. [Transaction on Nano Crawler](https://nanocrawler.cc/explorer/block/%s)"
-            % (recipient_info["username"], response["amount"] / 10 ** 30, sent)
-        )
     else:
 
         if not recipient_info["silence"]:
             receiving_new_balance = check_balance(recipient_info["address"])
             subject = "You just received a new Nano tip!"
             message_text = (
-                NEW_TIP
+                text.NEW_TIP
                 % (
                     response["amount"] / 10 ** 30,
                     recipient_info["address"],
@@ -306,15 +287,10 @@ def send_from_comment(message):
                         receiving_new_balance[1] / 10 ** 30
                         + response["amount"] / 10 ** 30
                     ),
-                    sent["hash"],
+                    response["hash"],
                 )
-                + COMMENT_FOOTER
+                + text.COMMENT_FOOTER
             )
             send_pm(recipient_info["username"], subject, message_text)
         response["status"] = 10
         return response
-
-        return (
-            "Sent ```%.4g Nano``` to /u/%s -- [Transaction on Nano Crawler](https://nanocrawler.cc/explorer/block/%s)"
-            % (response["amount"] / 10 ** 30, recipient_info["username"], sent)
-        )
