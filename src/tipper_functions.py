@@ -224,14 +224,14 @@ def account_info(key, by_address=False):
         sql = "SELECT username, address, private_key, minimum, silence FROM accounts WHERE address=%s"
     val = (key,)
     result = query_sql(sql, val)
-    if len(result) < 1:
+    if len(result) > 0:
         return {
             "username": result[0][0],
             "address": result[0][1],
             "private_key": result[0][2],
             "minimum": int(result[0][3]),
             "silence": result[0][4],
-            "balance": check_balance(result[0][0])[0],
+            "balance": check_balance(result[0][1])[0],
             "account_exists": True,
         }
     return None
@@ -323,9 +323,9 @@ def parse_action(action_item):
     else:
         return None
     if message_in_database(action_item):
-        return "prevented replay"
+        return "replay"
     elif not allowed_request(action_item.author, 30, 5):
-        return "spam prevention"
+        return "ignore"
     # check if it's a non-username post and if it has a tip or donate command
     elif action_item.name.startswith("t1_") and bool(
         {parsed_text[0], parsed_text[-2], parsed_text[-3]}
@@ -364,11 +364,10 @@ def parse_action(action_item):
 def message_in_database(message):
     sql = "SELECT * FROM history WHERE comment_id = %s"
     val = (message.name,)
-    print("this is a tipper message in database")
     MYCURSOR.execute(sql, val)
     results = MYCURSOR.fetchall()
     if len(results) > 0:
-        LOGGER.info("Found previous messages: ")
+        LOGGER.info("Found previous messages for %s: " % message.name)
         for result in results:
             LOGGER.info(result)
         return True

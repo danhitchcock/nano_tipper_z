@@ -27,7 +27,7 @@ import tipper_functions
 def handle_comment(message):
 
     response = send_from_comment(message)
-    response_text = text.make_response_text(response)
+    response_text = text.make_response_text(message, response)
 
     # check if subreddit is untracked or silent. If so, PM the users.
     if response["subreddit_status"] in ["silent", "hostile"]:
@@ -98,6 +98,20 @@ def send_from_comment(message):
     if parsed_text[2] in EXCLUDED_REDDITORS:
         response["status"] = 140
         return response
+    # before we can do anything, check the subreddit status for generating the response
+    # check if amount is above subreddit minimum. Don't worry about repsonse yet
+    response["subreddit"] = str(message.subreddit).lower()
+    sql = "SELECT status FROM subreddits WHERE subreddit=%s"
+    val = (response["subreddit"],)
+    results = tipper_functions.query_sql(sql, val)
+    if len(results) == 0:
+        response["subreddit_minimum"] = 1
+        results = [["untracked"]]
+    elif results[0][0] in ["full", "friendly", "minimal", "silent"]:
+        response["subreddit_minimum"] = 0
+    else:
+        response["subreddit_minimum"] = 1
+    response["subreddit_status"] = results[0][0]
 
     if parsed_text[0] in TIP_COMMANDS and len(parsed_text) <= 1:
         update_history_notes(entry_id, "no recipient or amount specified")
@@ -137,18 +151,7 @@ def send_from_comment(message):
         response["status"] = 160
         return response
 
-    # check if amount is above subreddit minimum. Don't worry about repsonse yet
-    response["subreddit"] = str(message.subreddit).lower()
-    sql = "SELECT status FROM subreddits WHERE subreddit=%s"
-    val = (response["subreddit"],)
-    results = tipper_functions.query_sql(sql, val)
-    if len(results) == 0:
-        response["subreddit_minimum"] = 1
-    elif results[0][0] in ["friendly", "minimal", "silent"]:
-        response["subreddit_minimum"] = 0
-    else:
-        response["subreddit_minimum"] = 1
-
+    print(response["subreddit_minimum"], response["subreddit_status"])
     if response["amount"] < nano_to_raw(response["subreddit_minimum"]):
         update_history_notes(entry_id, "amount below subreddit minimum")
         response["status"] = 150
@@ -161,7 +164,7 @@ def send_from_comment(message):
     ):
 
         response["status"] = 10
-        response["recipient"] = str(message.parent.author)
+        response["recipient"] = str(message.parent().author)
         recipient_info = tipper_functions.account_info(response["recipient"])
         if not recipient_info:
             response["status"] = 20

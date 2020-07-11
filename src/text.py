@@ -184,6 +184,10 @@ SEND_TEXT_MIN = {
         "no Tipper)](https://github.com/danhitchcock/nano_tipper_z)"
     ),
     20: (
+        "^Made a new account and [sent](https://nanocrawler.cc/explorer/block/%s) ^%s ^Nano ^to ^%s ^- [^(Na"
+        "no Tipper)](https://github.com/danhitchcock/nano_tipper_z)"
+    ),
+    40: (
         "^[Sent](https://nanocrawler.cc/explorer/block/%s) ^(%s Nano to NanoCenter Pro"
         "ject %s)"
     ),
