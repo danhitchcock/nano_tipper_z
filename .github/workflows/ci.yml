@@ -1,23 +1,34 @@
-
 name: Python application
 
 on: [push, pull_request]
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
+  example-3:
+    name: Test Nano Tipper
+    runs-on: "ubuntu-latest"
     steps:
-    - uses: actions/checkout@v2
-    - name: Set up Python 3.7
-      uses: actions/setup-python@v2
-      with:
-        python-version: 3.7
-    - name: Install dependencies
-      run: |
-        make setup
-    - name: Check Black
-      run: |
-        black --check ./
-    - name: Pytest
-      run: |
-        make test
+      - uses: actions/checkout@v2
+      - uses: goanpeca/setup-miniconda@v1
+        with:
+          activate-environment: reddit-tipbot
+          environment-file: environment.yml
+          python-version: 3.7
+          condarc-file: condarc.yml
+          auto-activate-base: false
+      - name: Check conda
+        shell: bash -l {0}
+        run: |
+          conda info
+          conda list
+      - name: Setup tipbot module
+        shell: bash -l {0}
+        run: |
+          make module-setup
+      - name: Pytest
+        shell: bash -l {0}
+        run: |
+          make test
+      - name: Black
+        shell: bash -l {0}
+        run: |
+          make black

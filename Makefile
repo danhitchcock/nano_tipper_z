@@ -5,19 +5,21 @@ setup: env-setup module-setup
 remove: env-remove
 
 env-setup:
-	conda env create -f environment.yml
+	conda env create reddit-tipbot
+	conda activate reddit-tipbot
+	conda env update -f environment.yml
 
 env-remove:
 	conda env remove -n reddit-tipbot -y
 
 module-setup:
-	source activate reddit-tipbot && pip install -e src
+	pip install -e src
 
-test: do-pytest
-
-
-do-pytest:
+test:
 	pytest -x
+
+black:
+	black --check ./
 
 
 
