@@ -12,3 +12,12 @@ env-remove:
 
 module-setup:
 	source activate reddit-tipbot && pip install -e src
+
+test: do-pytest
+
+
+do-pytest:
+	pytest -s -vv
+
+
+

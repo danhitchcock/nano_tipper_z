@@ -42,7 +42,8 @@ class RedditMessage:
         body="",
         created_utc=time.time(),
         subreddit="friendly_sub",
-        parent_id=None,
+        parent_id="t3_",
+        parent_author=None,
     ):
         self.name = name
         self.author = author
@@ -50,12 +51,11 @@ class RedditMessage:
         self.subject = subject
         self.created_utc = created_utc
         self.subreddit = subreddit
-        if parent_id:
-            self.parent_id = parent_id
+        self.parent_id = parent_id
+        self.parent_author = parent_author
 
-    def set_parent_author(self, name):
-        # default to a top level comment
-        self.parent = RedditMessage(author=name)
+    def parent(self):
+        return type(self)(author=self.parent_author)
 
 
 def test_graceful_list():
@@ -74,7 +74,7 @@ def mock_account_info(key, by_address=False):
             "address": "private",
             "private_key": "one",
             "minimum": 0,
-            "silence": True,
+            "silence": False,
             "balance": nano_to_raw(100),
             "account_exists": True,
         },
@@ -83,7 +83,7 @@ def mock_account_info(key, by_address=False):
             "address": "private",
             "private_key": "one",
             "minimum": 0,
-            "silence": True,
+            "silence": False,
             "balance": 0,
             "account_exists": True,
         },
@@ -92,7 +92,7 @@ def mock_account_info(key, by_address=False):
             "address": "private",
             "private_key": "one",
             "minimum": nano_to_raw(100),
-            "silence": True,
+            "silence": False,
             "balance": 0,
             "account_exists": True,
         },
@@ -104,6 +104,15 @@ def mock_account_info(key, by_address=False):
             "silence": False,
             "balance": None,
             "account_exists": False,
+        },
+        "silent": {
+            "username": "high_min",
+            "address": "private",
+            "private_key": "one",
+            "minimum": nano_to_raw(100),
+            "silence": True,
+            "balance": 0,
+            "account_exists": True,
         },
     }
     if not by_address:
@@ -157,9 +166,9 @@ def mock_query_sql(sql, val):
     if sql == "SELECT status FROM subreddits WHERE subreddit=%s":
         val = val[0]
         vals = {
-            "friendly_sub": [["friendly"]],
+            "friendly_sub": [["full"]],
             "minimal_sub": [["minimal"]],
-            "hostile_sub": [["hostile"]],
+            "hostile_sub": [["silent"]],
             "not_tracked_sub": [],
         }
         return vals[val]
@@ -228,6 +237,7 @@ def handle_send_from_message_mocks(monkeypatch):
     monkeypatch.setattr(tipper_functions, "exec_sql", lambda *args: None)
     monkeypatch.setattr(message_functions, "send", lambda *args: {"hash": "success!"})
     monkeypatch.setattr(message_functions, "send_pm", lambda *args: None)
+    monkeypatch.setattr(message_functions, "check_balance", lambda *args: [0, 0])
 
 
 def test_handle_send_from_PM(handle_send_from_message_mocks):
@@ -419,6 +429,7 @@ def handle_send_from_comment_mocks(monkeypatch):
     monkeypatch.setattr(tipper_functions, "exec_sql", lambda *args: None)
     monkeypatch.setattr(comment_functions, "send", lambda *args: {"hash": "success!"})
     monkeypatch.setattr(comment_functions, "send_pm", lambda *args: None)
+    monkeypatch.setattr(comment_functions, "check_balance", lambda *args: [0, 0])
 
 
 def test_handle_send_from_comment_and_text(handle_send_from_comment_mocks):
@@ -444,36 +455,45 @@ def test_handle_send_from_comment_and_text(handle_send_from_comment_mocks):
         """
 
     # sender has no account
-    message = RedditMessage(
-        "t4_5", "DNE", "", f"{TIP_COMMANDS[0]} 0.01", subreddit="nano_tipper_z"
-    )
+    message = RedditMessage("t4_5", "DNE", "", f"{TIP_COMMANDS[0]} 0.01")
     response = send_from_comment(message)
-    assert response == {"status": 100, "username": "DNE"}
+    assert response == {
+        "status": 100,
+        "username": "DNE",
+        "subreddit": "friendly_sub",
+        "subreddit_minimum": 0,
+        "subreddit_status": "full",
+    }
     assert (
         text.make_response_text(message, response)
         == "You don't have an account yet. Please PM me with `create` in the body to make an account."
     )
 
     # no amount specified
-    message = RedditMessage(
-        "t4_5", "rich", "", f"{TIP_COMMANDS[0]}", subreddit="nano_tipper_z"
-    )
+    message = RedditMessage("t4_5", "rich", "", f"{TIP_COMMANDS[0]}")
     response = send_from_comment(message)
-    assert response == {"status": 110, "username": "rich"}
+    assert response == {
+        "status": 110,
+        "username": "rich",
+        "subreddit": "friendly_sub",
+        "subreddit_minimum": 0,
+        "subreddit_status": "full",
+    }
     assert (
         text.make_response_text(message, response)
         == "You must specify an amount and a user, e.g. `send 1 nano_tipper`."
     )
 
     # could not parse the amount
-    message = RedditMessage(
-        "t4_5", "rich", "", f"{TIP_COMMANDS[0]} 0.0sdf1", subreddit="nano_tipper_z"
-    )
+    message = RedditMessage("t4_5", "rich", "", f"{TIP_COMMANDS[0]} 0.0sdf1")
     response = send_from_comment(message)
     assert response == {
         "status": 120,
         "username": "rich",
         "amount": "0.0sdf1",
+        "subreddit": "friendly_sub",
+        "subreddit_minimum": 0,
+        "subreddit_status": "full",
     }
     assert (
         text.make_response_text(message, response)
@@ -486,6 +506,9 @@ def test_handle_send_from_comment_and_text(handle_send_from_comment_mocks):
         "amount": 10000000000000000000000000,
         "status": 130,
         "username": "rich",
+        "subreddit": "friendly_sub",
+        "subreddit_minimum": 0,
+        "subreddit_status": "full",
     }
     assert (
         text.make_response_text(message, response) == "Program minimum is 0.0001 Nano."
@@ -494,7 +517,13 @@ def test_handle_send_from_comment_and_text(handle_send_from_comment_mocks):
     # send to an Excluded redditor (i.e. a currency code)
     message = RedditMessage("t4_5", "rich", "", f"{TIP_COMMANDS[0]} 0.01 USD")
     response = send_from_comment(message)
-    assert response == {"status": 140, "username": "rich"}
+    assert response == {
+        "status": 140,
+        "username": "rich",
+        "subreddit": "friendly_sub",
+        "subreddit_minimum": 0,
+        "subreddit_status": "full",
+    }
     assert (
         text.make_response_text(message, response)
         == "It wasn't clear if you were trying to perform a currency conversion or "
@@ -513,23 +542,7 @@ def test_handle_send_from_comment_and_text(handle_send_from_comment_mocks):
         "subreddit_minimum": 1,
         "username": "rich",
         "subreddit": "not_tracked_sub",
-    }
-    assert (
-        text.make_response_text(message, response)
-        == "Your tip is below the minimum for an unfamiliar sub."
-    )
-
-    # subreddit is hostile
-    message = RedditMessage(
-        "t4_5", "rich", "", f"{TIP_COMMANDS[0]} 0.01", subreddit="hostile_sub"
-    )
-    response = send_from_comment(message)
-    assert response == {
-        "status": 150,
-        "amount": 10000000000000000000000000000,
-        "subreddit_minimum": 1,
-        "username": "rich",
-        "subreddit": "hostile_sub",
+        "subreddit_status": "untracked",
     }
     assert (
         text.make_response_text(message, response)
@@ -545,6 +558,9 @@ def test_handle_send_from_comment_and_text(handle_send_from_comment_mocks):
         "amount": 10000000000000000000000000000,
         "status": 160,
         "username": "poor",
+        "subreddit": "friendly_sub",
+        "subreddit_minimum": 0,
+        "subreddit_status": "full",
     }
     assert (
         text.make_response_text(message, response)
@@ -553,9 +569,13 @@ def test_handle_send_from_comment_and_text(handle_send_from_comment_mocks):
 
     # send less than recipient minimum
     message = RedditMessage(
-        "t4_5", "rich", "", f"{TIP_COMMANDS[0]} 0.01", subreddit="friendly_sub"
+        "t4_5",
+        "rich",
+        "",
+        f"{TIP_COMMANDS[0]} 0.01",
+        subreddit="friendly_sub",
+        parent_author="high_min",
     )
-    message.set_parent_author("high_min")
     response = send_from_comment(message)
     assert response == {
         "amount": 10000000000000000000000000000,
@@ -563,6 +583,7 @@ def test_handle_send_from_comment_and_text(handle_send_from_comment_mocks):
         "status": 180,
         "subreddit": "friendly_sub",
         "subreddit_minimum": 0,
+        "subreddit_status": "full",
         "username": "rich",
         "recipient": "high_min",
     }
@@ -573,15 +594,20 @@ def test_handle_send_from_comment_and_text(handle_send_from_comment_mocks):
 
     # send to new user
     message = RedditMessage(
-        "t4_5", "rich", "", f"{TIP_COMMANDS[0]} 0.01", subreddit="friendly_sub"
+        "t4_5",
+        "rich",
+        "",
+        f"{TIP_COMMANDS[0]} 0.01",
+        subreddit="friendly_sub",
+        parent_author="dne",
     )
-    message.set_parent_author("dne")
     response = send_from_comment(message)
     assert response == {
         "amount": 10000000000000000000000000000,
         "status": 20,
         "subreddit": "friendly_sub",
         "subreddit_minimum": 0,
+        "subreddit_status": "full",
         "username": "rich",
         "hash": "success!",
         "recipient": "dne",
@@ -594,9 +620,13 @@ def test_handle_send_from_comment_and_text(handle_send_from_comment_mocks):
 
     # send to new user
     message = RedditMessage(
-        "t4_5", "rich", "", f"{TIP_COMMANDS[0]} 0.01", subreddit="friendly_sub"
+        "t4_5",
+        "rich",
+        "",
+        f"{TIP_COMMANDS[0]} 0.01",
+        subreddit="friendly_sub",
+        parent_author="poor",
     )
-    message.set_parent_author("poor")
     response = send_from_comment(message)
     assert response == {
         "amount": 10000000000000000000000000000,
@@ -606,6 +636,7 @@ def test_handle_send_from_comment_and_text(handle_send_from_comment_mocks):
         "username": "rich",
         "hash": "success!",
         "recipient": "poor",
+        "subreddit_status": "full",
     }
     assert (
         text.make_response_text(message, response)
@@ -618,7 +649,13 @@ def test_handle_send_from_comment_and_text(handle_send_from_comment_mocks):
         "t4_5", "rich", "", f"{DONATE_COMMANDS[0]} 1", subreddit="friendly_sub"
     )
     response = send_from_comment(message)
-    assert response == {"status": 110, "username": "rich"}
+    assert response == {
+        "status": 110,
+        "username": "rich",
+        "subreddit": "friendly_sub",
+        "subreddit_minimum": 0,
+        "subreddit_status": "full",
+    }
     assert (
         text.make_response_text(message, response)
         == "You must specify an amount and a user, e.g. `send 1 nano_tipper`."
@@ -640,6 +677,7 @@ def test_handle_send_from_comment_and_text(handle_send_from_comment_mocks):
         "subreddit": "friendly_sub",
         "subreddit_minimum": 0,
         "username": "rich",
+        "subreddit_status": "full",
     }
     assert (
         text.make_response_text(message, response)
@@ -663,6 +701,7 @@ def test_handle_send_from_comment_and_text(handle_send_from_comment_mocks):
         "subreddit_minimum": 0,
         "username": "rich",
         "recipient": "project_exists",
+        "subreddit_status": "full",
     }
     assert (
         text.make_response_text(message, response)

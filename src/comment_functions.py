@@ -93,12 +93,9 @@ def send_from_comment(message):
     # check if it's a send command at the end
     if parsed_text[-2] in TIP_COMMANDS:
         parsed_text = parsed_text[-2:]
-        # check that it wasn't a mistyped currency code or something
-    if parsed_text[2] in EXCLUDED_REDDITORS:
-        response["status"] = 140
-        return response
+
     # before we can do anything, check the subreddit status for generating the response
-    # check if amount is above subreddit minimum. Don't worry about repsonse yet
+    # check if amount is above subreddit minimum.
     response["subreddit"] = str(message.subreddit).lower()
     sql = "SELECT status FROM subreddits WHERE subreddit=%s"
     val = (response["subreddit"],)
@@ -111,6 +108,11 @@ def send_from_comment(message):
     else:
         response["subreddit_minimum"] = 1
     response["subreddit_status"] = results[0][0]
+
+    # check that it wasn't a mistyped currency code or something
+    if parsed_text[2] in EXCLUDED_REDDITORS:
+        response["status"] = 140
+        return response
 
     if parsed_text[0] in TIP_COMMANDS and len(parsed_text) <= 1:
         update_history_notes(entry_id, "no recipient or amount specified")
