@@ -17,7 +17,7 @@ test: do-pytest
 
 
 do-pytest:
-	pytest -s -vv
+	pytest -x
 
 
 
