@@ -57,3 +57,22 @@ def pull_history(u, n):
     )
     for result in results:
         LOGGER.info(result)
+
+
+@click.command()
+@click.argument("u")
+def delete_user(u):
+    sql = "DELETE FROM accounts WHERE username = %s"
+    val = (u,)
+    MYCURSOR.execute(sql, val)
+    MYDB.commit()
+
+
+@click.command()
+@click.option("-u", default=None)
+def list_users(u):
+    sql = "SELECT username FROM accounts"
+    MYCURSOR.execute(sql)
+    results = MYCURSOR.fetchall()
+    for result in results:
+        LOGGER.info(result)

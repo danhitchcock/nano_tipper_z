@@ -171,13 +171,6 @@ def allowed_request(username, seconds=30, num_requests=5):
         ).total_seconds() > seconds
 
 
-def delete_user(username):
-    sql = "DELETE FROM accounts WHERE username = %s"
-    val = (username,)
-    MYCURSOR.execute(sql, val)
-    MYDB.commit()
-
-
 def add_subreddit(subreddit, reply_to_comments=True, footer="", status="friendly"):
     sql = "INSERT INTO subreddits (subreddit, reply_to_comments, footer, status) VALUES (%s, %s, %s, %s)"
     val = (subreddit, reply_to_comments, footer, status)

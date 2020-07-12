@@ -62,7 +62,7 @@ def handle_message(message):
         subject = "Nano Tipper - Send"
         LOGGER.info("send via PM")
         response = handle_send(message)
-        response = text.make_response_text(response)
+        response = text.make_response_text(message, response)
     elif parsed_text[0].lower() == "history":
         LOGGER.info("history")
         subject = "Nano Tipper - History"
@@ -696,7 +696,6 @@ def handle_send(message):
     :param message:
     :return:
     """
-    new_account = True
     parsed_text = parse_text(str(message.body))
     username = str(message.author)
     message_time = datetime.utcfromtimestamp(
@@ -732,7 +731,7 @@ def handle_send(message):
 
     # parse the amount
     try:
-        response["amount"] = parse_raw_amount(parsed_text)
+        response["amount"] = parse_raw_amount(parsed_text, response["username"])
     except TipError as err:
         print(err)
         response["status"] = 120
@@ -835,7 +834,7 @@ def handle_send(message):
         f"Sending Nano: {sender_info['address']} {sender_info['private_key']} {response['amount']} {recipient_info['address']} {recipient_info['username']}"
     )
 
-    if new_account:
+    if response["status"] == 20:
         subject = "Congrats on receiving your first Nano Tip!"
         message_text = (
             WELCOME_TIP

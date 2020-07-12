@@ -73,7 +73,6 @@ def send_from_comment(message):
     :return: response string
     """
 
-    new_account = False
     parsed_text = parse_text(str(message.body))
     response = {"username": str(message.author)}
     message_time = datetime.datetime.utcfromtimestamp(
@@ -132,7 +131,7 @@ def send_from_comment(message):
 
     # parse the amount
     try:
-        response["amount"] = parse_raw_amount(parsed_text)
+        response["amount"] = parse_raw_amount(parsed_text, response["username"])
     except TipError as err:
         response["status"] = 120
         response["amount"] = parsed_text[1]
@@ -151,7 +150,6 @@ def send_from_comment(message):
         response["status"] = 160
         return response
 
-    print(response["subreddit_minimum"], response["subreddit_status"])
     if response["amount"] < nano_to_raw(response["subreddit_minimum"]):
         update_history_notes(entry_id, "amount below subreddit minimum")
         response["status"] = 150
@@ -166,10 +164,10 @@ def send_from_comment(message):
         response["status"] = 10
         response["recipient"] = str(message.parent().author)
         recipient_info = tipper_functions.account_info(response["recipient"])
+        print("Looked up, this is what I got: ", recipient_info)
         if not recipient_info:
             response["status"] = 20
             recipient_info = tipper_functions.add_new_account(response["recipient"])
-            new_account = True
         elif recipient_info["silence"]:
             response["status"] = 11
 
@@ -227,7 +225,7 @@ def send_from_comment(message):
     LOGGER.info(
         f"Sending Nano: {sender_info['address']} {sender_info['private_key']} {response['amount']} {recipient_info['address']} {recipient_info['username']}"
     )
-    print(recipient_info)
+
     # Update the sql and send the PMs if needed
     # if there is no private key, it's a donation. No PMs to send
     if "private_key" not in recipient_info.keys():
@@ -261,7 +259,7 @@ def send_from_comment(message):
     )
     tipper_functions.exec_sql(sql, val)
 
-    if new_account:
+    if response["status"] == 20:
         subject = "Congrats on receiving your first Nano Tip!"
         message_text = (
             text.WELCOME_TIP
@@ -273,10 +271,8 @@ def send_from_comment(message):
             + text.COMMENT_FOOTER
         )
         send_pm(recipient_info["username"], subject, message_text)
-        response["status"] = 20
         return response
     else:
-
         if not recipient_info["silence"]:
             receiving_new_balance = check_balance(recipient_info["address"])
             subject = "You just received a new Nano tip!"
@@ -295,5 +291,4 @@ def send_from_comment(message):
                 + text.COMMENT_FOOTER
             )
             send_pm(recipient_info["username"], subject, message_text)
-        response["status"] = 10
         return response

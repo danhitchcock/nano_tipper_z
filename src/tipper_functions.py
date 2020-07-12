@@ -265,6 +265,7 @@ def parse_raw_amount(parsed_text, username=None):
         val = (username,)
         MYCURSOR.execute(sql, val)
         result = MYCURSOR.fetchall()
+        print("results: ", username, result)
         if len(result) > 0:
             address = result[0][0]
             balance = check_balance(address)
