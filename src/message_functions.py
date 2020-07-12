@@ -733,7 +733,6 @@ def handle_send(message):
     try:
         response["amount"] = parse_raw_amount(parsed_text, response["username"])
     except TipError as err:
-        print(err)
         response["status"] = 120
         response["amount"] = parsed_text[1]
         update_history_notes(entry_id, err.sql_text)

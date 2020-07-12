@@ -166,7 +166,6 @@ def send_from_comment(message):
         response["status"] = 10
         response["recipient"] = str(message.parent().author)
         recipient_info = tipper_functions.account_info(response["recipient"])
-        print("Looked up, this is what I got: ", recipient_info)
         if not recipient_info:
             response["status"] = 20
             recipient_info = tipper_functions.add_new_account(response["recipient"])
