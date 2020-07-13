@@ -22,21 +22,40 @@ LOGGER.addHandler(fh)
 LOGGER.addHandler(ch)
 config = configparser.ConfigParser()
 config.read("tipper.ini")
-SQL_PASSWORD = config["SQL"]["sql_password"]
-DATABASE_NAME = config["SQL"]["database_name"]
-TIP_BOT_ON = config["BOT"]["tip_bot_on"]
-TIP_BOT_USERNAME = config["BOT"]["tip_bot_username"]
-PROGRAM_MINIMUM = float(config["BOT"]["program_minimum"])
-RECIPIENT_MINIMUM = float(config["BOT"]["recipient_minimum"])
-TIP_COMMANDS = config["BOT"]["tip_commands"].split(",")
-DONATE_COMMANDS = config["BOT"]["donate_commands"].split(",")
-TIPBOT_OWNER = config["BOT"]["tipbot_owner"]
-CMC_TOKEN = config["OTHER"]["cmc_token"]
-DPOW_TOKEN = config["NODE"]["dpow_token"]
-DEFAULT_URL = config["NODE"]["default_url"]
-PYTHON_COMMAND = config["BOT"]["python_command"]
-TIPPER_OPTIONS = config["BOT"]["tipper_options"]
-MESSENGER_OPTIONS = config["BOT"]["messenger_options"]
+
+# if we have a file, use it. Otherwise, load testing defaults
+try:
+    SQL_PASSWORD = config["SQL"]["sql_password"]
+    DATABASE_NAME = config["SQL"]["database_name"]
+    TIP_BOT_ON = config["BOT"]["tip_bot_on"]
+    TIP_BOT_USERNAME = config["BOT"]["tip_bot_username"]
+    PROGRAM_MINIMUM = float(config["BOT"]["program_minimum"])
+    RECIPIENT_MINIMUM = float(config["BOT"]["recipient_minimum"])
+    TIP_COMMANDS = config["BOT"]["tip_commands"].split(",")
+    DONATE_COMMANDS = config["BOT"]["donate_commands"].split(",")
+    TIPBOT_OWNER = config["BOT"]["tipbot_owner"]
+    CMC_TOKEN = config["OTHER"]["cmc_token"]
+    DPOW_TOKEN = config["NODE"]["dpow_token"]
+    DEFAULT_URL = config["NODE"]["default_url"]
+    PYTHON_COMMAND = config["BOT"]["python_command"]
+    TIPPER_OPTIONS = config["BOT"]["tipper_options"]
+    MESSENGER_OPTIONS = config["BOT"]["messenger_options"]
+except KeyError:
+    SQL_PASSWORD = ""
+    DATABASE_NAME = ""
+    TIP_BOT_ON = True
+    TIP_BOT_USERNAME = "nano_tipper_z"
+    PROGRAM_MINIMUM = 0.0001
+    RECIPIENT_MINIMUM = 0
+    TIP_COMMANDS = ["!ntipz", "!nano_tipz"]
+    DONATE_COMMANDS = ["!nanocenterz"]
+    TIPBOT_OWNER = ["zily88"]
+    CMC_TOKEN = ""
+    DPOW_TOKEN = ""
+    DEFAULT_URL = ""
+    PYTHON_COMMAND = ""
+    TIPPER_OPTIONS = ""
+    MESSENGER_OPTIONS = ""
 
 # only fails if no databases have been created
 try:
@@ -49,16 +68,22 @@ try:
     )
     MYCURSOR = MYDB.cursor()
 except mysql.connector.errors.DatabaseError:
-    MYDB = mysql.connector.connect(
-        user="root",
-        password=SQL_PASSWORD,
-        host="localhost",
-        auth_plugin="mysql_native_password",
-    )
-    MYCURSOR = MYDB.cursor()
+    try:
+        MYDB = mysql.connector.connect(
+            user="root",
+            password=SQL_PASSWORD,
+            host="localhost",
+            auth_plugin="mysql_native_password",
+        )
+        MYCURSOR = MYDB.cursor()
+    except mysql.connector.errors.DatabaseError:
+        MYDB = None
+        MYCURSOR = None
 
-
-REDDIT = praw.Reddit("bot1")
+try:
+    REDDIT = praw.Reddit("bot1")
+except:
+    REDDIT = None
 
 EXCLUDED_REDDITORS = [
     "nano",
