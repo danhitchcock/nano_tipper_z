@@ -5,9 +5,8 @@ setup: env-setup module-setup
 remove: env-remove
 
 env-setup:
-	conda env create reddit-tipbot
+	conda env create -f environment.yml
 	conda activate reddit-tipbot
-	conda env update -f environment.yml
 
 env-remove:
 	conda env remove -n reddit-tipbot -y
