@@ -6,7 +6,7 @@ A) **Create an account** by [sending a message](https://reddit.com/message/compo
 B) **Receive a Nano tip** from a fellow redditor, and you will automatically have an account made! be sure to activate it afterwards by [sending a message](https://reddit.com/message/compose/?to=nano_tipper&subject=command&message=create) to /u/nano_tipper.
 Once you have funds in your account, you can tip other redditors, or send to nano address via PM to /u/nano_tipper.
 # Comment Replies:
-Nano Tipper is intended for tipping on reddit posts and replies. On any [tracked subreddit](https://www.reddit.com/r/nano_tipper/comments/astwp6/nano_tipper_status/) you can tip and type a message like:
+Nano Tipper is intended for tipping on reddit posts and replies. On any [tracked subreddit](https://www.reddit.com/r/nano_tipper/comments/hrvr6o/nano_tipper_status/) you can tip and type a message like:
 
     !ntip 0.01 This is great!
 
@@ -26,7 +26,7 @@ Even specify a currency!
 
     !ntip 1USD Enjoy a dollar!
 
-If the subreddit is a [friendly subreddit](https://www.reddit.com/r/nano_tipper/comments/astwp6/nano_tipper_status/) (which correlates to [tracked subreddit](https://www.reddit.com/r/nano_tipper/comments/astwp6/nano_tipper_status/)), the bot will repsond with a message. If the subreddit is not friendly, a PM will be sent to both the sender and the recipient.
+If the subreddit is a [friendly subreddit](https://www.reddit.com/r/nano_tipper/comments/hrvr6o/nano_tipper_status/) (which correlates to [tracked subreddit](https://www.reddit.com/r/nano_tipper/comments/hrvr6o/nano_tipper_status/)), the bot will repsond with a message. If the subreddit is not friendly, a PM will be sent to both the sender and the recipient.
 
 ### NEW!
 
