@@ -358,7 +358,6 @@ def main_loop():
     actions = {
         "message": handle_message,
         "comment": handle_comment,
-        "username_mention": handle_comment,
         "faucet_tip": handle_message,
         "ignore": lambda x: None,
         "replay": lambda x: None,
