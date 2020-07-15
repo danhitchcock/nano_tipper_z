@@ -201,13 +201,10 @@ def test_parse_action(parse_action_mocks):
             "comment",
             RedditMessage("t1_2", "daniel", "", f"great job {TIP_COMMANDS[0]} .1"),
         ),
+        ("comment", RedditMessage("t1_3", "daniel", "", f"/u/{TIP_BOT_USERNAME} .1"),),
         (
-            "username_mention",
-            RedditMessage("t4_3", "daniel", "", f"/u/{TIP_BOT_USERNAME} .1"),
-        ),
-        (
-            "username_mention",
-            RedditMessage("t4_4", "daniel", "", f"nice /u/{TIP_BOT_USERNAME} .1"),
+            "comment",
+            RedditMessage("t1_4", "daniel", "", f"nice /u/{TIP_BOT_USERNAME} .1"),
         ),
         ("message", RedditMessage("t4_5", "daniel", "", "history"),),
         (

@@ -265,7 +265,6 @@ def parse_raw_amount(parsed_text, username=None):
         val = (username,)
         MYCURSOR.execute(sql, val)
         result = MYCURSOR.fetchall()
-        print("results: ", username, result)
         if len(result) > 0:
             address = result[0][0]
             balance = check_balance(address)
@@ -330,7 +329,11 @@ def parse_action(action_item):
     # check if it's a non-username post and if it has a tip or donate command
     elif action_item.name.startswith("t1_") and bool(
         {parsed_text[0], parsed_text[-2], parsed_text[-3]}
-        & set(TIP_COMMANDS + DONATE_COMMANDS)
+        & (
+            set(TIP_COMMANDS + DONATE_COMMANDS).union(
+                {"/u/%s" % TIP_BOT_USERNAME, "u/%s" % TIP_BOT_USERNAME}
+            )
+        )
     ):
         LOGGER.info(f"Comment: {action_item.author} - " f"{action_item.body[:20]}")
         return "comment"
@@ -346,15 +349,6 @@ def parse_action(action_item):
                 return "faucet_tip"
             else:
                 return "ignore"
-        # otherwise, check if it's a username mention
-        elif bool(
-            {parsed_text[0], parsed_text[-2]}
-            & {"/u/%s" % TIP_BOT_USERNAME, "u/%s" % TIP_BOT_USERNAME}
-        ):
-            LOGGER.info(
-                f"Username Mention: {action_item.author} - {action_item.body[:20]}"
-            )
-            return "username_mention"
         # otherwise, it's a normal message
         else:
             LOGGER.info(f"Comment: {action_item.author} - " f"{action_item.body[:20]}")

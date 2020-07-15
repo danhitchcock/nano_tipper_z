@@ -295,7 +295,6 @@ def open_or_receive_blocks(account, key, blocks, rep=None):
     try:
         previous = get_previous_hash(account)
     except Exception as e:
-        print("It's an open block. ", e)
         # otherwise, this is an open block.
         previous = 0
 
