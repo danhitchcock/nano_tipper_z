@@ -7,10 +7,9 @@ dependencies:
   - requests
   - pip
   - pip:
-    - praw==6.4.0
-    - qrcode==6.1
-    - mysql-connector-python==8.0.18
-    - click
-
-
-
+      - praw==6.4.0
+      - qrcode==6.1
+      - mysql-connector-python==8.0.18
+      - click
+      - black
+      - pytest

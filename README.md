@@ -129,21 +129,13 @@ Send /u/zily88 a PM on reddit, or post on https://reddit.com/r/nano_tipper
 
 # Error Codes
 If a reddit tip is a reply to a reply, it's better to keep a short message with an error code.
-* 0 - Could not read the tip command
-* 1 - Could not read the tip amount -- use either a number or the word 'all', or if using currency conversion, make sure there is no space
-* 2 - Sender does not have an account -- Create an account by typing 'create' or by receiving a tip from another redditor
-* 3 - Tip amount is below program minimum -- This is to prevent spamming other redditors.
-* 4 - Insufficient funds -- The amount of Nano in your account is lower than your tip amount. If you are using 'auto_receive' for your transactions, your account is scanned every 12 seconds.
-* 5 - User or address not specified -- If you are sending via PM, you must specify the recipient. Make sure there aren't extra spaces.
-* 6 - Address is invalid or recipient redditor does not exist -- You have a typo somewhere
-* 7 - Recipient redditor does not exist -- The redditor you specified doesn't have a reddit account.
-* 8 - Tip amount is below recipients specified tip minimum -- The recipient doesn't want to receive tips below a certain amount
-
-and FYI there are success codes, but you won't see these
-
-* 9 - Success! Sent to a redditor who requested silence -- This redditor will *not* receive a notification of their tip.
-* 10 - Success! Sent to redditor -- Redditor will receive a notification on their tip
-* 11 - Success! Sent to registered nano address -- If redditor has requested silence, they won't get a notification.
-* 12 - Success! Sent to unregistered nano address
-* 13 - Success! Sent to a newly created reddit account
-* 14 - Success! Send to a NanoCenter project fund
+* 100 - You do\ not have an account -- Create an account by typing 'create' or by receiving a tip from another redditor.
+* 110 - You must specify an amount and a user, e.g. `send 1 nano_tipper`.
+* 120 - Could not read the tip amount -- use either a number or the word 'all'.
+* 130 - Tip amount is below program minimum -- This is to prevent spamming other redditors.
+* 140 - If using currency conversion, make sure there is no space. Example: `!ntip 0.5USD`.
+* 150 - You are likely attempting to tip in an unfamiliar sub. The minimum is 1 Nano.
+* 160 - You have insufficient funds.
+* 180 - Tip amount is below recipients specified tip minimum.
+* 200 - Please specify a Nanocenter project, e.g. `nanocenter 1 reddit_tipbot`.
+* 210 - The Nanocenter project you attempted to donate to does not exist.

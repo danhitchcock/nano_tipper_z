@@ -7,13 +7,19 @@ from shared import LOGGER
 @click.command()
 @click.argument("subreddit")
 @click.option("--status", default="full")
-def add_subreddit(subreddit, status):
-    if status not in ["full", "minimal", "silent"]:
-        raise ValueError(f"'{status}' is not an acceptable subreddit status.")
-    try:
-        tipper_sql.add_subreddit(subreddit, True, "", status)
-    except:
-        tipper_sql.modify_subreddit(subreddit, status)
+@click.option("--delete", "-d", is_flag=True)
+def subreddit(subreddit, status, delete):
+    if delete:
+        print("deleting")
+        tipper_sql.rm_subreddit(subreddit)
+
+    else:
+        if status not in ["full", "minimal", "silent"]:
+            raise ValueError(f"'{status}' is not an acceptable subreddit status.")
+        try:
+            tipper_sql.add_subreddit(subreddit, True, "", status)
+        except:
+            tipper_sql.modify_subreddit(subreddit, status)
 
 
 @click.command()
@@ -55,5 +61,24 @@ def pull_history(u, n):
     LOGGER.info(
         "Printing results: Username, Datetime, action, amount, comment_id, notes_recipient_username, recipient_address"
     )
+    for result in results:
+        LOGGER.info(result)
+
+
+@click.command()
+@click.argument("u")
+def delete_user(u):
+    sql = "DELETE FROM accounts WHERE username = %s"
+    val = (u,)
+    MYCURSOR.execute(sql, val)
+    MYDB.commit()
+
+
+@click.command()
+@click.option("-u", default=None)
+def list_users(u):
+    sql = "SELECT username FROM accounts"
+    MYCURSOR.execute(sql)
+    results = MYCURSOR.fetchall()
     for result in results:
         LOGGER.info(result)

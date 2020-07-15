@@ -1,44 +1,26 @@
-import sys
 import time
-import datetime
+
 from time import sleep
-from tipper_rpc import get_pendings, open_or_receive_block
+from tipper_rpc import get_pendings, open_or_receive_block, send
+
 from shared import (
-    TIPBOT_OWNER,
-    TIP_COMMANDS,
-    TIP_BOT_ON,
     LOGGER,
     MYCURSOR,
     MYDB,
     REDDIT,
-    COMMENT_FOOTER,
-    WELCOME_CREATE,
-    WELCOME_TIP,
     PROGRAM_MINIMUM,
-    HELP,
-    DONATE_COMMANDS,
-    TIP_BOT_USERNAME,
 )
+
+from text import HELP
 from message_functions import (
-    handle_balance,
-    handle_create,
-    handle_help,
-    handle_history,
-    handle_minimum,
-    handle_percentage,
-    handle_send,
-    handle_silence,
-    handle_subreddit,
+    handle_message,
     add_history_record,
 )
 from tipper_functions import (
-    parse_text,
-    handle_send_nano,
     nano_to_raw,
-    allowed_request,
-    send,
-    activate,
+    parse_action,
 )
+from comment_functions import handle_comment
 
 # initiate the bot and all friendly subreddits
 def get_subreddits():
@@ -48,50 +30,38 @@ def get_subreddits():
     MYDB.commit()
     if len(results) == 0:
         return None
-    subreddits = ""
-    for result in results:
-        subreddits += "%s+" % result[0]
-    subreddits = subreddits[:-1]
+    subreddits = "+".join(result[0] for result in results)
     return REDDIT.subreddit(subreddits)
 
 
-try:
-    subreddits = get_subreddits()
-except:
-    subreddits
+SUBREDDITS = get_subreddits()
 
 
-# a few globals.
-toggle_receive = True
+# how often we poll for new transactions
+CYCLE_TIME = 6
 
 
-# generator to stream comments and messages to the main loop at the bottom, and contains the auto_receive functionality.
-# Maybe this wasn't necessary, but I never get to use generators.
-# To check for new messages and comments, the function scans the subreddits and inbox every 6 seconds and builds a
-# set of current message. I compare the old set with the new set.
 def stream_comments_messages():
+    """
+    # generator to stream comments and messages to the main loop at the bottom, and contains the auto_receive functionality.
+    # Maybe this wasn't necessary, but I never get to use generators.
+    # To check for new messages and comments, the function scans the subreddits and inbox every 6 seconds and builds a
+    # set of current message. I compare the old set with the new set.
+    :return:
+    """
     previous_time = time.time()
-    if subreddits is not None:
-        previous_comments = {comment for comment in subreddits.comments()}
-    else:
-        previous_comments = set()
+    previous_comments = {comment for comment in SUBREDDITS.comments()}
     previous_messages = {message for message in REDDIT.inbox.all(limit=25)}
-    global toggle_receive
+
     while True:
-        if toggle_receive and TIP_BOT_ON:
-            auto_receive()
-        toggle_receive = not toggle_receive
-
-        delay = 6 - (time.time() - previous_time)
-
-        if delay <= 0:
-            delay = 0
-        sleep(delay)
+        try:
+            sleep(CYCLE_TIME - (time.time() - previous_time))
+        except ValueError:
+            pass
         previous_time = time.time()
-        if subreddits is not None:
-            updated_comments = {comment for comment in subreddits.comments()}
-        else:
-            updated_comments = set()
+
+        # check for new comments
+        updated_comments = {comment for comment in SUBREDDITS.comments()}
         new_comments = updated_comments - previous_comments
         previous_comments = updated_comments
 
@@ -100,329 +70,12 @@ def stream_comments_messages():
         new_messages = updated_messages - previous_messages
         previous_messages = updated_messages
 
-        # send anything new to our main program
-        # also, check the message type. this will prevent posts from being seen as messages
-        if len(new_comments) >= 1:
-            for new_comment in new_comments:
-                # if new_comment starts with 't1_, it's just a regular comment'
-                if new_comment.name[:3] == "t1_":
-                    yield ("comment", new_comment)
-        if len(new_messages) >= 1:
-            for new_message in new_messages:
-                if new_message.name[:3] == "t4_":
-                    yield ("message", new_message)
-                # if the message has any of these subjects and it is labeled t1_, it is a username tag
-                elif (
-                    new_message.subject == "comment reply"
-                    or new_message.subject == "username mention"
-                    or new_message.subject == "post reply"
-                ) and new_message.name[:3] == "t1_":
-                    yield ("username mention", new_message)
+        total_new = new_comments.union(new_messages)
+        if len(total_new) >= 1:
+            for item in total_new:
+                yield item
         else:
             yield None
-
-
-# handles tip commands on subreddits
-def handle_comment(message, parsed_text=None):
-    """
-    Prepares a reddit comment starting with !nano_tip to send nano if everything goes well
-    :param message:
-    :param parsed_text
-    :return:
-    """
-    # remove an annoying extra space that might be in the front
-    if parsed_text is None:
-        if message.body[0] == " ":
-            parsed_text = parse_text(str(message.body[1:]))
-        else:
-            parsed_text = parse_text(str(message.body))
-
-    # attempt to parse the message, send the Nano, and record responses
-    # response is a 6-member list with some info
-    # response[0] - message to the tip sender
-    # response[1] - a status code
-    # response[2] - Tip amount in 'Nano'
-    # response[3] - reddit username
-    # response[4] - reddit address
-    # response[5] - transaction hash
-    # If the recipient is new, it will automatically send a welcome greeting.
-    response = handle_send_nano(message, parsed_text, "comment")
-
-    # apply the subreddit rules to our response message
-    # potential statuses:
-    #   friendly
-    #   hostile
-    #   minimal
-    # if it is a friendly subreddit, just reply with the response + comment_footer
-    # if it is not friendly, we need to notify the sender as well as the recipient if they have not elected silence
-    # handle top level comment
-    sql = "SELECT status FROM subreddits WHERE subreddit=%s"
-    val = (str(message.subreddit).lower(),)
-    MYCURSOR.execute(sql, val)
-    results = MYCURSOR.fetchall()
-
-    if len(results) == 0:
-        subreddit_status = "silent"
-    else:
-        subreddit_status = results[0][0]
-    # if it is a top level reply and the subreddit is friendly
-    if (str(message.parent_id)[:3] == "t3_") and (
-        subreddit_status in ["friendly", "full"]
-    ):
-        message.reply(response[0] + COMMENT_FOOTER)
-    # otherwise, if the subreddit is friendly (and reply is not top level) or subreddit is minimal
-    elif subreddit_status in ["friendly", "minimal", "full"]:
-        if response[1] <= 8:
-            message.reply(
-                "^(Tip not sent. Error code )^[%s](https://github.com/danhitchcock/nano_tipper_z#error-codes) ^- [^(Nano Tipper)](https://github.com/danhitchcock/nano_tipper_z)"
-                % response[1]
-            )
-        elif response[1] == 9:
-            message.reply(
-                "^[Sent](https://nanocrawler.cc/explorer/block/%s) ^%s ^Nano ^to ^%s ^- [^(Nano Tipper)](https://github.com/danhitchcock/nano_tipper_z)"
-                % (response[5], response[2], response[3])
-            )
-        elif (response[1] == 10) or (response[1] == 13):
-            # user didn't request silence or it's a new account, so tag them
-            message.reply(
-                "^[Sent](https://nanocrawler.cc/explorer/block/%s) ^%s ^Nano ^to ^(/u/%s) ^- [^(Nano Tipper)](https://github.com/danhitchcock/nano_tipper_z)"
-                % (response[5], response[2], response[3])
-            )
-        elif (response[1] == 11) or (response[1] == 12):
-            # this actually shouldn't ever happen
-            message.reply(
-                "^[Sent](https://nanocrawler.cc/explorer/block/%s) ^(%s Nano to %s)"
-                % (response[5], response[2], response[4])
-            )
-        elif response[1] == 14:
-            message.reply(
-                "^[Sent](https://nanocrawler.cc/explorer/block/%s) ^(%s Nano to NanoCenter Project %s)"
-                % (response[5], response[2], response[3])
-            )
-    elif subreddit_status in ["hostile", "silent"]:
-        # it's a hostile place, no posts allowed. Will need to PM users
-        if response[1] <= 8:
-            message_recipient = str(message.author)
-            subject = "Your Nano tip did not go through"
-            message_text = response[0] + COMMENT_FOOTER
-            sql = (
-                "INSERT INTO messages (username, subject, message) VALUES (%s, %s, %s)"
-            )
-            val = (message_recipient, subject, message_text)
-            MYCURSOR.execute(sql, val)
-            MYDB.commit()
-        else:
-            # if it was a new account, a PM was already sent to the recipient
-            message_recipient = str(message.author)
-            subject = "Successful tip!"
-            message_text = response[0] + COMMENT_FOOTER
-            sql = (
-                "INSERT INTO messages (username, subject, message) VALUES (%s, %s, %s)"
-            )
-            val = (message_recipient, subject, message_text)
-            MYCURSOR.execute(sql, val)
-            MYDB.commit()
-            # status code 10 means the recipient has not requested silence, so send a message
-            if response[1] == 10:
-                message_recipient = response[3]
-                subject = "You just received a new Nano tip!"
-                message_text = (
-                    "Somebody just tipped you ```%s Nano``` at your address %s. "
-                    "[Transaction on Nano Crawler](https://nanocrawler.cc/explorer/block/%s)\n\n"
-                    'To turn off these notifications, reply with "silence yes"'
-                    % (response[2], response[4], response[5])
-                    + COMMENT_FOOTER
-                )
-
-                sql = "INSERT INTO messages (username, subject, message) VALUES (%s, %s, %s)"
-                val = (message_recipient, subject, message_text)
-                MYCURSOR.execute(sql, val)
-                MYDB.commit()
-
-    elif subreddit_status == "custom":
-        # not sure what to do with this yet.
-        pass
-
-
-# These functions below handle the various messages the bot will receive
-def handle_auto_receive(message):
-    message_time = datetime.utcfromtimestamp(
-        message.created_utc
-    )  # time the reddit message was created
-    username = str(message.author)
-    add_history_record(
-        username=str(message.author),
-        action="auto_receive",
-        comment_id=message.name,
-        comment_or_message="message",
-        reddit_time=message_time.strftime("%Y-%m-%d %H:%M:%S"),
-    )
-
-    parsed_text = parse_text(str(message.body))
-
-    if len(parsed_text) < 2:
-        response = (
-            "I couldn't parse your command. I was expecting 'auto_receive <yes/no>'. "
-            "Be sure to check your spacing."
-        )
-        return response
-
-    if parsed_text[1] == "yes":
-        sql = "UPDATE accounts SET auto_receive = TRUE WHERE username = %s "
-        val = (username,)
-        MYCURSOR.execute(sql, val)
-        response = "auto_receive set to 'yes'."
-    elif parsed_text[1] == "no":
-        sql = "UPDATE accounts SET auto_receive = FALSE WHERE username = %s"
-        val = (username,)
-        MYCURSOR.execute(sql, val)
-        response = "auto_receive set to 'no'. Use 'receive' to manually receive unpocketed transactions."
-    else:
-        response = "I did not see 'no' or 'yes' after 'auto_receive'. If you did type that, check your spacing."
-    MYDB.commit()
-
-    return response
-
-
-def handle_message(message):
-    # activate the account
-    activate(message.author)
-    response = "not activated"
-    parsed_text = parse_text(str(message.body))
-
-    # standard things
-    if (parsed_text[0].lower() == "help") or (parsed_text[0].lower() == "!help"):
-        LOGGER.info("Helping")
-        subject = "Nano Tipper - Help"
-        response = handle_help(message)
-    elif (parsed_text[0].lower() == "balance") or (parsed_text[0].lower() == "address"):
-        LOGGER.info("balance")
-        subject = "Nano Tipper - Account Balance"
-        response = handle_balance(message)
-    elif parsed_text[0].lower() == "minimum":
-        LOGGER.info("Setting Minimum")
-        subject = "Nano Tipper - Tip Minimum"
-        response = handle_minimum(message)
-    elif parsed_text[0].lower() == "percentage" or parsed_text[0].lower() == "percent":
-        LOGGER.info("Setting Percentage")
-        subject = "Nano Tipper - Returned Tip Percentage for Donation"
-        response = handle_percentage(message)
-    elif (parsed_text[0].lower() == "create") or parsed_text[0].lower() == "register":
-        LOGGER.info("Creating")
-        subject = "Nano Tipper - Create"
-        response = handle_create(message)
-    elif (parsed_text[0].lower() == "send") or (parsed_text[0].lower() == "withdraw"):
-        subject = "Nano Tipper - Send"
-        LOGGER.info("send via PM")
-        response = handle_send(message)
-    elif parsed_text[0].lower() == "history":
-        LOGGER.info("history")
-        subject = "Nano Tipper - History"
-        response = handle_history(message)
-    elif parsed_text[0].lower() == "silence":
-        LOGGER.info("silencing")
-        subject = "Nano Tipper - Silence"
-        response = handle_silence(message)
-    elif parsed_text[0].lower() == "subreddit":
-        LOGGER.info("subredditing")
-        subject = "Nano Tipper - Subreddit"
-        response = handle_subreddit(message)
-        global subreddits
-        subreddits = get_subreddits()
-        LOGGER.info(subreddits)
-
-    # nanocenter donation commands
-    elif parsed_text[0].lower() == "project" or parsed_text[0].lower() == "projects":
-        if (
-            (str(message.author) == TIPBOT_OWNER)
-            or (str(message.author).lower() == "rockmsockmjesus")
-        ) and len(parsed_text) > 2:
-            sql = "INSERT INTO projects (project, address) VALUES(%s, %s) ON DUPLICATE KEY UPDATE address=%s"
-            val = (parsed_text[1], parsed_text[2], parsed_text[2])
-            MYCURSOR.execute(sql, val)
-            MYDB.commit()
-        add_history_record(
-            username=str(message.author),
-            action="project",
-            comment_text=str(message.body)[:255],
-            comment_or_message="message",
-            comment_id=message.name,
-        )
-
-        response = "Current NanoCenter Donation Projects: \n\n"
-        subject = "Nanocenter Projects"
-        sql = "SELECT project, address FROM projects"
-        MYCURSOR.execute(sql)
-        results = MYCURSOR.fetchall()
-        for result in results:
-            response += "%s %s  \n" % (result[0], result[1])
-    elif parsed_text[0].lower() == "delete_project":
-        if (
-            (str(message.author) == TIPBOT_OWNER)
-            or (str(message.author).lower() == "rockmsockmjesus")
-        ) and len(parsed_text) > 1:
-            sql = "DELETE FROM projects WHERE project=%s"
-            val = (parsed_text[1],)
-            MYCURSOR.execute(sql, val)
-            MYDB.commit()
-        response = "Current NanoCenter Donation Projects: \n\n"
-        subject = "Nanocenter Projects"
-        sql = "SELECT project, address FROM projects"
-        MYCURSOR.execute(sql)
-        results = MYCURSOR.fetchall()
-        for result in results:
-            response += "%s %s  \n" % (result[0], result[1])
-
-    # a few administrative tasks
-    elif parsed_text[0].lower() in ["restart", "stop", "disable", "deactivate"]:
-        if str(message.author).lower() in [
-            TIPBOT_OWNER,
-            "rockmsockmjesus",
-        ]:  # "joohansson"]:
-            add_history_record(
-                username=str(message.author),
-                action="restart",
-                comment_text=str(message.body)[:255],
-                comment_or_message="message",
-                comment_id=message.name,
-            )
-            sys.exit()
-    elif parsed_text[0].lower() == "status":
-        # benchmark a few SQL Selects
-        if str(message.author) == TIPBOT_OWNER:
-            previous_message_check = time.time()
-            message_in_database(message)
-            previous_message_check = previous_message_check - time.time()
-            subject = "Status"
-            message = "Check for Previous Messages: %s\n" % previous_message_check
-    elif parsed_text[0].lower() == "test_welcome_tipped":
-        subject = "Nano Tipper - Welcome By Tip"
-        response = WELCOME_TIP % (
-            0.01,
-            "xrb_3jy9954gncxbhuieujc3pg5t1h36e7tyqfapw1y6zukn9y1g6dj5xr7r6pij",
-            "xrb_3jy9954gncxbhuieujc3pg5t1h36e7tyqfapw1y6zukn9y1g6dj5xr7r6pij",
-        )
-    elif parsed_text[0].lower() == "test_welcome_create":
-        subject = "Nano Tipper - Create"
-        response = WELCOME_CREATE % (
-            "xrb_3jy9954gncxbhuieujc3pg5t1h36e7tyqfapw1y6zukn9y1g6dj5xr7r6pij",
-            "xrb_3jy9954gncxbhuieujc3pg5t1h36e7tyqfapw1y6zukn9y1g6dj5xr7r6pij",
-        )
-
-    else:
-        add_history_record(
-            username=str(message.author),
-            comment_text=str(message.body)[:255],
-            comment_or_message="message",
-            comment_id=message.name,
-        )
-        return None
-    message_recipient = str(message.author)
-    message_text = response + COMMENT_FOOTER
-    sql = "INSERT INTO messages (username, subject, message) VALUES (%s, %s, %s)"
-    val = (message_recipient, subject, message_text)
-    MYCURSOR.execute(sql, val)
-    MYDB.commit()
 
 
 def auto_receive():
@@ -453,19 +106,6 @@ def auto_receive():
             pass
         except Exception as e:
             print(e)
-
-
-def message_in_database(message):
-    sql = "SELECT * FROM history WHERE comment_id = %s"
-    val = (message.name,)
-    MYCURSOR.execute(sql, val)
-    results = MYCURSOR.fetchall()
-    if len(results) > 0:
-        LOGGER.info("Found previous messages: ")
-        for result in results:
-            LOGGER.info(result)
-        return True
-    return False
 
 
 def check_inactive_transactions():
@@ -713,174 +353,39 @@ def check_inactive_transactions():
     LOGGER.info("Inactivated script complete.")
 
 
-# main loop
-t0 = time.time()
-check_inactive_transactions()
-for action_item in stream_comments_messages():
-    # our 'stream_comments_messages()' generator will give us either a comment/reply, message, or username mention
-    # (t1 = comment, t4 = message)
-    # The bot handles these differently
-    if action_item is None:
-        # if we have nothing after the poll, pass
-        pass
+def main_loop():
+    global SUBREDDITS
+    actions = {
+        "message": handle_message,
+        "comment": handle_comment,
+        "faucet_tip": handle_message,
+        "ignore": lambda x: None,
+        "replay": lambda x: None,
+        None: lambda x: None,
+    }
+    inactive_timer = time.time()
+    receive_timer = time.time()
+    subreddit_timer = time.time()
+    check_inactive_transactions()
+    for action_item in stream_comments_messages():
+        action = parse_action(action_item)
+        actions[action](action_item)
 
-    elif message_in_database(action_item[1]):
-        # if a message was already handled, pass
-        pass
+        # run the inactive script at the end of the loop; every 12 hours
+        if time.time() - inactive_timer > 43200:
+            inactive_timer = time.time()
+            check_inactive_transactions()
 
-    elif action_item[0] == "comment":
-        parsed_text = parse_text(str(action_item[1].body))
-        try:
-            # check if it's a command at the beginning
-            if (parsed_text[0] in TIP_COMMANDS) or (parsed_text[0] in DONATE_COMMANDS):
-                LOGGER.info(
-                    f"Comment, beginning: {action_item[1].author} - {action_item[1].body[:20]}"
-                )
+        # run the receive script every 20 seconds
+        if time.time() - receive_timer > 20:
+            receive_timer = time.time()
+            auto_receive()
 
-                if allowed_request(
-                    action_item[1].author, 30, 5
-                ) and not message_in_database(action_item[1]):
-                    if TIP_BOT_ON:
-                        handle_comment(action_item[1])
-                    else:
-                        REDDIT.redditor(str(action_item[1].author)).message(
-                            "Nano Tipper Currently Disabled",
-                            "[^(Nano Tipper is currently disabled)](https://www.reddit.com/r/nano_tipper/comments/astwp6/nano_tipper_status/)",
-                        )
-                else:
-                    LOGGER.info(f"Too many requests for{action_item[1].author}")
-            # check if it's a tip command at the end of the message
-            elif parsed_text[-2] in TIP_COMMANDS:
-                LOGGER.info(
-                    f"Comment, end: {action_item[1].author} - {action_item[1].body[:20]}"
-                )
+        # refresh subreddit status every 5 minutes
+        if time.time() - subreddit_timer > 300:
+            subreddit_timer = time.time()
+            SUBREDDITS = get_subreddits()
 
-                if allowed_request(
-                    action_item[1].author, 30, 5
-                ) and not message_in_database(action_item[1]):
-                    if TIP_BOT_ON:
-                        if str(action_item[1].subreddit).lower() == "cryptocurrency":
-                            LOGGER.info("ignoring cryptocurrency post")
-                        else:
-                            handle_comment(action_item[1], parsed_text=parsed_text[-2:])
-                    else:
-                        REDDIT.redditor(str(action_item[1].author)).message(
-                            "Nano Tipper Currently Disabled",
-                            "[^(Nano Tipper is currently disabled)](https://www.reddit.com/r/nano_tipper/comments/astwp6/nano_tipper_status/)",
-                        )
-                else:
-                    LOGGER.info("Too many requests for %s" % action_item[1].author)
-            # check if it's a donate command at the end of the message
-            elif parsed_text[-3] in DONATE_COMMANDS:
-                LOGGER.info(
-                    'Donate command."%s", %s' % (parsed_text[-3], DONATE_COMMANDS)
-                )
-                LOGGER.info(
-                    f"Comment, end: {action_item[1].author} - {action_item[1].body[:20]}"
-                )
 
-                if allowed_request(
-                    action_item[1].author, 30, 5
-                ) and not message_in_database(action_item[1]):
-                    if TIP_BOT_ON:
-                        if str(action_item[1].subreddit).lower() == "cryptocurrency":
-                            LOGGER.info("ignoring cryptocurrency post")
-                        else:
-                            handle_comment(action_item[1], parsed_text=parsed_text[-3:])
-                    else:
-                        REDDIT.redditor(str(action_item[1].author)).message(
-                            "Nano Tipper Currently Disabled",
-                            "[^(Nano Tipper is currently disabled)](https://www.reddit.com/r/nano_tipper/comments/astwp6/nano_tipper_status/)",
-                        )
-                else:
-                    LOGGER.info("Too many requests for %s" % action_item[1].author)
-
-        except IndexError:
-            pass
-
-    elif action_item[0] == "message":
-        # if it's from the tipbot itself
-        if action_item[1].author == TIP_BOT_USERNAME:
-            if (
-                (action_item[1].name[:3] == "t4_")
-                and (action_item[1].body[:11] == "send 0.001 ")
-                and not message_in_database(action_item[1])
-            ):
-                LOGGER.info(
-                    f"Faucet Tip: {action_item[1].author} - {action_item[1].body[:20]}"
-                )
-                handle_message(action_item[1])
-            else:
-                LOGGER.info("ignoring nano_tipper message")
-        # if the user isn't spamming
-        elif not allowed_request(action_item[1].author, 30, 5):
-            LOGGER.info("Too many requests for %s" % action_item[1].author)
-        else:
-            if TIP_BOT_ON:
-                # handle the message finally
-                if action_item[1].name[:3] == "t4_" and not message_in_database(
-                    action_item[1]
-                ):
-
-                    LOGGER.info(
-                        f"Message: {action_item[1].author} - {action_item[1].body[:20]}"
-                    )
-                    handle_message(action_item[1])
-
-            else:
-                action_item[1].reply(
-                    "[^(Nano Tipper is currently disabled)](https://www.reddit.com/r/nano_tipper/comments/astwp6/nano_tipper_status/)"
-                )
-
-    elif action_item[0] == "username mention":
-        parsed_text = parse_text(str(action_item[1].body))
-
-        try:
-            if (parsed_text[0] == "/u/%s" % TIP_BOT_USERNAME) or (
-                parsed_text[0] == "u/%s" % TIP_BOT_USERNAME
-            ):
-
-                LOGGER.info(
-                    f"Username Mention: { action_item[1].author} - {action_item[1].body[:20]}"
-                )
-                if allowed_request(
-                    action_item[1].author, 30, 5
-                ) and not message_in_database(action_item[1]):
-                    if TIP_BOT_ON:
-                        handle_comment(action_item[1])
-                        pass
-                    else:
-                        REDDIT.redditor(str(action_item[1].author)).message(
-                            "Nano Tipper Currently Disabled",
-                            "[^(Nano Tipper is currently disabled)](https://www.reddit.com/r/nano_tipper/comments/astwp6/nano_tipper_status/)",
-                        )
-                else:
-                    LOGGER.info("Too many requests for %s" % action_item[1].author)
-
-            elif (parsed_text[-2] == "/u/%s" % TIP_BOT_USERNAME) or (
-                parsed_text[-2] == "u/%s" % TIP_BOT_USERNAME
-            ):
-
-                LOGGER.info(
-                    f"Username Mention: f{action_item[1].author} - {action_item[1].body[:20]}"
-                )
-                if allowed_request(
-                    action_item[1].author, 30, 5
-                ) and not message_in_database(action_item[1]):
-                    if TIP_BOT_ON:
-                        handle_comment(action_item[1], parsed_text=parsed_text[-2:])
-                    else:
-                        REDDIT.redditor(str(action_item[1].author)).message(
-                            "Nano Tipper Currently Disabled",
-                            "[^(Nano Tipper is currently disabled)](https://www.reddit.com/r/nano_tipper/comments/astwp6/nano_tipper_status/)",
-                        )
-                else:
-                    LOGGER.info("Too many requests for %s" % action_item[1].author)
-
-        except IndexError:
-            pass
-
-    # run the inactive script at the end of the loop; every 12 hours
-    if time.time() - t0 > 43200:
-        t0 = time.time()
-        check_inactive_transactions()
+if __name__ == "__main__":
+    main_loop()
