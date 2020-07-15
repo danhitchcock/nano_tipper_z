@@ -258,8 +258,8 @@ def send_from_comment(message):
     )
     val = (
         "sent to user",
-        recipient_info["address"],
-        recipient_info["username"],
+        sender_info["address"],
+        sender_info["username"],
         recipient_info["username"],
         recipient_info["address"],
         str(response["amount"]),
