@@ -185,6 +185,13 @@ def modify_subreddit(subreddit, status):
     MYDB.commit()
 
 
+def rm_subreddit(subreddit):
+    sql = "DELETE FROM subreddits WHERE subreddit = %s"
+    val = (subreddit,)
+    MYCURSOR.execute(sql, val)
+    MYDB.commit()
+
+
 def add_history_record(
     username=None,
     action=None,
