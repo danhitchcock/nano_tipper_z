@@ -283,10 +283,7 @@ def send_from_comment(message):
                     response["amount"] / 10 ** 30,
                     recipient_info["address"],
                     receiving_new_balance[0] / 10 ** 30,
-                    (
-                        receiving_new_balance[1] / 10 ** 30
-                        + response["amount"] / 10 ** 30
-                    ),
+                    receiving_new_balance[1] / 10 ** 30,
                     response["hash"],
                 )
                 + text.COMMENT_FOOTER
