@@ -90,8 +90,15 @@ def send_from_comment(message):
     # check if it's a donate command at the end
     if parsed_text[-3] in DONATE_COMMANDS:
         parsed_text = parsed_text[-3:]
-    # check if it's a send command at the end
-    if parsed_text[-2] in TIP_COMMANDS:
+    # don't do anything if the first word is a tip command or username
+    elif (parsed_text[0] in [f"/u/{TIP_BOT_USERNAME}", f"u/{TIP_BOT_USERNAME}"]) or (
+        parsed_text[0] in TIP_COMMANDS
+    ):
+        pass
+    # if the second to last is a username or tip command, redifine parsed text
+    elif (parsed_text[-2] in [f"/u/{TIP_BOT_USERNAME}", f"u/{TIP_BOT_USERNAME}"]) or (
+        parsed_text[-2] in TIP_COMMANDS
+    ):
         parsed_text = parsed_text[-2:]
 
     # before we can do anything, check the subreddit status for generating the response

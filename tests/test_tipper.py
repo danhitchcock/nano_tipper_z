@@ -615,12 +615,90 @@ def test_handle_send_from_comment_and_text(handle_send_from_comment_mocks):
         "tion on Nano Crawler](https://nanocrawler.cc/explorer/block/success!)"
     )
 
-    # send to new user
+    # send to user
     message = RedditMessage(
         "t4_5",
         "rich",
         "",
         f"{TIP_COMMANDS[0]} 0.01",
+        subreddit="friendly_sub",
+        parent_author="poor",
+    )
+    response = send_from_comment(message)
+    assert response == {
+        "amount": 10000000000000000000000000000,
+        "status": 10,
+        "subreddit": "friendly_sub",
+        "subreddit_minimum": 0,
+        "username": "rich",
+        "hash": "success!",
+        "recipient": "poor",
+        "subreddit_status": "full",
+    }
+    assert (
+        text.make_response_text(message, response)
+        == "Sent ```0.01 Nano``` to /u/poor -- [Transaction on Nano Crawler](https"
+        "://nanocrawler.cc/explorer/block/success!)"
+    )
+
+    # send at end of message
+    message = RedditMessage(
+        "t4_5",
+        "rich",
+        "",
+        f"something something {TIP_COMMANDS[0]} 0.01",
+        subreddit="friendly_sub",
+        parent_author="poor",
+    )
+    response = send_from_comment(message)
+    assert response == {
+        "amount": 10000000000000000000000000000,
+        "status": 10,
+        "subreddit": "friendly_sub",
+        "subreddit_minimum": 0,
+        "username": "rich",
+        "hash": "success!",
+        "recipient": "poor",
+        "subreddit_status": "full",
+    }
+    assert (
+        text.make_response_text(message, response)
+        == "Sent ```0.01 Nano``` to /u/poor -- [Transaction on Nano Crawler](https"
+        "://nanocrawler.cc/explorer/block/success!)"
+    )
+
+    # send by username mention
+    message = RedditMessage(
+        "t4_5",
+        "rich",
+        "",
+        f"/u/{TIP_BOT_USERNAME} 0.01",
+        subreddit="friendly_sub",
+        parent_author="poor",
+    )
+    response = send_from_comment(message)
+    assert response == {
+        "amount": 10000000000000000000000000000,
+        "status": 10,
+        "subreddit": "friendly_sub",
+        "subreddit_minimum": 0,
+        "username": "rich",
+        "hash": "success!",
+        "recipient": "poor",
+        "subreddit_status": "full",
+    }
+    assert (
+        text.make_response_text(message, response)
+        == "Sent ```0.01 Nano``` to /u/poor -- [Transaction on Nano Crawler](https"
+        "://nanocrawler.cc/explorer/block/success!)"
+    )
+
+    # send at end of by username mention
+    message = RedditMessage(
+        "t4_5",
+        "rich",
+        "",
+        f"something something /u/{TIP_BOT_USERNAME} 0.01",
         subreddit="friendly_sub",
         parent_author="poor",
     )
