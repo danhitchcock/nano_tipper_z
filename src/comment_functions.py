@@ -217,7 +217,7 @@ def send_from_comment(message):
     # Update the sql and send the PMs
     sql = (
         "UPDATE history SET notes = %s, address = %s, username = %s, recipient_username = %s, "
-        "recipient_address = %s, amount = %s, return_status = %s WHERE id = %s"
+        "recipient_address = %s, amount = %s, hash = %s, return_status = %s WHERE id = %s"
     )
     val = (
         "sent to user",
@@ -226,6 +226,7 @@ def send_from_comment(message):
         recipient_info["username"],
         recipient_info["address"],
         str(response["amount"]),
+        response["hash"],
         "cleared",
         entry_id,
     )
