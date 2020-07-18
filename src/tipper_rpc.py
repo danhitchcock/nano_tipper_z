@@ -1,7 +1,7 @@
 import json
 import qrcode
 import requests
-from shared import DPOW_TOKEN, DEFAULT_URL
+from shared import DPOW_TOKEN, DEFAULT_URL, LOGGER
 
 
 def perform_curl(data=None, URL=None, timeout=30):
@@ -50,6 +50,7 @@ def work_generate(hash, dpow=False):
             )
             results = json.loads(results.text)
         except requests.exceptions.Timeout:
+            LOGGER.info("Falling back to local POW...")
             return work_generate(hash)
         return results
     else:
