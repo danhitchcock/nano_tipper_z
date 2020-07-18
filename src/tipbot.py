@@ -26,7 +26,6 @@ from comment_functions import handle_comment
 def get_subreddits():
     MYCURSOR.execute("SELECT subreddit FROM subreddits")
     results = MYCURSOR.fetchall()
-    LOGGER.info(f"Initializing in the following subreddits: {results}")
     MYDB.commit()
     if len(results) == 0:
         return None
