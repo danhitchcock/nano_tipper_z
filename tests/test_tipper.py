@@ -614,6 +614,15 @@ def test_handle_send_from_comment_and_text(handle_send_from_comment_mocks):
         == "Creating a new account for /u/dne and sending ```0.01 Nano```. [Transac"
         "tion on Nano Crawler](https://nanocrawler.cc/explorer/block/success!)"
     )
+    # check text for minimal
+    message.subreddit = "minimal_sub"
+    response = send_from_comment(message)
+    assert (
+        text.make_response_text(message, response)
+        == "^(Made a new account and )^[sent](https://nanocrawler.cc/explorer/block"
+        "/success!) ^0.01 ^Nano ^to ^(/u/dne) ^- [^(Nano Tipper)](https://githu"
+        "b.com/danhitchcock/nano_tipper_z)"
+    )
 
     # send to user
     message = RedditMessage(
@@ -639,6 +648,15 @@ def test_handle_send_from_comment_and_text(handle_send_from_comment_mocks):
         text.make_response_text(message, response)
         == "Sent ```0.01 Nano``` to /u/poor -- [Transaction on Nano Crawler](https"
         "://nanocrawler.cc/explorer/block/success!)"
+    )
+    # minimal text for new user
+    message.subreddit = "minimal_sub"
+    response = send_from_comment(message)
+    assert (
+        text.make_response_text(message, response)
+        == "^[Sent](https://nanocrawler.cc/explorer/block/success!) ^0.01 ^Nano "
+        "^to ^(/u/poor) ^- [^(Nano Tipper)](https://github.com/danhitchcock/nan"
+        "o_tipper_z)"
     )
 
     # send at end of message
