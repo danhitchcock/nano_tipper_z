@@ -40,6 +40,7 @@ try:
     PYTHON_COMMAND = config["BOT"]["python_command"]
     TIPPER_OPTIONS = config["BOT"]["tipper_options"]
     MESSENGER_OPTIONS = config["BOT"]["messenger_options"]
+    DONATION_ADMINS = config["BOT"]["donation_admins"]
 except KeyError:
     SQL_PASSWORD = ""
     DATABASE_NAME = ""
@@ -56,6 +57,7 @@ except KeyError:
     PYTHON_COMMAND = ""
     TIPPER_OPTIONS = ""
     MESSENGER_OPTIONS = ""
+    DONATION_ADMINS = []
 
 # only fails if no databases have been created
 try:
