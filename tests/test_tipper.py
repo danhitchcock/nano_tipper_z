@@ -1,6 +1,8 @@
 import time
 import shared
 import text
+import tipbot
+from tipbot import stream_comments_messages
 
 # It is important to only import shared before disabling the database.
 # Otherwise, other tipper modules might import shared prior to the database
@@ -801,3 +803,46 @@ def test_handle_send_from_comment_and_text(handle_send_from_comment_mocks):
         == "Donated ```0.01 Nano``` to Nanocenter Project project_exists -- [Tran"
         "saction on Nano Crawler](https://nanocrawler.cc/explorer/block/success!)"
     )
+
+
+# Test the streaming of comments and methods
+class MockRedditInbox:
+    i = 0
+    responses = [
+        ["t3_one", "t3_two"],
+        ["t3_one", "t3_two", "t3_three", "t4_one"],
+        ["t3_three", "t3_four", "t4_one"],
+        ["t3_three", "t3_four", "t4_one"],
+    ]
+
+    def all(self, limit=25):
+        response = self.responses[self.i]
+        self.i += 1
+        return response
+
+
+class MockSubreddit:
+    i = 0
+    responses = [
+        ["t1_one", "t1_two"],
+        ["t1_one", "t1_two", "t1_three", "t4_one"],
+        ["t1_three", "t1_four", "t4_one"],
+        ["t1_three", "t1_four", "t4_one"],
+    ]
+
+    def comments(self):
+        response = self.responses[self.i]
+        self.i += 1
+        return response
+
+
+def test_stream_comments_messages(monkeypatch):
+    monkeypatch.setattr(tipbot, "CYCLE_TIME", 0)
+    monkeypatch.setattr(tipbot.REDDIT, "inbox", MockRedditInbox())
+    monkeypatch.setattr(tipbot, "SUBREDDITS", MockSubreddit())
+    items = []
+    for item in stream_comments_messages():
+        items.append(item)
+        if not item:
+            break
+    assert set(items) == {"t3_three", "t1_three", "t4_one", "t1_four", "t3_four", None}
