@@ -2,14 +2,8 @@ import time
 
 from time import sleep
 from tipper_rpc import get_pendings, open_or_receive_block, send
-
-from shared import (
-    LOGGER,
-    MYCURSOR,
-    MYDB,
-    REDDIT,
-    PROGRAM_MINIMUM,
-)
+import shared
+from shared import LOGGER, MYCURSOR, MYDB, REDDIT, PROGRAM_MINIMUM, SUBREDDITS
 
 from text import HELP
 from message_functions import (
@@ -21,19 +15,6 @@ from tipper_functions import (
     parse_action,
 )
 from comment_functions import handle_comment
-
-# initiate the bot and all friendly subreddits
-def get_subreddits():
-    MYCURSOR.execute("SELECT subreddit FROM subreddits")
-    results = MYCURSOR.fetchall()
-    MYDB.commit()
-    if len(results) == 0:
-        return None
-    subreddits = "+".join(result[0] for result in results)
-    return REDDIT.subreddit(subreddits)
-
-
-SUBREDDITS = get_subreddits()
 
 
 # how often we poll for new transactions
@@ -51,6 +32,7 @@ def stream_comments_messages():
     previous_time = time.time()
     previous_comments = {comment for comment in SUBREDDITS.comments()}
     previous_messages = {message for message in REDDIT.inbox.all(limit=25)}
+    previous_all = previous_comments.union(previous_messages)
 
     while True:
         try:
@@ -61,17 +43,13 @@ def stream_comments_messages():
 
         # check for new comments
         updated_comments = {comment for comment in SUBREDDITS.comments()}
-        new_comments = updated_comments - previous_comments
-        previous_comments = updated_comments
-
-        # check for new messages
         updated_messages = {message for message in REDDIT.inbox.all(limit=25)}
-        new_messages = updated_messages - previous_messages
-        previous_messages = updated_messages
+        updated_all = updated_comments.union(updated_messages)
+        new = updated_all - previous_all
+        previous_all = updated_all
 
-        total_new = new_comments.union(new_messages)
-        if len(total_new) >= 1:
-            for item in total_new:
+        if len(new) >= 1:
+            for item in new:
                 yield item
         else:
             yield None
@@ -383,7 +361,8 @@ def main_loop():
         # refresh subreddit status every 5 minutes
         if time.time() - subreddit_timer > 300:
             subreddit_timer = time.time()
-            SUBREDDITS = get_subreddits()
+            shared.SUBREDDITS = shared.get_subreddits()
+            SUBREDDITS = shared.SUBREDDITS
 
 
 if __name__ == "__main__":
