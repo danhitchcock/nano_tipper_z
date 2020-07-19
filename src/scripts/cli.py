@@ -6,6 +6,7 @@ from .sql_scripts import (
     pull_history,
     delete_user,
     list_users,
+    modify_history,
 )
 from .rpc_scripts import block_count
 
@@ -22,3 +23,4 @@ cli.add_command(block_count)
 cli.add_command(pull_history)
 cli.add_command(delete_user)
 cli.add_command(list_users)
+cli.add_command(modify_history)

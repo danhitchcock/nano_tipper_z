@@ -48,10 +48,10 @@ def pull_history(u, n):
     :param n:
     :return:
     """
-    sql = "SELECT username, reddit_time, action, amount, comment_id, notes, recipient_username, recipient_address, comment_text FROM history WHERE username=%s ORDER BY id DESC limit %s"
+    sql = "SELECT id, username, sql_time, action, amount, comment_id, notes, recipient_username, recipient_address, return_status, comment_text FROM history WHERE username=%s ORDER BY id DESC limit %s"
     val = (u, n)
     if u is None:
-        sql = "SELECT username, reddit_time, action, amount, comment_id, notes, recipient_username, recipient_address, comment_text FROM history ORDER BY id DESC limit %s"
+        sql = "SELECT id, username, sql_time, action, amount, comment_id, notes, recipient_username, recipient_address, return_status, comment_text FROM history ORDER BY id DESC limit %s"
         val = (n,)
     MYCURSOR.execute(sql, val)
     results = MYCURSOR.fetchall()
@@ -82,3 +82,12 @@ def list_users(u):
     results = MYCURSOR.fetchall()
     for result in results:
         LOGGER.info(result)
+
+
+@click.command()
+@click.option("--id", default=None)
+def modify_history(id):
+
+    sql = "UPDATE history SET sql_time='2020-06-10 09:21:28' WHERE id=%s"
+    MYCURSOR.execute(sql, (id,))
+    MYDB.commit()

@@ -1,9 +1,7 @@
 import types
 import time
 import shared
-import text
-import tipbot
-from tipbot import stream_comments_messages
+
 
 # It is important to only import shared before disabling the database.
 # Otherwise, other tipper modules might import shared prior to the database
@@ -26,6 +24,12 @@ class MockedDB:
 
 shared.MYDB = MockedDB()
 shared.MYCURSOR = MockedCursor()
+shared.REDDIT = None
+shared.SUBREDDITS = None
+shared.DEFAULT_URL = None
+import text
+import tipbot
+from tipbot import stream_comments_messages
 import pytest
 from shared import TIP_COMMANDS, TIP_BOT_USERNAME, DONATE_COMMANDS
 import message_functions
@@ -164,7 +168,7 @@ def mock_parse_recipient_username(recipient_text):
     return {"username": recipient_text}
 
 
-def mock_query_sql(sql, val):
+def mock_query_sql(sql, val=None):
     # subreddits
     if sql == "SELECT status FROM subreddits WHERE subreddit=%s":
         val = val[0]
@@ -181,6 +185,44 @@ def mock_query_sql(sql, val):
             "project_exists": [["address"]],
             "project_does_not_exist": [],
         }
+        return vals[val]
+
+    # return script
+    if sql == "SELECT username FROM accounts WHERE active IS NOT TRUE":
+        return [["return_me"], ["warn_me"]]
+    if sql == (
+        "SELECT recipient_username FROM history WHERE action = 'send' "
+        "AND hash IS NOT NULL "
+        "AND `sql_time` <= SUBDATE( CURRENT_DATE, INTERVAL 31 DAY) "
+        "AND ("
+        "return_status = 'cleared' "
+        "OR return_status = 'warned'"
+        ")"
+    ):
+        return [["warn_me"], ["return_me"]]
+    if sql == (
+        "SELECT id, username, amount FROM history WHERE action = 'send' "
+        "AND hash IS NOT NULL "
+        "AND recipient_username = %s "
+        "AND `sql_time` <= SUBDATE( CURRENT_DATE, INTERVAL 31 DAY) "
+        "AND return_status = 'cleared'"
+    ):
+        return [[1, "warn_me", "10000000"]]
+    if sql == (
+        "SELECT id, username, amount FROM history WHERE action = 'send' "
+        "AND hash IS NOT NULL "
+        "AND recipient_username = %s "
+        "AND `sql_time` <= SUBDATE( CURRENT_DATE, INTERVAL 35 DAY) "
+        "AND return_status = 'warned'"
+    ):
+        return [[1, "return_me", "1000000"]]
+    if sql == ("SELECT address, private_key FROM accounts WHERE username = %s"):
+        val = val[0]
+        vals = {"warn_me": ["one", "two"], "return_me": ["one", "two"]}
+        return vals[val]
+    if sql == ("SELECT address, percentage FROM accounts WHERE username = %s"):
+        val = val[0]
+        vals = {"warn_me": [["one", 0.5]], "return_me": [["one", 0.5]]}
         return vals[val]
     raise Exception("Unhandled sql query")
 
@@ -849,3 +891,14 @@ def test_stream_comments_messages(monkeypatch):
         if not item:
             break
     assert set(items) == {"t3_three", "t1_three", "t4_one", "t1_four", "t3_four", None}
+
+
+def test_return_transactions(monkeypatch):
+    monkeypatch.setattr(tipper_functions, "query_sql", mock_query_sql)
+    monkeypatch.setattr(tipper_functions, "exec_sql", lambda *args: None)
+    monkeypatch.setattr(tipper_functions, "send_pm", lambda *args: None)
+    monkeypatch.setattr(tipper_functions, "send", lambda *args: {"hash": "hash"})
+    monkeypatch.setattr(
+        tipper_functions, "add_history_record", lambda *args, **kwargs: None
+    )
+    tipper_functions.return_transactions()

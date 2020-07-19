@@ -13,7 +13,7 @@ def perform_curl(data=None, URL=None, timeout=30):
     return json.loads(r.text)
 
 
-def send_w(origin, key, amount, destination, rep=None, work=None):
+def send(origin, key, amount, destination, rep=None, work=None):
     """
     Highest level send command. Takes care of everything.
     :param origin:
@@ -160,14 +160,6 @@ def receive_block(account, key, sent_hash, rep=None):
         "key": key,
     }
     results = perform_curl(data)
-    return results
-
-
-def send(*argv):
-    """
-    origin, key, amount, destination, rep=None
-    """
-    results = process_block(send_block(*argv))
     return results
 
 

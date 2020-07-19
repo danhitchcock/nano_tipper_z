@@ -34,6 +34,7 @@ try:
     TIP_COMMANDS = config["BOT"]["tip_commands"].split(",")
     DONATE_COMMANDS = config["BOT"]["donate_commands"].split(",")
     TIPBOT_OWNER = config["BOT"]["tipbot_owner"]
+    TIPBOT_DONATION_ADDRESS = config["BOT"]["tipbot_donation_address"]
     CMC_TOKEN = config["OTHER"]["cmc_token"]
     DPOW_TOKEN = config["NODE"]["dpow_token"]
     DEFAULT_URL = config["NODE"]["default_url"]
@@ -42,6 +43,7 @@ try:
     MESSENGER_OPTIONS = config["BOT"]["messenger_options"]
     DONATION_ADMINS = config["BOT"]["donation_admins"]
 except KeyError:
+    LOGGER.info("Failed to read tipper.ini. Falling back to test defaults...")
     SQL_PASSWORD = ""
     DATABASE_NAME = ""
     TIP_BOT_ON = True
@@ -50,7 +52,8 @@ except KeyError:
     RECIPIENT_MINIMUM = 0
     TIP_COMMANDS = ["!ntipz", "!nano_tipz"]
     DONATE_COMMANDS = ["!nanocenterz"]
-    TIPBOT_OWNER = ["zily88"]
+    TIPBOT_OWNER = "zily88"
+    TIPBOT_DONATION_ADDRESS = ""
     CMC_TOKEN = ""
     DPOW_TOKEN = ""
     DEFAULT_URL = ""
