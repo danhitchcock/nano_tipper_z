@@ -87,6 +87,24 @@ try:
 except:
     REDDIT = None
 
+# initiate the bot and all friendly subreddits
+def get_subreddits():
+    MYCURSOR.execute("SELECT subreddit FROM subreddits")
+    results = MYCURSOR.fetchall()
+    MYDB.commit()
+    if len(results) == 0:
+        return None
+    subreddits = "+".join(result[0] for result in results)
+    return REDDIT.subreddit(subreddits)
+
+
+# disable for testing
+try:
+    SUBREDDITS = get_subreddits()
+except AttributeError:
+    SUBREDDITS = None
+
+
 EXCLUDED_REDDITORS = [
     "nano",
     "nanos",

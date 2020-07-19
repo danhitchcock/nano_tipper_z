@@ -2,14 +2,8 @@ import time
 
 from time import sleep
 from tipper_rpc import get_pendings, open_or_receive_block, send
-
-from shared import (
-    LOGGER,
-    MYCURSOR,
-    MYDB,
-    REDDIT,
-    PROGRAM_MINIMUM,
-)
+import shared
+from shared import LOGGER, MYCURSOR, MYDB, REDDIT, PROGRAM_MINIMUM, SUBREDDITS
 
 from text import HELP
 from message_functions import (
@@ -21,23 +15,6 @@ from tipper_functions import (
     parse_action,
 )
 from comment_functions import handle_comment
-
-# initiate the bot and all friendly subreddits
-def get_subreddits():
-    MYCURSOR.execute("SELECT subreddit FROM subreddits")
-    results = MYCURSOR.fetchall()
-    MYDB.commit()
-    if len(results) == 0:
-        return None
-    subreddits = "+".join(result[0] for result in results)
-    return REDDIT.subreddit(subreddits)
-
-
-# disable for testing
-try:
-    SUBREDDITS = get_subreddits()
-except AttributeError:
-    SUBREDDITS = None
 
 
 # how often we poll for new transactions
@@ -384,7 +361,8 @@ def main_loop():
         # refresh subreddit status every 5 minutes
         if time.time() - subreddit_timer > 300:
             subreddit_timer = time.time()
-            SUBREDDITS = get_subreddits()
+            shared.SUBREDDITS = shared.get_subreddits()
+            SUBREDDITS = shared.SUBREDDITS
 
 
 if __name__ == "__main__":

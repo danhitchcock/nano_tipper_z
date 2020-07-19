@@ -1,3 +1,4 @@
+import types
 import time
 import shared
 import text
@@ -837,8 +838,10 @@ class MockSubreddit:
 
 
 def test_stream_comments_messages(monkeypatch):
+    reddit = types.SimpleNamespace()
+    reddit.inbox = MockRedditInbox()
     monkeypatch.setattr(tipbot, "CYCLE_TIME", 0)
-    monkeypatch.setattr(tipbot.REDDIT, "inbox", MockRedditInbox())
+    monkeypatch.setattr(tipbot, "REDDIT", reddit)
     monkeypatch.setattr(tipbot, "SUBREDDITS", MockSubreddit())
     items = []
     for item in stream_comments_messages():
