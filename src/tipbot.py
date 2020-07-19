@@ -33,7 +33,11 @@ def get_subreddits():
     return REDDIT.subreddit(subreddits)
 
 
-SUBREDDITS = get_subreddits()
+# disable for testing
+try:
+    SUBREDDITS = get_subreddits()
+except AttributeError:
+    SUBREDDITS = None
 
 
 # how often we poll for new transactions
