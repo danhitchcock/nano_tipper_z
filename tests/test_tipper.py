@@ -207,7 +207,10 @@ def mock_query_sql(sql, val=None):
         "AND `sql_time` <= SUBDATE( CURRENT_DATE, INTERVAL 31 DAY) "
         "AND return_status = 'cleared'"
     ):
-        return [[1, "warn_me", "10000000"]]
+        if val[0] == "warn_me":
+            return [[1, "warn_me", "1000000000000000000000000000"]]
+        else:
+            return []
     if sql == (
         "SELECT id, username, amount FROM history WHERE action = 'send' "
         "AND hash IS NOT NULL "
@@ -215,14 +218,17 @@ def mock_query_sql(sql, val=None):
         "AND `sql_time` <= SUBDATE( CURRENT_DATE, INTERVAL 35 DAY) "
         "AND return_status = 'warned'"
     ):
-        return [[1, "return_me", "1000000"]]
+        if val[0] == "return_me":
+            return [[1, "return_me", "1000000000000000000000000000"]]
+        else:
+            return []
     if sql == ("SELECT address, private_key FROM accounts WHERE username = %s"):
         val = val[0]
-        vals = {"warn_me": ["one", "two"], "return_me": ["one", "two"]}
+        vals = {"warn_me": [["one", "two"]], "return_me": [["one", "two"]]}
         return vals[val]
     if sql == ("SELECT address, percentage FROM accounts WHERE username = %s"):
         val = val[0]
-        vals = {"warn_me": [["one", 0.5]], "return_me": [["one", 0.5]]}
+        vals = {"warn_me": [["one", 50]], "return_me": [["one", 50]]}
         return vals[val]
     raise Exception("Unhandled sql query")
 
@@ -893,12 +899,37 @@ def test_stream_comments_messages(monkeypatch):
     assert set(items) == {"t3_three", "t1_three", "t4_one", "t1_four", "t3_four", None}
 
 
+class StoreStuff:
+    def __init__(self, returns=None):
+        self.stuff = []
+        self.returns = returns
+
+    def store(self, *args, **kwargs):
+        self.stuff.append([args, kwargs])
+        return self.returns
+
+
 def test_return_transactions(monkeypatch):
     monkeypatch.setattr(tipper_functions, "query_sql", mock_query_sql)
     monkeypatch.setattr(tipper_functions, "exec_sql", lambda *args: None)
-    monkeypatch.setattr(tipper_functions, "send_pm", lambda *args: None)
-    monkeypatch.setattr(tipper_functions, "send", lambda *args: {"hash": "hash"})
+    pm_responses = StoreStuff()
+
+    monkeypatch.setattr(tipper_functions, "send_pm", pm_responses.store)
+    send_responses = StoreStuff({"hash": "hash"})
+    monkeypatch.setattr(tipper_functions, "send", send_responses.store)
     monkeypatch.setattr(
         tipper_functions, "add_history_record", lambda *args, **kwargs: None
     )
     tipper_functions.return_transactions()
+    assert send_responses.stuff == [
+        [("one", "two", 500000000000000000000000000, "one"), {}],
+        [
+            (
+                "one",
+                "two",
+                500000000000000000000000000,
+                "nano_3jy9954gncxbhuieujc3pg5t1h36e7tyqfapw1y6zukn9y1g6dj5xr7r6pij",
+            ),
+            {},
+        ],
+    ]

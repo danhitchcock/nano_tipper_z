@@ -448,13 +448,11 @@ def return_transactions():
             private_key = inactive_results[0][1]
 
             for txn in txns:
-                LOGGER.info("1")
                 # set the pre-update message to 'return failed'. This will be changed
                 # to 'returned' upon success
                 sql = "UPDATE history SET return_status = 'return failed' WHERE id = %s"
                 val = (txn[0],)
                 exec_sql(sql, val)
-                LOGGER.info("2")
                 # get the transaction information and find out to whom we are returning
                 # the tip
                 sql = "SELECT address, percentage FROM accounts WHERE username = %s"
@@ -463,14 +461,12 @@ def return_transactions():
                 recipient_address = returned_results[0][0]
                 percentage = returned_results[0][1]
                 percentage = float(percentage) / 100
-                LOGGER.info("3")
                 # send it back
                 donation_amount = int(txn[2]) / 10 ** 30
                 donation_amount = donation_amount * percentage
                 donation_amount = nano_to_raw(donation_amount)
 
                 return_amount = int(txn[2]) - donation_amount
-                LOGGER.info("4")
                 if (return_amount > 0) and (return_amount <= int(txn[2])):
                     hash = send(address, private_key, return_amount, recipient_address)[
                         "hash"
@@ -481,7 +477,7 @@ def return_transactions():
                         amount=return_amount,
                         notes="Returned transaction from history record %s" % txn[0],
                     )
-                LOGGER.info("5")
+
                 if (donation_amount > 0) and (donation_amount <= int(txn[2])):
                     hash2 = send(
                         address, private_key, donation_amount, TIPBOT_DONATION_ADDRESS,
@@ -492,12 +488,10 @@ def return_transactions():
                         amount=donation_amount,
                         notes="Donation from returned tip %s" % txn[0],
                     )
-                LOGGER.info("6")
                 # update database if everything goes through
                 sql = "UPDATE history SET return_status = 'returned' WHERE id = %s"
                 val = (txn[0],)
                 exec_sql(sql, val)
-                LOGGER.info("7")
                 # add transactions to the messaging queue to build a single message
                 message_recipient = txn[1]
                 if message_recipient not in returns.keys():
@@ -515,7 +509,6 @@ def return_transactions():
                 )
 
         # send out our return messages
-    LOGGER.info("8")
     for user in returns:
         message = text.make_return_message(returns[user])
         send_pm(user, SUBJECTS["RETURN_MESSAGE"], message)
