@@ -53,7 +53,9 @@ except KeyError:
     TIP_COMMANDS = ["!ntipz", "!nano_tipz"]
     DONATE_COMMANDS = ["!nanocenterz"]
     TIPBOT_OWNER = "zily88"
-    TIPBOT_DONATION_ADDRESS = ""
+    TIPBOT_DONATION_ADDRESS = (
+        "nano_3jy9954gncxbhuieujc3pg5t1h36e7tyqfapw1y6zukn9y1g6dj5xr7r6pij"
+    )
     CMC_TOKEN = ""
     DPOW_TOKEN = ""
     DEFAULT_URL = ""
