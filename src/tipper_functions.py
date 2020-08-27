@@ -152,7 +152,7 @@ def activate(author):
 
 
 def allowed_request(username, seconds=30, num_requests=5):
-    """ Spam prevention
+    """Spam prevention
     :param username: str (username)
     :param seconds: int (time period to allow the num_requests)
     :param num_requests: int (number of allowed requests)
@@ -480,7 +480,10 @@ def return_transactions():
 
                 if (donation_amount > 0) and (donation_amount <= int(txn[2])):
                     hash2 = send(
-                        address, private_key, donation_amount, TIPBOT_DONATION_ADDRESS,
+                        address,
+                        private_key,
+                        donation_amount,
+                        TIPBOT_DONATION_ADDRESS,
                     )["hash"]
                     add_history_record(
                         action="donate",
