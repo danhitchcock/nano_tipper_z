@@ -152,7 +152,7 @@ def activate(author):
 
 
 def allowed_request(username, seconds=30, num_requests=5):
-    """ Spam prevention
+    """Spam prevention
     :param username: str (username)
     :param seconds: int (time period to allow the num_requests)
     :param num_requests: int (number of allowed requests)

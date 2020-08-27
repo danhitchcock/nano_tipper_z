@@ -290,25 +290,25 @@ def handle_send_from_message_mocks(monkeypatch):
 
 def test_handle_send_from_PM(handle_send_from_message_mocks):
     """
-        Error codes:
-        Success
-        10 - sent to existing user
-        20 - sent to new user
-        30 - sent to address
-        40 - donated to nanocenter project
-        Tip not sent
-        100 - sender account does not exist
-        110 - Amount and/or recipient not specified
-        120 - could not parse send amount
-        130 - below program minimum
-        140 - currency code issue
-        150 - below 1 nano for untracked sub
-        160 - insufficient funds
-        170 - invalid address / recipient
-        180 - below recipient minimum
-        200 - No Nanocenter Project specified
-        210 - Nanocenter Project does not exist
-        """
+    Error codes:
+    Success
+    10 - sent to existing user
+    20 - sent to new user
+    30 - sent to address
+    40 - donated to nanocenter project
+    Tip not sent
+    100 - sender account does not exist
+    110 - Amount and/or recipient not specified
+    120 - could not parse send amount
+    130 - below program minimum
+    140 - currency code issue
+    150 - below 1 nano for untracked sub
+    160 - insufficient funds
+    170 - invalid address / recipient
+    180 - below recipient minimum
+    200 - No Nanocenter Project specified
+    210 - Nanocenter Project does not exist
+    """
     # sender has no account
     message = RedditMessage("t4_5", "DNE", "", "send 0.01 poor")
     response = handle_send(message)
@@ -482,25 +482,25 @@ def handle_send_from_comment_mocks(monkeypatch):
 
 def test_handle_send_from_comment_and_text(handle_send_from_comment_mocks):
     """
-        Error codes:
-        Success
-        10 - sent to existing user
-        20 - sent to new user
-        30 - sent to address
-        40 - donated to nanocenter project
-        Tip not sent
-        100 - sender account does not exist
-        110 - Amount and/or recipient not specified
-        120 - could not parse send amount
-        130 - below program minimum
-        140 - currency code issue
-        150 - below 1 nano for untracked sub
-        160 - insufficient funds
-        170 - invalid address / recipient
-        180 - below recipient minimum
-        200 - No Nanocenter Project specified
-        210 - Nanocenter Project does not exist
-        """
+    Error codes:
+    Success
+    10 - sent to existing user
+    20 - sent to new user
+    30 - sent to address
+    40 - donated to nanocenter project
+    Tip not sent
+    100 - sender account does not exist
+    110 - Amount and/or recipient not specified
+    120 - could not parse send amount
+    130 - below program minimum
+    140 - currency code issue
+    150 - below 1 nano for untracked sub
+    160 - insufficient funds
+    170 - invalid address / recipient
+    180 - below recipient minimum
+    200 - No Nanocenter Project specified
+    210 - Nanocenter Project does not exist
+    """
 
     # sender has no account
     message = RedditMessage("t4_5", "DNE", "", f"{TIP_COMMANDS[0]} 0.01")
