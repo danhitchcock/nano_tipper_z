@@ -1,5 +1,6 @@
 import os
 import click
+
 # change the working directory to two levels up
 dir_path = os.path.dirname(os.path.realpath(__file__))
 os.chdir(os.path.join(dir_path, "../.."))
