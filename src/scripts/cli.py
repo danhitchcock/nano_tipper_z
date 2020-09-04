@@ -14,7 +14,7 @@ from .sql_scripts import (
     list_users,
     modify_history,
 )
-from .rpc_scripts import block_count
+from .rpc_scripts import block_count, address_pendings
 
 
 @click.group()
@@ -30,3 +30,4 @@ cli.add_command(pull_history)
 cli.add_command(delete_user)
 cli.add_command(list_users)
 cli.add_command(modify_history)
+cli.add_command(address_pendings)
