@@ -42,8 +42,9 @@ try:
     TIPPER_OPTIONS = config["BOT"]["tipper_options"]
     MESSENGER_OPTIONS = config["BOT"]["messenger_options"]
     DONATION_ADMINS = config["BOT"]["donation_admins"]
-except KeyError:
+except KeyError as e:
     LOGGER.info("Failed to read tipper.ini. Falling back to test defaults...")
+    LOGGER.info(e)
     SQL_PASSWORD = ""
     DATABASE_NAME = ""
     TIP_BOT_ON = True
