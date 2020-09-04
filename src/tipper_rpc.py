@@ -108,7 +108,7 @@ def open_block(account, key, rep=None, work=None):
     if rep is None:
         rep = "xrb_1thingspmippfngcrtk1ofd3uwftffnu4qu9xkauo9zkiuep6iknzci3jxa6"
     try:
-        get_previous_hash(account)
+        account_info(account)["frontier"]
         return "Previous block exists. Use receive."
     except:
         pass
@@ -143,7 +143,7 @@ def receive_block(account, key, sent_hash, rep=None):
     """
     if rep is None:
         rep = "xrb_1thingspmippfngcrtk1ofd3uwftffnu4qu9xkauo9zkiuep6iknzci3jxa6"
-    previous = get_previous_hash(account)
+    previous = account_info(account)["frontier"]
     sent_block = get_block_by_hash(sent_hash)
     sent_previous_hash = sent_block["previous"]
     sent_previous_block = get_block_by_hash(sent_previous_hash)
@@ -286,7 +286,7 @@ def open_or_receive_blocks(account, key, blocks, rep=None):
 
     # if there is a previous block, receive the blocks
     try:
-        previous = get_previous_hash(account)
+        previous = account_info(account)["frontier"]
     except Exception as e:
         # otherwise, this is an open block.
         previous = 0
@@ -327,7 +327,7 @@ def open_or_receive_block(account, key, sent_hash, rep=None):
 
     # if there is a previous block, receive the blocks
     try:
-        previous = get_previous_hash(account)
+        previous = account_info(account)["frontier"]
     except Exception as e:
         # print("It's an open block. ", e)
         # otherwise, this is an open block.
