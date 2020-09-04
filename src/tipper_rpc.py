@@ -200,9 +200,9 @@ def generate_account():
 
 
 def get_previous_hash(account):
-    data = {"action": "account_history", "account": account, "count": "1"}
+    data = {"action": "account_info", "account": account}
     results = perform_curl(data)
-    return results["history"][0]["hash"]
+    return results["frontier"]
 
 
 def get_block_by_hash(hash):
