@@ -28,5 +28,5 @@ def all_pendings(threshold):
     pendings = tipper_rpc.get_pendings(addresses, threshold=nano_to_raw(threshold))
     for username, address in zip(usernames, addresses):
         if pendings['blocks'][address]:
-            print(username, address, pendings['blocks'][address])
+            print(username, address, int(pendings['blocks'][address])/10**30)
 
