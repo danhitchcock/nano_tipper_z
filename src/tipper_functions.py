@@ -11,8 +11,12 @@ from shared import (
     LOGGER,
     TIP_COMMANDS,
     DONATE_COMMANDS,
+    TIPBOT_DONATION_ADDRESS,
 )
-from tipper_rpc import generate_account, nano_to_raw, check_balance, raw_to_nano
+
+from text import HELP, RETURN_WARNING, SUBJECTS
+
+from tipper_rpc import generate_account, nano_to_raw, check_balance, send
 import text
 
 
@@ -148,7 +152,7 @@ def activate(author):
 
 
 def allowed_request(username, seconds=30, num_requests=5):
-    """ Spam prevention
+    """Spam prevention
     :param username: str (username)
     :param seconds: int (time period to allow the num_requests)
     :param num_requests: int (number of allowed requests)
@@ -380,8 +384,135 @@ def exec_sql(sql, val):
     MYDB.commit()
 
 
-def query_sql(sql, val):
-    MYCURSOR.execute(sql, val)
+def query_sql(sql, val=None):
+    if val:
+        MYCURSOR.execute(sql, val)
+    else:
+        MYCURSOR.execute(sql)
     results = MYCURSOR.fetchall()
     MYDB.commit()
     return results
+
+
+def return_transactions():
+    LOGGER.info("Running inactive script")
+    myresults = query_sql("SELECT username FROM accounts WHERE active IS NOT TRUE")
+    inactivated_accounts = {item[0] for item in myresults}
+    results = query_sql(
+        "SELECT recipient_username FROM history WHERE action = 'send' "
+        "AND hash IS NOT NULL "
+        "AND `sql_time` <= SUBDATE( CURRENT_DATE, INTERVAL 31 DAY) "
+        "AND ("
+        "return_status = 'cleared' "
+        "OR return_status = 'warned'"
+        ")"
+    )
+    tipped_accounts = {item[0] for item in results}
+    tipped_inactivated_accounts = inactivated_accounts.intersection(tipped_accounts)
+    LOGGER.info(f"Accounts on warning: {sorted(tipped_inactivated_accounts)}")
+    returns = {}
+    # scrolls through our inactive members and check if they have unclaimed tips
+    for i, recipient in enumerate(tipped_inactivated_accounts):
+        # send warning messages on day 31
+        sql = (
+            "SELECT id, username, amount FROM history WHERE action = 'send' "
+            "AND hash IS NOT NULL "
+            "AND recipient_username = %s "
+            "AND `sql_time` <= SUBDATE( CURRENT_DATE, INTERVAL 31 DAY) "
+            "AND return_status = 'cleared'"
+        )
+        txns = query_sql(sql, (recipient,))
+        if len(txns) >= 1:
+            LOGGER.info(f"Warning Message to {recipient}")
+
+            send_pm(recipient, SUBJECTS["RETURN_WARNING"], RETURN_WARNING + HELP)
+            for txn in txns:
+                sql = "UPDATE history SET return_status = 'warned' WHERE id = %s"
+                val = (txn[0],)
+                exec_sql(sql, val)
+
+        # return transactions over 35 days old
+        sql = (
+            "SELECT id, username, amount FROM history WHERE action = 'send' "
+            "AND hash IS NOT NULL "
+            "AND recipient_username = %s "
+            "AND `sql_time` <= SUBDATE( CURRENT_DATE, INTERVAL 35 DAY) "
+            "AND return_status = 'warned'"
+        )
+        val = (recipient,)
+        txns = query_sql(sql, val)
+        if len(txns) >= 1:
+            sql = "SELECT address, private_key FROM accounts WHERE username = %s"
+            inactive_results = query_sql(sql, (recipient,))
+            address = inactive_results[0][0]
+            private_key = inactive_results[0][1]
+
+            for txn in txns:
+                # set the pre-update message to 'return failed'. This will be changed
+                # to 'returned' upon success
+                sql = "UPDATE history SET return_status = 'return failed' WHERE id = %s"
+                val = (txn[0],)
+                exec_sql(sql, val)
+                # get the transaction information and find out to whom we are returning
+                # the tip
+                sql = "SELECT address, percentage FROM accounts WHERE username = %s"
+                val = (txn[1],)
+                returned_results = query_sql(sql, val)
+                recipient_address = returned_results[0][0]
+                percentage = returned_results[0][1]
+                percentage = float(percentage) / 100
+                # send it back
+                donation_amount = int(txn[2]) / 10 ** 30
+                donation_amount = donation_amount * percentage
+                donation_amount = nano_to_raw(donation_amount)
+
+                return_amount = int(txn[2]) - donation_amount
+                if (return_amount > 0) and (return_amount <= int(txn[2])):
+                    hash = send(address, private_key, return_amount, recipient_address)[
+                        "hash"
+                    ]
+                    add_history_record(
+                        action="return",
+                        hash=hash,
+                        amount=return_amount,
+                        notes="Returned transaction from history record %s" % txn[0],
+                    )
+
+                if (donation_amount > 0) and (donation_amount <= int(txn[2])):
+                    hash2 = send(
+                        address,
+                        private_key,
+                        donation_amount,
+                        TIPBOT_DONATION_ADDRESS,
+                    )["hash"]
+                    add_history_record(
+                        action="donate",
+                        hash=hash2,
+                        amount=donation_amount,
+                        notes="Donation from returned tip %s" % txn[0],
+                    )
+                # update database if everything goes through
+                sql = "UPDATE history SET return_status = 'returned' WHERE id = %s"
+                val = (txn[0],)
+                exec_sql(sql, val)
+                # add transactions to the messaging queue to build a single message
+                message_recipient = txn[1]
+                if message_recipient not in returns.keys():
+                    returns[message_recipient] = {
+                        "percent": round(percentage * 100, 2),
+                        "transactions": [],
+                    }
+                returns[message_recipient]["transactions"].append(
+                    [
+                        recipient,
+                        int(txn[2]) / 10 ** 30,
+                        return_amount / 10 ** 30,
+                        donation_amount / 10 ** 30,
+                    ]
+                )
+
+        # send out our return messages
+    for user in returns:
+        message = text.make_return_message(returns[user])
+        send_pm(user, SUBJECTS["RETURN_MESSAGE"], message)
+    LOGGER.info("Inactivated script complete.")

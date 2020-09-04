@@ -1,4 +1,10 @@
+import os
 import click
+
+# change the working directory to two levels up
+dir_path = os.path.dirname(os.path.realpath(__file__))
+os.chdir(os.path.join(dir_path, "../.."))
+
 from .sql_scripts import (
     subreddit,
     list_subreddits,
@@ -6,8 +12,9 @@ from .sql_scripts import (
     pull_history,
     delete_user,
     list_users,
+    modify_history,
 )
-from .rpc_scripts import block_count
+from .rpc_scripts import block_count, address_pendings
 
 
 @click.group()
@@ -22,3 +29,5 @@ cli.add_command(block_count)
 cli.add_command(pull_history)
 cli.add_command(delete_user)
 cli.add_command(list_users)
+cli.add_command(modify_history)
+cli.add_command(address_pendings)

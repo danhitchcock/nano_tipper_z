@@ -1,6 +1,7 @@
+import types
 import time
 import shared
-import text
+
 
 # It is important to only import shared before disabling the database.
 # Otherwise, other tipper modules might import shared prior to the database
@@ -23,6 +24,12 @@ class MockedDB:
 
 shared.MYDB = MockedDB()
 shared.MYCURSOR = MockedCursor()
+shared.REDDIT = None
+shared.SUBREDDITS = None
+shared.DEFAULT_URL = None
+import text
+import tipbot
+from tipbot import stream_comments_messages
 import pytest
 from shared import TIP_COMMANDS, TIP_BOT_USERNAME, DONATE_COMMANDS
 import message_functions
@@ -161,7 +168,7 @@ def mock_parse_recipient_username(recipient_text):
     return {"username": recipient_text}
 
 
-def mock_query_sql(sql, val):
+def mock_query_sql(sql, val=None):
     # subreddits
     if sql == "SELECT status FROM subreddits WHERE subreddit=%s":
         val = val[0]
@@ -178,6 +185,50 @@ def mock_query_sql(sql, val):
             "project_exists": [["address"]],
             "project_does_not_exist": [],
         }
+        return vals[val]
+
+    # return script
+    if sql == "SELECT username FROM accounts WHERE active IS NOT TRUE":
+        return [["return_me"], ["warn_me"]]
+    if sql == (
+        "SELECT recipient_username FROM history WHERE action = 'send' "
+        "AND hash IS NOT NULL "
+        "AND `sql_time` <= SUBDATE( CURRENT_DATE, INTERVAL 31 DAY) "
+        "AND ("
+        "return_status = 'cleared' "
+        "OR return_status = 'warned'"
+        ")"
+    ):
+        return [["warn_me"], ["return_me"]]
+    if sql == (
+        "SELECT id, username, amount FROM history WHERE action = 'send' "
+        "AND hash IS NOT NULL "
+        "AND recipient_username = %s "
+        "AND `sql_time` <= SUBDATE( CURRENT_DATE, INTERVAL 31 DAY) "
+        "AND return_status = 'cleared'"
+    ):
+        if val[0] == "warn_me":
+            return [[1, "warn_me", "1000000000000000000000000000"]]
+        else:
+            return []
+    if sql == (
+        "SELECT id, username, amount FROM history WHERE action = 'send' "
+        "AND hash IS NOT NULL "
+        "AND recipient_username = %s "
+        "AND `sql_time` <= SUBDATE( CURRENT_DATE, INTERVAL 35 DAY) "
+        "AND return_status = 'warned'"
+    ):
+        if val[0] == "return_me":
+            return [[1, "return_me", "1000000000000000000000000000"]]
+        else:
+            return []
+    if sql == ("SELECT address, private_key FROM accounts WHERE username = %s"):
+        val = val[0]
+        vals = {"warn_me": [["one", "two"]], "return_me": [["one", "two"]]}
+        return vals[val]
+    if sql == ("SELECT address, percentage FROM accounts WHERE username = %s"):
+        val = val[0]
+        vals = {"warn_me": [["one", 50]], "return_me": [["one", 50]]}
         return vals[val]
     raise Exception("Unhandled sql query")
 
@@ -196,17 +247,26 @@ def mock_add_new_account(username):
 
 def test_parse_action(parse_action_mocks):
     tests = [
-        ("comment", RedditMessage("t1_1", "daniel", "", f"{TIP_COMMANDS[0]} .1"),),
+        (
+            "comment",
+            RedditMessage("t1_1", "daniel", "", f"{TIP_COMMANDS[0]} .1"),
+        ),
         (
             "comment",
             RedditMessage("t1_2", "daniel", "", f"great job {TIP_COMMANDS[0]} .1"),
         ),
-        ("comment", RedditMessage("t1_3", "daniel", "", f"/u/{TIP_BOT_USERNAME} .1"),),
+        (
+            "comment",
+            RedditMessage("t1_3", "daniel", "", f"/u/{TIP_BOT_USERNAME} .1"),
+        ),
         (
             "comment",
             RedditMessage("t1_4", "daniel", "", f"nice /u/{TIP_BOT_USERNAME} .1"),
         ),
-        ("message", RedditMessage("t4_5", "daniel", "", "history"),),
+        (
+            "message",
+            RedditMessage("t4_5", "daniel", "", "history"),
+        ),
         (
             "faucet_tip",
             RedditMessage("t4_6", "nano_tipper_z", "", "send 0.001 someone"),
@@ -224,7 +284,9 @@ def handle_send_from_message_mocks(monkeypatch):
         message_functions, "add_history_record", lambda *args, **kwargs: None
     )
     monkeypatch.setattr(
-        tipper_functions, "add_new_account", mock_add_new_account,
+        tipper_functions,
+        "add_new_account",
+        mock_add_new_account,
     )
     monkeypatch.setattr(message_functions, "update_history_notes", lambda *args: None)
     monkeypatch.setattr(
@@ -239,25 +301,25 @@ def handle_send_from_message_mocks(monkeypatch):
 
 def test_handle_send_from_PM(handle_send_from_message_mocks):
     """
-        Error codes:
-        Success
-        10 - sent to existing user
-        20 - sent to new user
-        30 - sent to address
-        40 - donated to nanocenter project
-        Tip not sent
-        100 - sender account does not exist
-        110 - Amount and/or recipient not specified
-        120 - could not parse send amount
-        130 - below program minimum
-        140 - currency code issue
-        150 - below 1 nano for untracked sub
-        160 - insufficient funds
-        170 - invalid address / recipient
-        180 - below recipient minimum
-        200 - No Nanocenter Project specified
-        210 - Nanocenter Project does not exist
-        """
+    Error codes:
+    Success
+    10 - sent to existing user
+    20 - sent to new user
+    30 - sent to address
+    40 - donated to nanocenter project
+    Tip not sent
+    100 - sender account does not exist
+    110 - Amount and/or recipient not specified
+    120 - could not parse send amount
+    130 - below program minimum
+    140 - currency code issue
+    150 - below 1 nano for untracked sub
+    160 - insufficient funds
+    170 - invalid address / recipient
+    180 - below recipient minimum
+    200 - No Nanocenter Project specified
+    210 - Nanocenter Project does not exist
+    """
     # sender has no account
     message = RedditMessage("t4_5", "DNE", "", "send 0.01 poor")
     response = handle_send(message)
@@ -431,25 +493,25 @@ def handle_send_from_comment_mocks(monkeypatch):
 
 def test_handle_send_from_comment_and_text(handle_send_from_comment_mocks):
     """
-        Error codes:
-        Success
-        10 - sent to existing user
-        20 - sent to new user
-        30 - sent to address
-        40 - donated to nanocenter project
-        Tip not sent
-        100 - sender account does not exist
-        110 - Amount and/or recipient not specified
-        120 - could not parse send amount
-        130 - below program minimum
-        140 - currency code issue
-        150 - below 1 nano for untracked sub
-        160 - insufficient funds
-        170 - invalid address / recipient
-        180 - below recipient minimum
-        200 - No Nanocenter Project specified
-        210 - Nanocenter Project does not exist
-        """
+    Error codes:
+    Success
+    10 - sent to existing user
+    20 - sent to new user
+    30 - sent to address
+    40 - donated to nanocenter project
+    Tip not sent
+    100 - sender account does not exist
+    110 - Amount and/or recipient not specified
+    120 - could not parse send amount
+    130 - below program minimum
+    140 - currency code issue
+    150 - below 1 nano for untracked sub
+    160 - insufficient funds
+    170 - invalid address / recipient
+    180 - below recipient minimum
+    200 - No Nanocenter Project specified
+    210 - Nanocenter Project does not exist
+    """
 
     # sender has no account
     message = RedditMessage("t4_5", "DNE", "", f"{TIP_COMMANDS[0]} 0.01")
@@ -614,6 +676,15 @@ def test_handle_send_from_comment_and_text(handle_send_from_comment_mocks):
         == "Creating a new account for /u/dne and sending ```0.01 Nano```. [Transac"
         "tion on Nano Crawler](https://nanocrawler.cc/explorer/block/success!)"
     )
+    # check text for minimal
+    message.subreddit = "minimal_sub"
+    response = send_from_comment(message)
+    assert (
+        text.make_response_text(message, response)
+        == "^(Made a new account and )^[sent](https://nanocrawler.cc/explorer/block"
+        "/success!) ^0.01 ^Nano ^to ^(/u/dne) ^- [^(Nano Tipper)](https://githu"
+        "b.com/danhitchcock/nano_tipper_z)"
+    )
 
     # send to user
     message = RedditMessage(
@@ -639,6 +710,15 @@ def test_handle_send_from_comment_and_text(handle_send_from_comment_mocks):
         text.make_response_text(message, response)
         == "Sent ```0.01 Nano``` to /u/poor -- [Transaction on Nano Crawler](https"
         "://nanocrawler.cc/explorer/block/success!)"
+    )
+    # minimal text for new user
+    message.subreddit = "minimal_sub"
+    response = send_from_comment(message)
+    assert (
+        text.make_response_text(message, response)
+        == "^[Sent](https://nanocrawler.cc/explorer/block/success!) ^0.01 ^Nano "
+        "^to ^(/u/poor) ^- [^(Nano Tipper)](https://github.com/danhitchcock/nan"
+        "o_tipper_z)"
     )
 
     # send at end of message
@@ -783,3 +863,84 @@ def test_handle_send_from_comment_and_text(handle_send_from_comment_mocks):
         == "Donated ```0.01 Nano``` to Nanocenter Project project_exists -- [Tran"
         "saction on Nano Crawler](https://nanocrawler.cc/explorer/block/success!)"
     )
+
+
+# Test the streaming of comments and methods
+class MockRedditInbox:
+    i = 0
+    responses = [
+        ["t3_one", "t3_two"],
+        ["t3_one", "t3_two", "t3_three", "t4_one"],
+        ["t3_three", "t3_four", "t4_one"],
+        ["t3_three", "t3_four", "t4_one"],
+    ]
+
+    def all(self, limit=25):
+        response = self.responses[self.i]
+        self.i += 1
+        return response
+
+
+class MockSubreddit:
+    i = 0
+    responses = [
+        ["t1_one", "t1_two"],
+        ["t1_one", "t1_two", "t1_three", "t4_one"],
+        ["t1_three", "t1_four", "t4_one"],
+        ["t1_three", "t1_four", "t4_one"],
+    ]
+
+    def comments(self):
+        response = self.responses[self.i]
+        self.i += 1
+        return response
+
+
+def test_stream_comments_messages(monkeypatch):
+    reddit = types.SimpleNamespace()
+    reddit.inbox = MockRedditInbox()
+    monkeypatch.setattr(tipbot, "CYCLE_TIME", 0)
+    monkeypatch.setattr(tipbot, "REDDIT", reddit)
+    monkeypatch.setattr(tipbot, "SUBREDDITS", MockSubreddit())
+    items = []
+    for item in stream_comments_messages():
+        items.append(item)
+        if not item:
+            break
+    assert set(items) == {"t3_three", "t1_three", "t4_one", "t1_four", "t3_four", None}
+
+
+class StoreStuff:
+    def __init__(self, returns=None):
+        self.stuff = []
+        self.returns = returns
+
+    def store(self, *args, **kwargs):
+        self.stuff.append([args, kwargs])
+        return self.returns
+
+
+def test_return_transactions(monkeypatch):
+    monkeypatch.setattr(tipper_functions, "query_sql", mock_query_sql)
+    monkeypatch.setattr(tipper_functions, "exec_sql", lambda *args: None)
+    pm_responses = StoreStuff()
+
+    monkeypatch.setattr(tipper_functions, "send_pm", pm_responses.store)
+    send_responses = StoreStuff({"hash": "hash"})
+    monkeypatch.setattr(tipper_functions, "send", send_responses.store)
+    monkeypatch.setattr(
+        tipper_functions, "add_history_record", lambda *args, **kwargs: None
+    )
+    tipper_functions.return_transactions()
+    assert send_responses.stuff == [
+        [("one", "two", 500000000000000000000000000, "one"), {}],
+        [
+            (
+                "one",
+                "two",
+                500000000000000000000000000,
+                "nano_3jy9954gncxbhuieujc3pg5t1h36e7tyqfapw1y6zukn9y1g6dj5xr7r6pij",
+            ),
+            {},
+        ],
+    ]

@@ -28,6 +28,7 @@ from shared import (
     EXCLUDED_REDDITORS,
     LOGGER,
     TIPBOT_OWNER,
+    DONATION_ADMINS,
 )
 
 
@@ -78,10 +79,9 @@ def handle_message(message):
 
     # nanocenter donation commands
     elif parsed_text[0].lower() in ("project", "projects"):
-        if (
-            (str(message.author) == TIPBOT_OWNER)
-            or (str(message.author).lower() == "rockmsockmjesus")
-        ) and len(parsed_text) > 2:
+        if (str(message.author).lower() in DONATION_ADMINS + TIPBOT_OWNER) and len(
+            parsed_text
+        ) > 2:
             sql = "INSERT INTO projects (project, address) VALUES(%s, %s) ON DUPLICATE KEY UPDATE address=%s"
             val = (parsed_text[1], parsed_text[2], parsed_text[2])
             MYCURSOR.execute(sql, val)

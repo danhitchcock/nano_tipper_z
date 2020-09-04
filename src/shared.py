@@ -34,13 +34,16 @@ try:
     TIP_COMMANDS = config["BOT"]["tip_commands"].split(",")
     DONATE_COMMANDS = config["BOT"]["donate_commands"].split(",")
     TIPBOT_OWNER = config["BOT"]["tipbot_owner"]
+    TIPBOT_DONATION_ADDRESS = config["BOT"]["tipbot_donation_address"]
     CMC_TOKEN = config["OTHER"]["cmc_token"]
     DPOW_TOKEN = config["NODE"]["dpow_token"]
     DEFAULT_URL = config["NODE"]["default_url"]
     PYTHON_COMMAND = config["BOT"]["python_command"]
     TIPPER_OPTIONS = config["BOT"]["tipper_options"]
     MESSENGER_OPTIONS = config["BOT"]["messenger_options"]
+    DONATION_ADMINS = config["BOT"]["donation_admins"]
 except KeyError:
+    LOGGER.info("Failed to read tipper.ini. Falling back to test defaults...")
     SQL_PASSWORD = ""
     DATABASE_NAME = ""
     TIP_BOT_ON = True
@@ -49,13 +52,17 @@ except KeyError:
     RECIPIENT_MINIMUM = 0
     TIP_COMMANDS = ["!ntipz", "!nano_tipz"]
     DONATE_COMMANDS = ["!nanocenterz"]
-    TIPBOT_OWNER = ["zily88"]
+    TIPBOT_OWNER = "zily88"
+    TIPBOT_DONATION_ADDRESS = (
+        "nano_3jy9954gncxbhuieujc3pg5t1h36e7tyqfapw1y6zukn9y1g6dj5xr7r6pij"
+    )
     CMC_TOKEN = ""
     DPOW_TOKEN = ""
     DEFAULT_URL = ""
     PYTHON_COMMAND = ""
     TIPPER_OPTIONS = ""
     MESSENGER_OPTIONS = ""
+    DONATION_ADMINS = []
 
 # only fails if no databases have been created
 try:
@@ -84,6 +91,24 @@ try:
     REDDIT = praw.Reddit("bot1")
 except:
     REDDIT = None
+
+# initiate the bot and all friendly subreddits
+def get_subreddits():
+    MYCURSOR.execute("SELECT subreddit FROM subreddits")
+    results = MYCURSOR.fetchall()
+    MYDB.commit()
+    if len(results) == 0:
+        return None
+    subreddits = "+".join(result[0] for result in results)
+    return REDDIT.subreddit(subreddits)
+
+
+# disable for testing
+try:
+    SUBREDDITS = get_subreddits()
+except AttributeError:
+    SUBREDDITS = None
+
 
 EXCLUDED_REDDITORS = [
     "nano",

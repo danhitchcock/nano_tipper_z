@@ -102,33 +102,19 @@ Unpocketed: %s Nano\n\n
 Unpocketed Nanos will be pocketed automatically. [Transaction on Nano Crawler](https://nanocrawler.cc/explorer/block/%s)\n\n
 To turn off these notifications, reply with "silence yes".
 """
-"""
-Codes
-Sent
-10 - sent to existing user
-11 - sent to existing *silent* user
-20 - sent to new user
-30 - sent to address
-40 - donated to nanocenter project
-Not sent
-100 - sender account does not exist
-110 - Amount and/or recipient not specified
-120 - could not parse send amount
-130 - below program minimum
-140 - currency code issue
-150 - below 1 nano for untracked sub
-160 - insufficient funds
-170 - invalid address / recipient
-180 - below recipient minimum
-200 - No Nanocenter Project specified
-210 - Nanocenter Project does not exist
+
+RETURN_WARNING = (
+    "Somebody tipped you at least 30 days ago, but your account"
+    " hasn't been activated yet.\n\nPlease activate your account by repl"
+    "ying any command to this bot. If you do not, any tips 35 days or ol"
+    "der will be returned.\n\n***\n\n"
+)
 
 
-
-Extracts send command information from a PM command
-:param message:
-:return: response string
-    """
+SUBJECTS = {
+    "RETURN_WARNING": "Please Activate Your Nano Tipper Account",
+    "RETURN_MESSAGE": "Returned Tips",
+}
 # full responses
 SEND_TEXT = {
     10: (
@@ -184,7 +170,7 @@ SEND_TEXT_MIN = {
         "no Tipper)](https://github.com/danhitchcock/nano_tipper_z)"
     ),
     20: (
-        "^(Made a new account and )^[sent](https://nanocrawler.cc/explorer/block/%s) ^%s ^Nano ^to ^%s ^- [^(Na"
+        "^(Made a new account and )^[sent](https://nanocrawler.cc/explorer/block/%s) ^%s ^Nano ^to ^(/u/%s) ^- [^(Na"
         "no Tipper)](https://github.com/danhitchcock/nano_tipper_z)"
     ),
     40: (
@@ -241,3 +227,20 @@ def make_response_text(message, response):
             raw_to_nano(response["minimum"]),
             raw_to_nano(response["amount"]),
         )
+
+
+def make_return_message(user):
+    return_message = (
+        "The following tips have been returned and %s percent of each tip has been "
+        "donated to the tipbot development fund:\n\n "
+        "(Redditor, Total Tip Amount, Returned Amount, Donation Amount)\n\n "
+    )
+    message = return_message % user["percent"]
+    for transaction in user["transactions"]:
+        message += "%s | %s | %s | %s\n\n " % (
+            transaction[0],
+            transaction[1],
+            transaction[2],
+            transaction[3],
+        )
+    return message
