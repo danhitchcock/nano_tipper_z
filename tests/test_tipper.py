@@ -71,6 +71,7 @@ def test_graceful_list():
     assert a[4] is None
     assert (a + [4])[5] is None
     a = a[:2]
+
     assert a[4] is None
 
 
@@ -916,6 +917,7 @@ class StoreStuff:
     It's how I test functions that don't have a return, by making sure they are invoking others with
     the correct, expected parameters.
     """
+
     def __init__(self, returns=None):
         self.stuff = []
         self.returns = returns
@@ -949,5 +951,6 @@ def test_return_transactions(monkeypatch):
             {},
         ],
     ]
+
 
 # todo test opt-out functionality
