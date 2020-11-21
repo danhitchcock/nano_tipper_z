@@ -911,6 +911,11 @@ def test_stream_comments_messages(monkeypatch):
 
 
 class StoreStuff:
+    """
+    In short, creates a fake "function" that returns a value but stores all args and kwargs pass to it.
+    It's how I test functions that don't have a return, by making sure they are invoking others with
+    the correct, expected parameters.
+    """
     def __init__(self, returns=None):
         self.stuff = []
         self.returns = returns
@@ -944,3 +949,5 @@ def test_return_transactions(monkeypatch):
             {},
         ],
     ]
+
+# todo test opt-out functionality

@@ -76,6 +76,9 @@ def handle_message(message):
         LOGGER.info("subredditing")
         subject = "Nano Tipper - Subreddit"
         response = handle_subreddit(message)
+    elif parsed_text[0].lower() == "opt-out":
+        LOGGER.info("opting out")
+        response = handle_opt_out(message)
 
     # nanocenter donation commands
     elif parsed_text[0].lower() in ("project", "projects"):
@@ -729,6 +732,8 @@ def handle_send(message):
         response["status"] = 100
         return response
 
+    # todo check if user has not opted-out
+
     # parse the amount
     try:
         response["amount"] = parse_raw_amount(parsed_text, response["username"])
@@ -865,6 +870,17 @@ def handle_send(message):
             send_pm(recipient_info["username"], subject, message_text)
         return response
 
+def handle_opt_out(message):
+    # todo update sql database to opt-out
+    # todo find balance and attempt to return tips, based on what is available
+    # todo if any is remaining, send to the bot
+    # todo send a response to the user
+    pass
+
+def handle_opt_in(message):
+    # todo update sql
+    # todo formulate a response
+    pass
 
 def parse_recipient_username(recipient_text):
     """
