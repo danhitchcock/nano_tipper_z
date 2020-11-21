@@ -3,6 +3,7 @@ import tipper_rpc
 from shared import MYCURSOR, MYDB
 from tipper_functions import nano_to_raw
 
+
 @click.command()
 def block_count():
     data = {"action": "block_count"}
@@ -27,6 +28,5 @@ def all_pendings(threshold):
     MYDB.commit()
     pendings = tipper_rpc.get_pendings(addresses, threshold=nano_to_raw(threshold))
     for username, address in zip(usernames, addresses):
-        if pendings['blocks'][address]:
-            print(username, address, pendings['blocks'][address])
-
+        if pendings["blocks"][address]:
+            print(username, address, pendings["blocks"][address])
