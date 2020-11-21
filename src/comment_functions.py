@@ -178,7 +178,9 @@ def send_from_comment(message):
             recipient_info = tipper_functions.add_new_account(response["recipient"])
         elif recipient_info["silence"]:
             response["status"] = 11
-        # todo check if user has not opted-out
+        elif not recipient_info["opt_in"]:
+            response["status"] = 190
+            return response
 
     elif parsed_text[0] in DONATE_COMMANDS:
         response["recipient"] = parsed_text[2]

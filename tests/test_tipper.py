@@ -85,6 +85,7 @@ def mock_account_info(key, by_address=False):
             "silence": False,
             "balance": nano_to_raw(100),
             "account_exists": True,
+            "opt_in": True,
         },
         "poor": {
             "username": "poor",
@@ -94,6 +95,7 @@ def mock_account_info(key, by_address=False):
             "silence": False,
             "balance": 0,
             "account_exists": True,
+            "opt_in": True,
         },
         "high_min": {
             "username": "high_min",
@@ -103,6 +105,7 @@ def mock_account_info(key, by_address=False):
             "silence": False,
             "balance": 0,
             "account_exists": True,
+            "opt_in": True,
         },
         "nano_valid": {
             "username": None,
@@ -112,6 +115,7 @@ def mock_account_info(key, by_address=False):
             "silence": False,
             "balance": None,
             "account_exists": False,
+            "opt_in": True,
         },
         "silent": {
             "username": "high_min",
@@ -121,6 +125,17 @@ def mock_account_info(key, by_address=False):
             "silence": True,
             "balance": 0,
             "account_exists": True,
+            "opt_in": True,
+        },
+        "out": {
+            "username": "rich",
+            "address": "private",
+            "private_key": "one",
+            "minimum": 0,
+            "silence": False,
+            "balance": nano_to_raw(100),
+            "account_exists": True,
+            "opt_in": False,
         },
     }
     if not by_address:
@@ -318,6 +333,7 @@ def test_handle_send_from_PM(handle_send_from_message_mocks):
     160 - insufficient funds
     170 - invalid address / recipient
     180 - below recipient minimum
+    190 - user has opted out
     200 - No Nanocenter Project specified
     210 - Nanocenter Project does not exist
     """
@@ -370,6 +386,20 @@ def test_handle_send_from_PM(handle_send_from_message_mocks):
     assert (
         text.make_response_text(message, response)
         == "You have insufficient funds. Please check your balance."
+    )
+
+    # send send to opted out user
+    message = RedditMessage("t4_5", "rich", "", "send 0.01 out")
+    response = handle_send(message)
+    assert response == {
+        "amount": 10000000000000000000000000000,
+        "status": 190,
+        "username": "rich",
+        "recipient": "out",
+    }
+    assert (
+        text.make_response_text(message, response)
+        == "Sorry, the user has opted-out of using Nano Tipper."
     )
 
     # send to an Excluded redditor (i.e. a currency code)
@@ -625,6 +655,30 @@ def test_handle_send_from_comment_and_text(handle_send_from_comment_mocks):
     assert (
         text.make_response_text(message, response)
         == "You have insufficient funds. Please check your balance."
+    )
+
+    # user is opted out
+    message = RedditMessage(
+        "t4_5",
+        "rich",
+        "",
+        f"{TIP_COMMANDS[0]} 0.01",
+        subreddit="friendly_sub",
+        parent_author="out",
+    )
+    response = send_from_comment(message)
+    assert response == {
+        "amount": 10000000000000000000000000000,
+        "status": 190,
+        "subreddit": "friendly_sub",
+        "subreddit_minimum": 0,
+        "username": "rich",
+        "recipient": "out",
+        "subreddit_status": "full",
+    }
+    assert (
+        text.make_response_text(message, response)
+        == "Sorry, the user has opted-out of using Nano Tipper."
     )
 
     # send less than recipient minimum

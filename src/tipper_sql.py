@@ -55,7 +55,8 @@ def init_accounts():
         "auto_receive BOOL, "
         "silence BOOL, "
         "active BOOL, "
-        "percentage VARCHAR(255)"
+        "percentage VARCHAR(255), "
+        "opt_in BOOL"
         ")"
     )
     MYDB.commit()

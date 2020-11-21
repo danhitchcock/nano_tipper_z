@@ -79,6 +79,9 @@ def handle_message(message):
     elif parsed_text[0].lower() == "opt-out":
         LOGGER.info("opting out")
         response = handle_opt_out(message)
+    elif parsed_text[0].lower() == "opt-in":
+        LOGGER.info("opting in")
+        response = handle_opt_in(message)
 
     # nanocenter donation commands
     elif parsed_text[0].lower() in ("project", "projects"):
@@ -158,10 +161,7 @@ def handle_message(message):
         return None
     message_recipient = str(message.author)
     message_text = response + COMMENT_FOOTER
-    sql = "INSERT INTO messages (username, subject, message) VALUES (%s, %s, %s)"
-    val = (message_recipient, subject, message_text)
-    MYCURSOR.execute(sql, val)
-    MYDB.commit()
+    send_pm(message_recipient, subject, message_text, bypass_opt_out=True)
 
 
 def handle_percentage(message):
@@ -732,8 +732,6 @@ def handle_send(message):
         response["status"] = 100
         return response
 
-    # todo check if user has not opted-out
-
     # parse the amount
     try:
         response["amount"] = parse_raw_amount(parsed_text, response["username"])
@@ -775,6 +773,9 @@ def handle_send(message):
         if recipient_info is None:
             recipient_info = tipper_functions.add_new_account(response["recipient"])
             response["status"] = 20
+        elif not recipient_info["opt_in"]:
+            response["status"] = 190
+            return response
     # check if it's an address
     else:
         # otherwise, just use the address. Everything is None except address
@@ -870,17 +871,29 @@ def handle_send(message):
             send_pm(recipient_info["username"], subject, message_text)
         return response
 
+
 def handle_opt_out(message):
-    # todo update sql database to opt-out
-    # todo find balance and attempt to return tips, based on what is available
-    # todo if any is remaining, send to the bot
-    # todo send a response to the user
-    pass
+    sql = "UPDATE accounts SET opt_in = FALSE WHERE username = %s"
+    MYCURSOR.execute(sql, (message.author,))
+    MYDB.commit()
+    response = (
+        "You have opted-out and I promise not to bother you anymore.\n\nReturnable Nano will be returned "
+        "to the tippers, and the remaining balance will be donated to the tipbot fund.\n\nIf this was in "
+        "error, please respond immediately with the text `opt-in`."
+    )
+    return response
+
 
 def handle_opt_in(message):
-    # todo update sql
-    # todo formulate a response
-    pass
+    sql = "UPDATE accounts SET opt_in = TRUE WHERE username = %s"
+    MYCURSOR.execute(sql, (message.author,))
+    MYDB.commit()
+    response = (
+        "Welcome back! You have opted back in. Your account will be restored with the same address, "
+        "though any Nano you had may have already been returned or donated already."
+    )
+    return response
+
 
 def parse_recipient_username(recipient_text):
     """

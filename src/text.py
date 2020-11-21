@@ -11,7 +11,7 @@ COMMENT_FOOTER = """\n\n
 [*^(Nano Links)*](https://nanolinks.info/)"""
 
 HELP = """
-Help from Nano Tipper! This bot was handles tips via the Nano cryptocurrency.
+Help from Nano Tipper! This bot was handles tips via the Nano currency.
 [Visit us on GitHub](https://github.com/danhitchcock/nano_tipper_z), the [Wiki](http://reddit.com/r/nano_tipper/wiki/) 
 or /r/nano_tipper for more information on its use and its status. Be sure to read the 
 [Terms of Service](https://github.com/danhitchcock/nano_tipper_z#terms-of-service)\n\n
@@ -34,7 +34,8 @@ For PM commands, create a new message with any of the following commands (be sur
     'minimum <amount>' - (default 0.0001) Sets a minimum amount for receiving tips
     'silence <yes/no>' - (default 'no') Prevents the bot from sending you tip notifications or tagging in posts 
     'history <optional: number of records>' - Retrieves tipbot commands. Default 10, maximum is 50.
-    'percentage <percent>' - (default 10 percent) Sets a percentage of returned tips to donate to TipBot development
+    'percentage <percent>' - (default 10 percent) Sets a percentage of returned tips to donate to TipBot development.
+    'opt-out' - Disables your account and donates your remaining Nano to the tipbot. 
     'help' - Get this help message\n
 If you wanted to send 0.01 Nano to zily88, reply:\n
     send 0.01 zily88\n
@@ -44,6 +45,8 @@ WELCOME_CREATE = """
 Welcome to Nano Tipper, a reddit tip bot which allows you to tip and send the Nano Currency to your favorite redditors! 
 Your account is **active** and your Nano address is %s. By using this service, you agree 
 to the [Terms of Service](https://github.com/danhitchcock/nano_tipper_z#terms-of-service).\n\n
+
+If you do not accept the Terms of Service, or do not with to participate, please respond with the text `opt-out`\n\n
 
 You will be receiving a tip of 0.001 Nano as a welcome gift! To load more Nano, try any of the the free 
 [Nano Faucets](https://nanolinks.info/#faucets-free-nano), or deposit some (click on the Nanode link for a QR code), 
@@ -155,6 +158,7 @@ SEND_TEXT = {
         "Sorry, the user has set a tip minimum of %s. "
         "Your tip of %s is below this amount."
     ),
+    190: "Sorry, the user has opted-out of using Nano Tipper.",
     200: "Please specify a Nanocenter project, e.g. `nanocenter 1 reddit_tipbot`",
     210: "No Nanocenter project named %s was found.",
 }
@@ -214,7 +218,7 @@ def make_response_text(message, response):
             response["recipient"],
             response["hash"],
         )
-    if response["status"] in [100, 110, 140, 150, 160, 200]:
+    if response["status"] in [100, 110, 140, 150, 160, 190, 200]:
         return SEND_TEXT[response["status"]]
     if response["status"] == 120:
         return SEND_TEXT[response["status"]] % response["amount"]
