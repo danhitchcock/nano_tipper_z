@@ -120,7 +120,7 @@ def add_new_account(username):
     address = generate_account()
     private = address["private"]
     address = address["account"]
-    sql = "INSERT INTO accounts (username, private_key, address, minimum, auto_receive, silence, active, percentage, opt-in) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)"
+    sql = "INSERT INTO accounts (username, private_key, address, minimum, auto_receive, silence, active, percentage, opt_in) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)"
     val = (
         username,
         private,
@@ -254,7 +254,7 @@ def send_pm(recipient, subject, body, bypass_opt_out=False):
     opt_in = True
     # If there is not a bypass to opt in, check the status
     if not bypass_opt_out:
-        sql = "FROM accounts SELECT opt_in WHERE username=%s"
+        sql = "SELECT opt_in FROM accounts WHERE username=%s"
         MYCURSOR.execute(sql, (recipient,))
         opt_in = MYCURSOR.fetchall()[0][0]
         MYDB.commit()

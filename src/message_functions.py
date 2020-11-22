@@ -81,8 +81,10 @@ def handle_message(message):
     elif command == "opt-out":
         LOGGER.info("opting out")
         response = handle_opt_out(message)
+        subject = "Nano Tipper - Opt Out"
     elif command == "opt-in":
         LOGGER.info("opting in")
+        subject = "Nano Tipper - Opt In"
         response = handle_opt_in(message)
 
     # nanocenter donation commands
@@ -886,7 +888,7 @@ def handle_opt_out(message):
     )
 
     sql = "UPDATE accounts SET opt_in = FALSE WHERE username = %s"
-    MYCURSOR.execute(sql, (message.author,))
+    MYCURSOR.execute(sql, (str(message.author),))
     MYDB.commit()
 
     response = (
@@ -908,7 +910,7 @@ def handle_opt_in(message):
         ),
     )
     sql = "UPDATE accounts SET opt_in = TRUE WHERE username = %s"
-    MYCURSOR.execute(sql, (message.author,))
+    MYCURSOR.execute(sql, (str(message.author),))
     MYDB.commit()
     response = (
         "Welcome back! You have opted back in. Your account will be restored with the same address, "

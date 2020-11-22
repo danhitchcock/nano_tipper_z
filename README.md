@@ -131,7 +131,7 @@ Send /u/zily88 a PM on reddit, or post on https://reddit.com/r/nano_tipper
 
 # Error Codes
 If a reddit tip is a reply to a reply, it's better to keep a short message with an error code.
-* 100 - You do\ not have an account -- Create an account by typing 'create' or by receiving a tip from another redditor.
+* 100 - You do not have an account -- Create an account by typing 'create' or by receiving a tip from another redditor.
 * 110 - You must specify an amount and a user, e.g. `send 1 nano_tipper`.
 * 120 - Could not read the tip amount -- use either a number or the word 'all'.
 * 130 - Tip amount is below program minimum -- This is to prevent spamming other redditors.
