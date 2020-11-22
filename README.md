@@ -139,5 +139,6 @@ If a reddit tip is a reply to a reply, it's better to keep a short message with 
 * 150 - You are likely attempting to tip in an unfamiliar sub. The minimum is 1 Nano.
 * 160 - You have insufficient funds.
 * 180 - Tip amount is below recipients specified tip minimum.
+* 190 - The recipient has disabled tipping for their account.
 * 200 - Please specify a Nanocenter project, e.g. `nanocenter 1 reddit_tipbot`.
 * 210 - The Nanocenter project you attempted to donate to does not exist.

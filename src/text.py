@@ -8,7 +8,9 @@ COMMENT_FOOTER = """\n\n
 [*^(Nano Tipper)*](https://github.com/danhitchcock/nano_tipper_z)*^( | )*
 [*^(Free Nano!)*](https://nanolinks.info/#faucets-free-nano)*^( | )*
 [*^(Spend Nano)*](https://usenano.org/)*^( | )*
-[*^(Nano Links)*](https://nanolinks.info/)"""
+[*^(Nano Links)*](https://nanolinks.info/)*^( | )*
+[*^(Opt Out)*](https://reddit.com/message/compose/?to=nano_tipper&subject=command&message=opt-out)
+"""
 
 HELP = """
 Help from Nano Tipper! This bot was handles tips via the Nano currency.
