@@ -71,6 +71,8 @@ There are many other commands.
 'projects' - Retrives a list of NanoCenter donation projects
 'subreddit <subreddit> <'activate'/'deactivate'> <option>' - Subreddit Moderator Controls - Enabled Tipping on Your Sub (`silent`, `minimal`, `full`)
 'withdraw <amount or all> <user/address>' - Same as send
+'opt-out' - Disables your account and donates your remaining Nano to the tipbot.
+'opt-in' - Reenables your account. Your Nano may or may not still be available. 
 ```
 ### Control TipBot Behavior On Your Subreddit
 If you are a moderator of a subreddit, and would like to tipping to your sub, use the `subreddit` command. For example, for me to activate tipping on my /r/nano_tipper subreddit, I send a PM to the bot saying:
@@ -129,7 +131,7 @@ Send /u/zily88 a PM on reddit, or post on https://reddit.com/r/nano_tipper
 
 # Error Codes
 If a reddit tip is a reply to a reply, it's better to keep a short message with an error code.
-* 100 - You do\ not have an account -- Create an account by typing 'create' or by receiving a tip from another redditor.
+* 100 - You do not have an account -- Create an account by typing 'create' or by receiving a tip from another redditor.
 * 110 - You must specify an amount and a user, e.g. `send 1 nano_tipper`.
 * 120 - Could not read the tip amount -- use either a number or the word 'all'.
 * 130 - Tip amount is below program minimum -- This is to prevent spamming other redditors.

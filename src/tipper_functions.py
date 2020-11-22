@@ -120,7 +120,7 @@ def add_new_account(username):
     address = generate_account()
     private = address["private"]
     address = address["account"]
-    sql = "INSERT INTO accounts (username, private_key, address, minimum, auto_receive, silence, active, percentage) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"
+    sql = "INSERT INTO accounts (username, private_key, address, minimum, auto_receive, silence, active, percentage, opt_in) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)"
     val = (
         username,
         private,
@@ -130,6 +130,7 @@ def add_new_account(username):
         False,
         False,
         10,
+        True,
     )
     MYCURSOR.execute(sql, val)
     MYDB.commit()
@@ -223,9 +224,9 @@ def account_info(key, by_address=False):
     :return: dict - name, address, private_key, balance
     """
     if not by_address:
-        sql = "SELECT username, address, private_key, minimum, silence FROM accounts WHERE username=%s"
+        sql = "SELECT username, address, private_key, minimum, silence, opt_in FROM accounts WHERE username=%s"
     else:
-        sql = "SELECT username, address, private_key, minimum, silence FROM accounts WHERE address=%s"
+        sql = "SELECT username, address, private_key, minimum, silence, opt_in FROM accounts WHERE address=%s"
     val = (key,)
     result = query_sql(sql, val)
     if len(result) > 0:
@@ -237,6 +238,7 @@ def account_info(key, by_address=False):
             "silence": result[0][4],
             "balance": check_balance(result[0][1])[0],
             "account_exists": True,
+            "opt_in": result[0][5],
         }
     return None
 
@@ -248,11 +250,21 @@ def update_history_notes(entry_id, text):
     MYDB.commit()
 
 
-def send_pm(recipient, subject, body):
-    sql = "INSERT INTO messages (username, subject, message) VALUES (%s, %s, %s)"
-    val = (recipient, subject, body)
-    MYCURSOR.execute(sql, val)
-    MYDB.commit()
+def send_pm(recipient, subject, body, bypass_opt_out=False):
+    opt_in = True
+    # If there is not a bypass to opt in, check the status
+    if not bypass_opt_out:
+        sql = "SELECT opt_in FROM accounts WHERE username=%s"
+        MYCURSOR.execute(sql, (recipient,))
+        opt_in = MYCURSOR.fetchall()[0][0]
+        MYDB.commit()
+
+    # if the user has opted in, or if there is an override to send the PM even if they have not
+    if opt_in or not bypass_opt_out:
+        sql = "INSERT INTO messages (username, subject, message) VALUES (%s, %s, %s)"
+        val = (recipient, subject, body)
+        MYCURSOR.execute(sql, val)
+        MYDB.commit()
 
 
 def parse_raw_amount(parsed_text, username=None):
