@@ -33,58 +33,60 @@ from shared import (
 
 
 def handle_message(message):
-    # activate the account
-    activate(message.author)
     response = "not activated"
     parsed_text = parse_text(str(message.body))
+    command = parsed_text[0].lower()
+    # only activate if it's not an opt-out command
+    if command != "opt-out":
+        activate(message.author)
 
-    # standard things
-    if (parsed_text[0].lower() == "help") or (parsed_text[0].lower() == "!help"):
+    # normal commands
+    if command in ["help", "!help"]:
         LOGGER.info("Helping")
         subject = "Nano Tipper - Help"
         response = handle_help(message)
-    elif (parsed_text[0].lower() == "balance") or (parsed_text[0].lower() == "address"):
+    elif command in ["balance", "address"]:
         LOGGER.info("balance")
         subject = "Nano Tipper - Account Balance"
         response = handle_balance(message)
-    elif parsed_text[0].lower() == "minimum":
+    elif command == "minimum":
         LOGGER.info("Setting Minimum")
         subject = "Nano Tipper - Tip Minimum"
         response = handle_minimum(message)
-    elif parsed_text[0].lower() == "percentage" or parsed_text[0].lower() == "percent":
+    elif command in ["percentage", "percent"]:
         LOGGER.info("Setting Percentage")
         subject = "Nano Tipper - Returned Tip Percentage for Donation"
         response = handle_percentage(message)
-    elif (parsed_text[0].lower() == "create") or parsed_text[0].lower() == "register":
+    elif command in ["create", "register"]:
         LOGGER.info("Creating")
         subject = "Nano Tipper - Create"
         response = handle_create(message)
-    elif (parsed_text[0].lower() == "send") or (parsed_text[0].lower() == "withdraw"):
+    elif command in ["send", "withdraw"]:
         subject = "Nano Tipper - Send"
         LOGGER.info("send via PM")
         response = handle_send(message)
         response = text.make_response_text(message, response)
-    elif parsed_text[0].lower() == "history":
+    elif command == "history":
         LOGGER.info("history")
         subject = "Nano Tipper - History"
         response = handle_history(message)
-    elif parsed_text[0].lower() == "silence":
+    elif command == "silence":
         LOGGER.info("silencing")
         subject = "Nano Tipper - Silence"
         response = handle_silence(message)
-    elif parsed_text[0].lower() == "subreddit":
+    elif command == "subreddit":
         LOGGER.info("subredditing")
         subject = "Nano Tipper - Subreddit"
         response = handle_subreddit(message)
-    elif parsed_text[0].lower() == "opt-out":
+    elif command == "opt-out":
         LOGGER.info("opting out")
         response = handle_opt_out(message)
-    elif parsed_text[0].lower() == "opt-in":
+    elif command == "opt-in":
         LOGGER.info("opting in")
         response = handle_opt_in(message)
 
     # nanocenter donation commands
-    elif parsed_text[0].lower() in ("project", "projects"):
+    elif command in ("project", "projects"):
         if (str(message.author).lower() in DONATION_ADMINS + TIPBOT_OWNER) and len(
             parsed_text
         ) > 2:
@@ -107,7 +109,7 @@ def handle_message(message):
         results = MYCURSOR.fetchall()
         for result in results:
             response += "%s %s  \n" % (result[0], result[1])
-    elif parsed_text[0].lower() == "delete_project":
+    elif command == "delete_project":
         if (
             (str(message.author) == TIPBOT_OWNER)
             or (str(message.author).lower() == "rockmsockmjesus")
@@ -124,7 +126,7 @@ def handle_message(message):
         for result in results:
             response += "%s %s  \n" % (result[0], result[1])
     # a few administrative tasks
-    elif parsed_text[0].lower() in ["restart", "stop", "disable", "deactivate"]:
+    elif command in ["restart", "stop", "disable", "deactivate"]:
         if str(message.author).lower() in [
             TIPBOT_OWNER,
             "rockmsockmjesus",
@@ -137,14 +139,14 @@ def handle_message(message):
                 comment_id=message.name,
             )
             sys.exit()
-    elif parsed_text[0].lower() == "test_welcome_tipped":
+    elif command == "test_welcome_tipped":
         subject = "Nano Tipper - Welcome By Tip"
         response = WELCOME_TIP % (
             0.01,
             "xrb_3jy9954gncxbhuieujc3pg5t1h36e7tyqfapw1y6zukn9y1g6dj5xr7r6pij",
             "xrb_3jy9954gncxbhuieujc3pg5t1h36e7tyqfapw1y6zukn9y1g6dj5xr7r6pij",
         )
-    elif parsed_text[0].lower() == "test_welcome_create":
+    elif command == "test_welcome_create":
         subject = "Nano Tipper - Create"
         response = WELCOME_CREATE % (
             "xrb_3jy9954gncxbhuieujc3pg5t1h36e7tyqfapw1y6zukn9y1g6dj5xr7r6pij",
@@ -873,9 +875,20 @@ def handle_send(message):
 
 
 def handle_opt_out(message):
+    add_history_record(
+        username=str(message.author),
+        action="opt-out",
+        comment_or_message="message",
+        comment_id=message.name,
+        reddit_time=datetime.utcfromtimestamp(message.created_utc).strftime(
+            "%Y-%m-%d %H:%M:%S"
+        ),
+    )
+
     sql = "UPDATE accounts SET opt_in = FALSE WHERE username = %s"
     MYCURSOR.execute(sql, (message.author,))
     MYDB.commit()
+
     response = (
         "You have opted-out and I promise not to bother you anymore.\n\nReturnable Nano will be returned "
         "to the tippers, and the remaining balance will be donated to the tipbot fund.\n\nIf this was in "
@@ -885,6 +898,15 @@ def handle_opt_out(message):
 
 
 def handle_opt_in(message):
+    add_history_record(
+        username=str(message.author),
+        action="opt-in",
+        comment_or_message="message",
+        comment_id=message.name,
+        reddit_time=datetime.utcfromtimestamp(message.created_utc).strftime(
+            "%Y-%m-%d %H:%M:%S"
+        ),
+    )
     sql = "UPDATE accounts SET opt_in = TRUE WHERE username = %s"
     MYCURSOR.execute(sql, (message.author,))
     MYDB.commit()
