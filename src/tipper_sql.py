@@ -55,7 +55,8 @@ def init_accounts():
         "auto_receive BOOL, "
         "silence BOOL, "
         "active BOOL, "
-        "percentage VARCHAR(255)"
+        "percentage VARCHAR(255), "
+        "opt_in BOOL"
         ")"
     )
     MYDB.commit()
@@ -293,6 +294,14 @@ def update_to_nano():
     MYDB.commit()
 
 
+def migrate_opt_out():
+    sql = "ALTER TABLE accounts ADD opt_in BOOL"
+    MYCURSOR.execute(sql)
+    sql = "UPDATE accounts SET opt_in = TRUE"
+    MYCURSOR.execute(sql)
+    MYDB.commit()
+
+
 # if __name__ == "__main__":
 #   add_subreddit("nano_tipper", True, None, "friendly")
 #   init_history()
@@ -304,7 +313,6 @@ def update_to_nano():
 #   subreddits()
 #   clear_messages()
 #   add_history_record(username='zily88', sql_time='2018-04-13 09:21:28', recipient_username='nano_tipper_z_test2', action='send', hash='test', amount = 1*10**28, return_status='cleared')
-
 #   history(100)
 #   update_percentage()
 #   accounts()
