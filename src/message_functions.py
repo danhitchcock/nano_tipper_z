@@ -18,7 +18,7 @@ from tipper_rpc import (
     validate_address,
     send,
 )
-from text import WELCOME_CREATE, HELP, WELCOME_TIP, COMMENT_FOOTER, NEW_TIP
+from text import WELCOME_CREATE, WELCOME_TIP, COMMENT_FOOTER, NEW_TIP
 from shared import (
     MYCURSOR,
     MYDB,
@@ -89,45 +89,14 @@ def handle_message(message):
 
     # nanocenter donation commands
     elif command in ("project", "projects"):
-        if (str(message.author).lower() in DONATION_ADMINS + TIPBOT_OWNER) and len(
-            parsed_text
-        ) > 2:
-            sql = "INSERT INTO projects (project, address) VALUES(%s, %s) ON DUPLICATE KEY UPDATE address=%s"
-            val = (parsed_text[1], parsed_text[2], parsed_text[2])
-            MYCURSOR.execute(sql, val)
-            MYDB.commit()
-        add_history_record(
-            username=str(message.author),
-            action="project",
-            comment_text=str(message.body)[:255],
-            comment_or_message="message",
-            comment_id=message.name,
-        )
 
-        response = "Current NanoCenter Donation Projects: \n\n"
-        subject = "Nanocenter Projects"
-        sql = "SELECT project, address FROM projects"
-        MYCURSOR.execute(sql)
-        results = MYCURSOR.fetchall()
-        for result in results:
-            response += "%s %s  \n" % (result[0], result[1])
+        subject = text.SUBJECTS["cf_projects"]
+        response = handle_projects(message)
 
     elif command == "delete_project":
-        if (
-            (str(message.author) == TIPBOT_OWNER)
-            or (str(message.author).lower() == "rockmsockmjesus")
-        ) and len(parsed_text) > 1:
-            sql = "DELETE FROM projects WHERE project=%s"
-            val = (parsed_text[1],)
-            MYCURSOR.execute(sql, val)
-            MYDB.commit()
-        response = "Current NanoCenter Donation Projects: \n\n"
-        subject = "Nanocenter Projects"
-        sql = "SELECT project, address FROM projects"
-        MYCURSOR.execute(sql)
-        results = MYCURSOR.fetchall()
-        for result in results:
-            response += "%s %s  \n" % (result[0], result[1])
+        subject = text.SUBJECTS["cf_projects"]
+        response = handle_delete_project(message)
+
     # a few administrative tasks
     elif command in ["restart", "stop", "disable", "deactivate"]:
         if str(message.author).lower() in [
@@ -840,6 +809,51 @@ def handle_opt_in(message):
     MYCURSOR.execute(sql, (str(message.author),))
     MYDB.commit()
     response = text.OPT_IN
+    return response
+
+
+def handle_projects(message):
+    parsed_text = parse_text(str(message.body))
+    response = text.CROWD_FUNDING["projects"]
+    if (str(message.author).lower() in DONATION_ADMINS + TIPBOT_OWNER) and len(
+        parsed_text
+    ) > 2:
+        sql = "INSERT INTO projects (project, address) VALUES(%s, %s) ON DUPLICATE KEY UPDATE address=%s"
+        val = (parsed_text[1], parsed_text[2], parsed_text[2])
+        MYCURSOR.execute(sql, val)
+        MYDB.commit()
+    add_history_record(
+        username=str(message.author),
+        action="project",
+        comment_text=str(message.body)[:255],
+        comment_or_message="message",
+        comment_id=message.name,
+    )
+
+    sql = "SELECT project, address FROM projects"
+    MYCURSOR.execute(sql)
+    results = MYCURSOR.fetchall()
+    for result in results:
+        response += "%s %s  \n" % (result[0], result[1])
+    return response
+
+
+def handle_delete_project(message):
+    parsed_text = parse_text(str(message.body))
+    if (
+        (str(message.author) == TIPBOT_OWNER)
+        or (str(message.author).lower() == "rockmsockmjesus")
+    ) and len(parsed_text) > 1:
+        sql = "DELETE FROM projects WHERE project=%s"
+        val = (parsed_text[1],)
+        MYCURSOR.execute(sql, val)
+        MYDB.commit()
+    response = text.CROWD_FUNDING["projects"]
+    sql = "SELECT project, address FROM projects"
+    MYCURSOR.execute(sql)
+    results = MYCURSOR.fetchall()
+    for result in results:
+        response += "%s %s  \n" % (result[0], result[1])
     return response
 
 

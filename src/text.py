@@ -1,4 +1,4 @@
-from tipper_rpc import nano_to_raw, raw_to_nano
+from tipper_rpc import raw_to_nano
 
 import shared
 
@@ -123,10 +123,10 @@ RETURN_WARNING = (
 
 
 SUBJECTS = {
-    "RETURN_WARNING": "Please Activate Your Nano Tipper Account",
-    "RETURN_MESSAGE": "Returned Tips",
-    "first_tip": "Congrats on receiving your first Nano Tip!",
-    "new_tip": "You just received a new Nano tip!",
+    "RETURN_WARNING": "Nano Tipper - Please Activate Your Nano Tipper Account",
+    "RETURN_MESSAGE": "Nano Tipper - Returned Tips",
+    "first_tip": "Nano Tipper - Congrats on receiving your first Nano Tip!",
+    "new_tip": "Nano Tipper - You just received a new Nano tip!",
     "help": "Nano Tipper - Help",
     "balance": "Nano Tipper - Account Balance",
     "minimum": "Nano Tipper - Tip Minimum",
@@ -138,6 +138,9 @@ SUBJECTS = {
     "subreddit": "Nano Tipper - Subreddit",
     "opt-out": "Nano Tipper - Opt Out",
     "opt-in": "Nano Tipper - Opt In",
+    "cf_projects": "Nano Tipper - Nanocenter Projects",
+    "success": "Nano Tipper - Your Tip Was Successful",
+    "failure": "Nano Tipper - You Tip Did Not Go Through",
 }
 
 MINIMUM = {
@@ -277,6 +280,10 @@ BALANCE = (
     "\n\nhttps://nanocrawler.cc/explorer/account/%s"
 )
 
+CROWD_FUNDING = {
+    "projects": "Current NanoCenter Donation Projects: \n\n",
+}
+
 
 def make_response_text(message, response):
 
@@ -320,10 +327,12 @@ def make_response_text(message, response):
             raw_to_nano(response["minimum"]),
             raw_to_nano(response["amount"]),
         )
+    return None
 
 
 PERCENTAGE = {
-    "parse_error": "I couldn't parse your command. I was expecting 'percentage <amount>'. Be sure to check your spacing.",
+    "parse_error": "I couldn't parse your command. I was expecting 'percentage <amount>'. "
+    "Be sure to check your spacing.",
     "neg": "Did not update. Your percentage cannot be negative.",
     "100": "Did not update. Your percentage must be 100 or lower.",
     "updating": "Updating donation percentage to %s.",

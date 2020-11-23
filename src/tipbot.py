@@ -2,14 +2,13 @@ import time
 
 from time import sleep
 
-from tipper_rpc import get_pendings, open_or_receive_block, send
+from tipper_rpc import get_pendings, open_or_receive_block
 import shared
 from shared import (
     MYCURSOR,
     MYDB,
     REDDIT,
     PROGRAM_MINIMUM,
-    SUBREDDITS,
 )
 
 from message_functions import handle_message
@@ -87,7 +86,6 @@ def auto_receive():
 
 
 def main_loop():
-    global SUBREDDITS
     actions = {
         "message": handle_message,
         "comment": handle_comment,
