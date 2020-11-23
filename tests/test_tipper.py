@@ -31,12 +31,12 @@ import text
 import tipbot
 from tipbot import stream_comments_messages
 import pytest
-from shared import TIP_COMMANDS, TIP_BOT_USERNAME, DONATE_COMMANDS
+from shared import TIP_COMMANDS, TIP_BOT_USERNAME, DONATE_COMMANDS, to_raw
 import message_functions
 from message_functions import handle_send
 import comment_functions
 from comment_functions import send_from_comment
-from tipper_functions import TipError, nano_to_raw
+from tipper_functions import TipError
 import tipper_functions
 
 
@@ -83,7 +83,7 @@ def mock_account_info(key, by_address=False):
             "private_key": "one",
             "minimum": 0,
             "silence": False,
-            "balance": nano_to_raw(100),
+            "balance": to_raw(100),
             "account_exists": True,
             "opt_in": True,
         },
@@ -101,7 +101,7 @@ def mock_account_info(key, by_address=False):
             "username": "high_min",
             "address": "private",
             "private_key": "one",
-            "minimum": nano_to_raw(100),
+            "minimum": to_raw(100),
             "silence": False,
             "balance": 0,
             "account_exists": True,
@@ -121,7 +121,7 @@ def mock_account_info(key, by_address=False):
             "username": "high_min",
             "address": "private",
             "private_key": "one",
-            "minimum": nano_to_raw(100),
+            "minimum": to_raw(100),
             "silence": True,
             "balance": 0,
             "account_exists": True,
@@ -133,7 +133,7 @@ def mock_account_info(key, by_address=False):
             "private_key": "one",
             "minimum": 0,
             "silence": False,
-            "balance": nano_to_raw(100),
+            "balance": to_raw(100),
             "account_exists": True,
             "opt_in": False,
         },
