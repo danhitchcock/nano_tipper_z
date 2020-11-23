@@ -1,6 +1,5 @@
-from tipper_rpc import raw_to_nano
-
 import shared
+from shared import from_raw
 
 COMMENT_FOOTER = """\n\n
 ***\n\n
@@ -295,7 +294,7 @@ def make_response_text(message, response):
         if response["status"] < 100:
             return SEND_TEXT_MIN[response["status"]] % (
                 response["hash"],
-                raw_to_nano(response["amount"]),
+                from_raw(response["amount"]),
                 response["recipient"],
             )
         else:
@@ -305,12 +304,12 @@ def make_response_text(message, response):
     if response["status"] == 20:
         return SEND_TEXT[response["status"]] % (
             response["recipient"],
-            raw_to_nano(response["amount"]),
+            from_raw(response["amount"]),
             response["hash"],
         )
     if response["status"] < 100:
         return SEND_TEXT[response["status"]] % (
-            raw_to_nano(response["amount"]),
+            from_raw(response["amount"]),
             response["recipient"],
             response["hash"],
         )
@@ -324,8 +323,8 @@ def make_response_text(message, response):
         return SEND_TEXT[response["status"]] % response["recipient"]
     if response["status"] == 180:
         return SEND_TEXT[response["status"]] % (
-            raw_to_nano(response["minimum"]),
-            raw_to_nano(response["amount"]),
+            from_raw(response["minimum"]),
+            from_raw(response["amount"]),
         )
     return None
 

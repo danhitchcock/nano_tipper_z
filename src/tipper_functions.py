@@ -12,11 +12,13 @@ from shared import (
     TIP_COMMANDS,
     DONATE_COMMANDS,
     TIPBOT_DONATION_ADDRESS,
+    to_raw,
+    from_raw,
 )
 
 from text import HELP, RETURN_WARNING, SUBJECTS
 
-from tipper_rpc import generate_account, nano_to_raw, check_balance, send
+from tipper_rpc import generate_account, check_balance, send
 import text
 
 
@@ -125,7 +127,7 @@ def add_new_account(username):
         username,
         private,
         address,
-        nano_to_raw(RECIPIENT_MINIMUM),
+        to_raw(RECIPIENT_MINIMUM),
         True,
         False,
         False,
@@ -138,7 +140,7 @@ def add_new_account(username):
         "username": username,
         "address": address,
         "private_key": private,
-        "minimum": nano_to_raw(RECIPIENT_MINIMUM),
+        "minimum": to_raw(RECIPIENT_MINIMUM),
         "silence": False,
         "balance": 0,
         "account_exists": True,
@@ -322,7 +324,7 @@ def parse_raw_amount(parsed_text, username=None):
         )
     else:
         try:
-            amount = nano_to_raw(float(amount) / conversion)
+            amount = to_raw(float(amount) / conversion)
         except:
             raise TipError(
                 None,
@@ -474,9 +476,9 @@ def return_transactions():
                 percentage = returned_results[0][1]
                 percentage = float(percentage) / 100
                 # send it back
-                donation_amount = int(txn[2]) / 10 ** 30
+                donation_amount = from_raw(int(txn[2]))
                 donation_amount = donation_amount * percentage
-                donation_amount = nano_to_raw(donation_amount)
+                donation_amount = to_raw(donation_amount)
 
                 return_amount = int(txn[2]) - donation_amount
                 if (return_amount > 0) and (return_amount <= int(txn[2])):
@@ -517,9 +519,9 @@ def return_transactions():
                 returns[message_recipient]["transactions"].append(
                     [
                         recipient,
-                        int(txn[2]) / 10 ** 30,
-                        return_amount / 10 ** 30,
-                        donation_amount / 10 ** 30,
+                        from_raw(int(txn[2])),
+                        from_raw(return_amount),
+                        from_raw(donation_amount),
                     ]
                 )
 

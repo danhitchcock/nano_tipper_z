@@ -14,7 +14,6 @@ from tipper_functions import (
 from tipper_rpc import (
     check_balance,
     open_or_receive,
-    nano_to_raw,
     validate_address,
     send,
 )
@@ -29,6 +28,8 @@ from shared import (
     LOGGER,
     TIPBOT_OWNER,
     DONATION_ADMINS,
+    to_raw,
+    from_raw,
 )
 
 
@@ -216,8 +217,8 @@ def handle_balance(message):
 
         response = text.BALANCE % (
             result[0][0],
-            results[0] / 10 ** 30,
-            results[1] / 10 ** 30,
+            from_raw(results[0]),
+            from_raw(results[1]),
             result[0][0],
         )
 
@@ -329,7 +330,7 @@ def handle_history(message):
             try:
                 amount = result[2]
                 if (result[1] == "send") and amount:
-                    amount = int(result[2]) / 10 ** 30
+                    amount = from_raw(int(result[2]))
                     if (
                         result[4] == "sent to registered redditor"
                         or result[4] == "new user created"
@@ -368,7 +369,7 @@ def handle_history(message):
                         result[4],
                     )
                 elif (result[1] == "minimum") and amount:
-                    amount = int(result[2]) / 10 ** 30
+                    amount = from_raw(int(result[2]))
                     response += "%s: %s | %s | %s | %s\n\n" % (
                         result[0],
                         result[1],
@@ -429,7 +430,7 @@ def handle_minimum(message):
         return response
 
     # check that it's greater than 0.01
-    if nano_to_raw(amount) < nano_to_raw(PROGRAM_MINIMUM):
+    if to_raw(amount) < to_raw(PROGRAM_MINIMUM):
         response = text.MINIMUM["below_program"] % PROGRAM_MINIMUM
         return response
 
@@ -444,7 +445,7 @@ def handle_minimum(message):
         add_history_record(
             username=username,
             action="minimum",
-            amount=nano_to_raw(amount),
+            amount=to_raw(amount),
             address=result[0][0],
             comment_or_message="message",
             comment_id=message.name,
@@ -452,7 +453,7 @@ def handle_minimum(message):
             comment_text=str(message.body)[:255],
         )
         sql = "UPDATE accounts SET minimum = %s WHERE username = %s"
-        val = (str(nano_to_raw(amount)), username)
+        val = (str(to_raw(amount)), username)
         MYCURSOR.execute(sql, val)
         MYDB.commit()
         response = text.MINIMUM["set_min"] % amount
@@ -462,7 +463,7 @@ def handle_minimum(message):
             username=username,
             action="minimum",
             reddit_time=message_time.strftime("%Y-%m-%d %H:%M:%S"),
-            amount=nano_to_raw(amount),
+            amount=to_raw(amount),
             comment_id=message.name,
             comment_text=str(message.body)[:255],
         )
@@ -497,8 +498,8 @@ def handle_receive(message):
         )
         response = text.RECEIVE["balance"] % (
             address,
-            balance[0] / 10 ** 30,
-            balance[1] / 10 ** 30,
+            from_raw(balance[0]),
+            from_raw(balance[1]),
             address,
         )
         return response
@@ -646,7 +647,7 @@ def handle_send(message):
         return response
 
     # check if it's above the program minimum
-    if response["amount"] < nano_to_raw(PROGRAM_MINIMUM):
+    if response["amount"] < to_raw(PROGRAM_MINIMUM):
         update_history_notes(entry_id, "amount below program limit")
         response["status"] = 130
         return response
@@ -749,7 +750,7 @@ def handle_send(message):
         message_text = (
             WELCOME_TIP
             % (
-                response["amount"] / 10 ** 30,
+                from_raw(response["amount"]),
                 recipient_info["address"],
                 recipient_info["address"],
             )
@@ -764,10 +765,10 @@ def handle_send(message):
             message_text = (
                 NEW_TIP
                 % (
-                    response["amount"] / 10 ** 30,
+                    from_raw(response["amount"]),
                     recipient_info["address"],
-                    receiving_new_balance[0] / 10 ** 30,
-                    receiving_new_balance[1] / 10 ** 30,
+                    from_raw(receiving_new_balance[0]),
+                    from_raw(receiving_new_balance[1]),
                     response["hash"],
                 )
                 + COMMENT_FOOTER

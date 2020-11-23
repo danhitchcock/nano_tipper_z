@@ -37,11 +37,14 @@ try:
     TIPBOT_DONATION_ADDRESS = config["BOT"]["tipbot_donation_address"]
     CMC_TOKEN = config["OTHER"]["cmc_token"]
     DPOW_TOKEN = config["NODE"]["dpow_token"]
+    DPOW_USERNAME = config["NODE"]["dpow_username"]
     DEFAULT_URL = config["NODE"]["default_url"]
     PYTHON_COMMAND = config["BOT"]["python_command"]
     TIPPER_OPTIONS = config["BOT"]["tipper_options"]
     MESSENGER_OPTIONS = config["BOT"]["messenger_options"]
     DONATION_ADMINS = config["BOT"]["donation_admins"]
+    CURRENCY = config["bot"]["currency"]
+    REP = config["bot"]["rep"]
 except KeyError as e:
     LOGGER.info("Failed to read tipper.ini. Falling back to test defaults...")
     LOGGER.info(e)
@@ -59,11 +62,14 @@ except KeyError as e:
     )
     CMC_TOKEN = ""
     DPOW_TOKEN = ""
+    DPOW_USERNAME = ""
     DEFAULT_URL = ""
     PYTHON_COMMAND = ""
     TIPPER_OPTIONS = ""
     MESSENGER_OPTIONS = ""
     DONATION_ADMINS = []
+    CURRENCY = "Nano"
+    REP = ""
 
 # only fails if no databases have been created
 try:
@@ -92,6 +98,25 @@ try:
     REDDIT = praw.Reddit("bot1")
 except:
     REDDIT = None
+
+
+if CURRENCY == "Nano":
+
+    def to_raw(amount):
+        return round(int(amount * 10 ** 30), -20)
+
+    def from_raw(amount):
+        return amount / 10 ** 30
+
+
+elif CURRENCY == "Banano":
+
+    def to_raw(amount):
+        return round(int(amount * 10 ** 24), -20)
+
+    def from_raw(amount):
+        return amount / 10 ** 24
+
 
 # initiate the bot and all friendly subreddits
 def get_subreddits():
