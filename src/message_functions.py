@@ -111,6 +111,7 @@ def handle_message(message):
         results = MYCURSOR.fetchall()
         for result in results:
             response += "%s %s  \n" % (result[0], result[1])
+
     elif command == "delete_project":
         if (
             (str(message.author) == TIPBOT_OWNER)
@@ -141,20 +142,6 @@ def handle_message(message):
                 comment_id=message.name,
             )
             sys.exit()
-    elif command == "test_welcome_tipped":
-        subject = "Nano Tipper - Welcome By Tip"
-        response = WELCOME_TIP % (
-            0.01,
-            "xrb_3jy9954gncxbhuieujc3pg5t1h36e7tyqfapw1y6zukn9y1g6dj5xr7r6pij",
-            "xrb_3jy9954gncxbhuieujc3pg5t1h36e7tyqfapw1y6zukn9y1g6dj5xr7r6pij",
-        )
-    elif command == "test_welcome_create":
-        subject = "Nano Tipper - Create"
-        response = WELCOME_CREATE % (
-            "xrb_3jy9954gncxbhuieujc3pg5t1h36e7tyqfapw1y6zukn9y1g6dj5xr7r6pij",
-            "xrb_3jy9954gncxbhuieujc3pg5t1h36e7tyqfapw1y6zukn9y1g6dj5xr7r6pij",
-        )
-
     else:
         add_history_record(
             username=str(message.author),
