@@ -1005,6 +1005,3 @@ def test_return_transactions(monkeypatch):
             {},
         ],
     ]
-
-
-# todo test opt-out functionality
