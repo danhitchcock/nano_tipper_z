@@ -33,9 +33,10 @@ def handle_comment(message):
     if response["subreddit_status"] in ["silent", "hostile"]:
         message_recipient = str(message.author)
         if response["status"] < 100:
-            subject = "Your Tip Was Successful"
+            subject = text.SUBJECTS["success"]
+
         else:
-            subject = "You Tip Did Not Go Through"
+            subject = text.SUBJECTS["failure"]
         message_text = response_text + text.COMMENT_FOOTER
         sql = "INSERT INTO messages (username, subject, message) VALUES (%s, %s, %s)"
         val = (message_recipient, subject, message_text)
@@ -272,7 +273,7 @@ def send_from_comment(message):
     tipper_functions.exec_sql(sql, val)
 
     if response["status"] == 20:
-        subject = "Congrats on receiving your first Nano Tip!"
+        subject = text.SUBJECTS["first_tip"]
         message_text = (
             text.WELCOME_TIP
             % (
@@ -287,7 +288,7 @@ def send_from_comment(message):
     else:
         if not recipient_info["silence"]:
             receiving_new_balance = check_balance(recipient_info["address"])
-            subject = "You just received a new Nano tip!"
+            subject = text.SUBJECTS["new_tip"]
             message_text = (
                 text.NEW_TIP
                 % (

@@ -2,7 +2,7 @@ import time
 
 from time import sleep
 
-from tipper_rpc import get_pendings, open_or_receive_block, send
+from tipper_rpc import get_pendings, open_or_receive_block
 import shared
 from shared import (
     MYCURSOR,
