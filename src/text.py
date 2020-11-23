@@ -125,7 +125,32 @@ RETURN_WARNING = (
 SUBJECTS = {
     "RETURN_WARNING": "Please Activate Your Nano Tipper Account",
     "RETURN_MESSAGE": "Returned Tips",
+    "first_tip": "Congrats on receiving your first Nano Tip!",
+    "new_tip": "You just received a new Nano tip!",
+    "help": "Nano Tipper - Help",
+    "balance": "Nano Tipper - Account Balance",
+    "minimum": "Nano Tipper - Tip Minimum",
+    "percentage": "Nano Tipper - Returned Tip Percentage for Donation",
+    "create": "Nano Tipper - Create",
+    "send": "Nano Tipper - Send",
+    "history": "Nano Tipper - History",
+    "silence": "Nano Tipper - Silence",
+    "subreddit": "Nano Tipper - Subreddit",
+    "opt-out": "Nano Tipper - Opt Out",
+    "opt-in": "Nano Tipper - Opt In",
 }
+
+MINIMUM = {
+    "set_min": "Updating tip minimum to %s",
+    "below_program": "Did not update. The amount you specified is below the program minimum "
+    "of %s Nano.",
+    "parse_error": "I couldn't parse your command. I was expecting 'minimum "
+    "<amount>'. Be sure to check your spacing.",
+}
+
+NAN = "'%s' didn't look like a number to me. If it is blank, there might be extra spaces in the command."
+
+
 # full responses
 SEND_TEXT = {
     10: (
@@ -196,6 +221,62 @@ SEND_TEXT_MIN = {
     ),
 }
 
+OPT_IN = """
+Welcome back! You have opted back in. Your account will be restored with the same address, 
+though any Nano you had may have already been returned or donated already.
+"""
+
+OPT_OUT = """
+You have opted-out and I promise not to bother you anymore.\n\n
+Returnable Nano will be returned to the tippers, and the remaining balance will be donated to the tipbot fund.\n\n
+If this was in error, please respond immediately with the text `opt-in`.
+"""
+
+SUBREDDIT = {
+    "missing": "Your command seems to be missing something. Make sure it follow the format `subreddit <subreddit> "
+    "<command> <option>.`",
+    "not_mod": "You are not a moderator of /r/%s.",
+    "min": "Subreddit-specific minimums aren't enabled yet. Check back soon!",
+    "deactivate": "Within 5 minutes, tipping will be deactivated in your subreddit %s.",
+    "activate": "Within 5 minutes, the tipbot response in your Subreddit will be set to %s.",
+    "error": "There was something wrong with your activate or minimum command.",
+}
+
+SILENCE = {
+    "yes_no": "I did not see 'no' or 'yes' after 'silence'. If you did type "
+    "that, check your spacing.",
+    "no": "Silence set to 'no'. You will receive tip notifications and be "
+    "tagged by the bot in replies.",
+    "yes": "Silence set to 'yes'. You will no longer receive tip "
+    "notifications or be tagged by the bot.",
+    "parse_error": "I couldn't parse your command. I was expecting 'silence "
+    "<yes/no>'. Be sure to check your spacing.",
+}
+
+RECEIVE = {
+    "balance": "At address %s, you currently have %s Nano available, and %s Nano "
+    "unpocketed. If you have any unpocketed, create a new "
+    "message containing the word 'receive'\n\nhttps://nanocrawler.cc/explorer/account/%s",
+}
+
+NOT_OPEN = (
+    "You do not currently have an account open. To create one, "
+    "respond with the text 'create' in the message body."
+)
+
+ALREADY_EXISTS = (
+    "It looks like you already have an account. In any case it is now "
+    "**active**. Your Nano address is %s."
+    "\n\nhttps://nanocrawler.cc/explorer/account/%s"
+)
+
+BALANCE = (
+    "At address %s:\n\nAvailable: %s Nano\n\nUnpocketed: %s Nano\n\nNano "
+    "will be pocketed automatically unless the transaction is below "
+    "0.0001 Nano."
+    "\n\nhttps://nanocrawler.cc/explorer/account/%s"
+)
+
 
 def make_response_text(message, response):
 
@@ -239,6 +320,14 @@ def make_response_text(message, response):
             raw_to_nano(response["minimum"]),
             raw_to_nano(response["amount"]),
         )
+
+
+PERCENTAGE = {
+    "parse_error": "I couldn't parse your command. I was expecting 'percentage <amount>'. Be sure to check your spacing.",
+    "neg": "Did not update. Your percentage cannot be negative.",
+    "100": "Did not update. Your percentage must be 100 or lower.",
+    "updating": "Updating donation percentage to %s.",
+}
 
 
 def make_return_message(user):
