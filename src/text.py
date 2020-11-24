@@ -38,6 +38,7 @@ For PM commands, create a new message with any of the following commands (be sur
     'silence <yes/no>' - (default 'no') Prevents the bot from sending you tip notifications or tagging in posts 
     'history <optional: number of records>' - Retrieves tipbot commands. Default 10, maximum is 50.
     'percentage <percent>' - (default 10 percent) Sets a percentage of returned tips to donate to TipBot development.
+    'convert <amountcurrency>' - Calculates the Nano value of the specified curency. e.g. `convert 1USD`. Also works with "price" and "value".
     'opt-out' - Disables your account and donates your remaining Nano to the tipbot. 
     'opt-in' - Reenables your account. Your Nano may or may not still be available. 
     'help' - Get this help message\n
@@ -140,6 +141,7 @@ SUBJECTS = {
     "cf_projects": "Nano Tipper - Nanocenter Projects",
     "success": "Nano Tipper - Your Tip Was Successful",
     "failure": "Nano Tipper - You Tip Did Not Go Through",
+    "convert": "Nano Tipper - Your Currency Conversion",
 }
 
 MINIMUM = {
@@ -282,6 +284,11 @@ BALANCE = (
 
 CROWD_FUNDING = {
     "projects": "Current NanoCenter Donation Projects: \n\n",
+}
+
+CONVERT = {
+    "no_amount_specified": "You must specify an amount, for example `convert 0.01USD`.",
+    "success": "%s converts to %s Nano.",
 }
 
 
