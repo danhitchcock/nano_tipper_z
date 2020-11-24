@@ -1,7 +1,15 @@
 import json
 import qrcode
 import requests
-from shared import DPOW_TOKEN, DEFAULT_URL, LOGGER, DPOW_USERNAME, REP, DPOW_ENDPOINT
+from shared import (
+    DPOW_TOKEN,
+    DEFAULT_URL,
+    LOGGER,
+    DPOW_USERNAME,
+    REP,
+    DPOW_ENDPOINT,
+    USE_DPOW,
+)
 
 
 def perform_curl(data=None, URL=None, timeout=30):
@@ -40,6 +48,10 @@ def work_generate(hash, dpow=False):
     :param dpow:
     :return: dict with 'work' as a key
     """
+    # if dpow is globaly disable, disable here
+    if not USE_DPOW:
+        dpow = False
+
     if dpow:
         # API call
         try:

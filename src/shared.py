@@ -47,6 +47,7 @@ try:
     DPOW_USERNAME = config["NODE"]["dpow_username"]
     DEFAULT_URL = config["NODE"]["default_url"]
     REP = config["NODE"]["rep"]
+    USE_DPOW = config["NODE"]["use_dpow"]
 
     CMC_TOKEN = config["OTHER"]["cmc_token"]
 except KeyError as e:
@@ -75,6 +76,7 @@ except KeyError as e:
     CURRENCY = "Nano"
     REP = ""
     DPOW_ENDPOINT = ""
+    USE_DPOW = False
 
 # only fails if no databases have been created
 try:
