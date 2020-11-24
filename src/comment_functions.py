@@ -104,19 +104,14 @@ def send_from_comment(message):
         parsed_text = parsed_text[-2:]
 
     # before we can do anything, check the subreddit status for generating the response
-    # check if amount is above subreddit minimum.
     response["subreddit"] = str(message.subreddit).lower()
-    sql = "SELECT status FROM subreddits WHERE subreddit=%s"
+    sql = "SELECT status, minimum FROM subreddits WHERE subreddit=%s"
     val = (response["subreddit"],)
     results = tipper_functions.query_sql(sql, val)
     if len(results) == 0:
-        response["subreddit_minimum"] = 1
-        results = [["untracked"]]
-    elif results[0][0] in ["full", "friendly", "minimal", "silent"]:
-        response["subreddit_minimum"] = 0
-    else:
-        response["subreddit_minimum"] = 1
+        results = [["untracked"], "1"]
     response["subreddit_status"] = results[0][0]
+    response["subreddit_minimum"] = float(results[0][1])
 
     # check that it wasn't a mistyped currency code or something
     if parsed_text[2] in EXCLUDED_REDDITORS:
@@ -161,6 +156,7 @@ def send_from_comment(message):
         response["status"] = 160
         return response
 
+    # check that it's above the subreddit minimum
     if response["amount"] < to_raw(response["subreddit_minimum"]):
         update_history_notes(entry_id, "amount below subreddit minimum")
         response["status"] = 150
