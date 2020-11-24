@@ -4,17 +4,11 @@ from time import sleep
 
 from tipper_rpc import get_pendings, open_or_receive_block
 import shared
-from shared import (
-    MYCURSOR,
-    MYDB,
-    REDDIT,
-    PROGRAM_MINIMUM,
-    SUBREDDITS,
-)
+from shared import MYCURSOR, MYDB, REDDIT, PROGRAM_MINIMUM, SUBREDDITS, to_raw
 
 from message_functions import handle_message
 
-from tipper_functions import nano_to_raw, parse_action, return_transactions
+from tipper_functions import parse_action, return_transactions
 from comment_functions import handle_comment
 
 
@@ -64,7 +58,7 @@ def auto_receive():
     addresses = [str(result[1]) for result in myresult]
     private_keys = [str(result[2]) for result in myresult]
     MYDB.commit()
-    pendings = get_pendings(addresses, threshold=nano_to_raw(PROGRAM_MINIMUM))
+    pendings = get_pendings(addresses, threshold=to_raw(PROGRAM_MINIMUM))
     # get any pending blocks from our address
     for address, private_key in zip(addresses, private_keys):
         # allow 5 transactions to be received per cycle. If the bot gets transaction spammed, at least it won't be

@@ -1,6 +1,5 @@
-from tipper_rpc import raw_to_nano
-
 import shared
+from shared import from_raw
 
 COMMENT_FOOTER = """\n\n
 ***\n\n
@@ -180,7 +179,8 @@ SEND_TEXT = {
         "make an account."
     ),
     110: "You must specify an amount and a user, e.g. `send 1 nano_tipper`.",
-    120: "I could not read the amount. Is '%s' a number?",
+    120: "I could not read the amount or the currency code. Is '%s' a number? This could also mean the "
+    "currency converter is down.",
     130: "Program minimum is %s Nano.",
     140: (
         "It wasn't clear if you were trying to perform a currency conversion or "
@@ -295,7 +295,7 @@ def make_response_text(message, response):
         if response["status"] < 100:
             return SEND_TEXT_MIN[response["status"]] % (
                 response["hash"],
-                raw_to_nano(response["amount"]),
+                from_raw(response["amount"]),
                 response["recipient"],
             )
         else:
@@ -305,12 +305,12 @@ def make_response_text(message, response):
     if response["status"] == 20:
         return SEND_TEXT[response["status"]] % (
             response["recipient"],
-            raw_to_nano(response["amount"]),
+            from_raw(response["amount"]),
             response["hash"],
         )
     if response["status"] < 100:
         return SEND_TEXT[response["status"]] % (
-            raw_to_nano(response["amount"]),
+            from_raw(response["amount"]),
             response["recipient"],
             response["hash"],
         )
@@ -324,8 +324,8 @@ def make_response_text(message, response):
         return SEND_TEXT[response["status"]] % response["recipient"]
     if response["status"] == 180:
         return SEND_TEXT[response["status"]] % (
-            raw_to_nano(response["minimum"]),
-            raw_to_nano(response["amount"]),
+            from_raw(response["minimum"]),
+            from_raw(response["amount"]),
         )
     return None
 
