@@ -297,15 +297,13 @@ def parse_raw_amount(parsed_text, username=None):
             balance = check_balance(address)
             return balance[0]
         else:
-            raise (
-                TipError(None, 'You do not have a tip bot account yet. PM me "create".')
-            )
+            raise (TipError(None, text.NOT_OPEN))
 
     # check if there is a currency code in the amount; if so, get the conversion
     if parsed_text[1][-3:].lower() in EXCLUDED_REDDITORS:
         currency = parsed_text[1][-3:].upper()
         url = "https://min-api.cryptocompare.com/data/price?fsym={}&tsyms={}".format(
-            "NANO", currency
+            shared.CURRENCY, currency
         )
         try:
             results = requests.get(url, timeout=1)

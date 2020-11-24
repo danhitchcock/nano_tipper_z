@@ -1,7 +1,7 @@
 import json
 import qrcode
 import requests
-from shared import DPOW_TOKEN, DEFAULT_URL, LOGGER, DPOW_USERNAME, REP
+from shared import DPOW_TOKEN, DEFAULT_URL, LOGGER, DPOW_USERNAME, REP, DPOW_ENDPOINT
 
 
 def perform_curl(data=None, URL=None, timeout=30):
@@ -45,9 +45,7 @@ def work_generate(hash, dpow=False):
         try:
             # api token will be in a separate text file
             data = {"api_key": DPOW_TOKEN, "user": DPOW_USERNAME, "hash": hash}
-            results = requests.post(
-                "https://dpow.nanocenter.org/service/", json.dumps(data), timeout=10
-            )
+            results = requests.post(DPOW_ENDPOINT, json.dumps(data), timeout=10)
             results = json.loads(results.text)
         except requests.exceptions.Timeout:
             LOGGER.info("Falling back to local POW...")
