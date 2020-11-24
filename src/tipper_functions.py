@@ -20,6 +20,7 @@ from text import HELP, RETURN_WARNING, SUBJECTS
 
 from tipper_rpc import generate_account, check_balance, send
 import text
+import shared
 
 
 def add_history_record(
@@ -176,19 +177,27 @@ def allowed_request(username, seconds=30, num_requests=5):
 def check_registered_by_address(address):
     address = address.split("_")[1]
 
-    sql = "SELECT username FROM accounts WHERE address=%s"
-    val = ("nano_" + address,)
-    MYCURSOR.execute(sql, val)
-    result = MYCURSOR.fetchall()
-    if len(result) > 0:
-        return result[0][0]
+    if shared.CURRENCY == "Nano":
+        sql = "SELECT username FROM accounts WHERE address=%s"
+        val = ("nano_" + address,)
+        MYCURSOR.execute(sql, val)
+        result = MYCURSOR.fetchall()
+        if len(result) > 0:
+            return result[0][0]
 
-    sql = "SELECT username FROM accounts WHERE address=%s"
-    val = ("xrb_" + address,)
-    MYCURSOR.execute(sql, val)
-    result = MYCURSOR.fetchall()
-    if len(result) > 0:
-        return result[0][0]
+        sql = "SELECT username FROM accounts WHERE address=%s"
+        val = ("xrb_" + address,)
+        MYCURSOR.execute(sql, val)
+        result = MYCURSOR.fetchall()
+        if len(result) > 0:
+            return result[0][0]
+    elif shared.CURRENCY == "Banano":
+        sql = "SELECT username FROM accounts WHERE address=%s"
+        val = ("ban_" + address,)
+        MYCURSOR.execute(sql, val)
+        result = MYCURSOR.fetchall()
+        if len(result) > 0:
+            return result[0][0]
     return None
 
 

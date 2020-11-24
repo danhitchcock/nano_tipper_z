@@ -18,6 +18,7 @@ from tipper_rpc import (
     send,
 )
 from text import WELCOME_CREATE, WELCOME_TIP, COMMENT_FOOTER, NEW_TIP
+import shared
 from shared import (
     MYCURSOR,
     MYDB,
@@ -870,8 +871,13 @@ def parse_recipient_username(recipient_text):
     elif recipient_text[:2].lower() == "u/":
         recipient_text = recipient_text[2:]
 
-    if (recipient_text[:5].lower() == "nano_") or (
-        recipient_text[:4].lower() == "xrb_"
+    if (
+        shared.CURRENCY == "Nano"
+        and (
+            recipient_text[:5].lower() == "nano_"
+            or recipient_text[:4].lower() == "xrb_"
+        )
+        or (shared.CURRENCY == "Banano" and recipient_text[:4].lower() == "ban_")
     ):
         # check valid address
         success = validate_address(recipient_text)
