@@ -179,7 +179,8 @@ SEND_TEXT = {
         "make an account."
     ),
     110: "You must specify an amount and a user, e.g. `send 1 nano_tipper`.",
-    120: "I could not read the amount. Is '%s' a number?",
+    120: "I could not read the amount or the currency code. Is '%s' a number? This could also mean the "
+    "currency converter is down.",
     130: "Program minimum is %s Nano.",
     140: (
         "It wasn't clear if you were trying to perform a currency conversion or "
