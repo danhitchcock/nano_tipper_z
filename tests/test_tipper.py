@@ -372,7 +372,7 @@ def test_handle_send_from_PM(handle_send_from_message_mocks):
     }
     assert (
         text.make_response_text(message, response)
-        == "I could not read the amount. Is '0.0sdf1' a number?"
+        == "I could not read the amount or the currency code. Is '0.0sdf1' a number? This could also mean the currency converter is down."
     )
 
     # send below sender balance
@@ -587,7 +587,7 @@ def test_handle_send_from_comment_and_text(handle_send_from_comment_mocks):
     }
     assert (
         text.make_response_text(message, response)
-        == "I could not read the amount. Is '0.0sdf1' a number?"
+        == "I could not read the amount or the currency code. Is '0.0sdf1' a number? This could also mean the currency converter is down."
     )
     # send below program limit
     message = RedditMessage("t4_5", "rich", "", f"{TIP_COMMANDS[0]} 0.00001")
