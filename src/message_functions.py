@@ -88,7 +88,10 @@ def handle_message(message):
         LOGGER.info("opting in")
         subject = text.SUBJECTS["opt-in"]
         response = handle_opt_in(message)
-
+    elif command in ["value", "price", "convert"]:
+        LOGGER.info("converting")
+        subject = text.SUBJECTS["convert"]
+        response = handle_convert(message)
     # nanocenter donation commands
     elif command in ("project", "projects"):
 
@@ -814,7 +817,35 @@ def handle_opt_in(message):
     return response
 
 
+def handle_convert(message):
+    """
+    Returns the Nano amount of a currency.
+    """
+    parsed_text = parse_text(str(message.body))
+
+    add_history_record(
+        username=str(message.author),
+        action="convert",
+        comment_or_message="message",
+        comment_id=message.name,
+        reddit_time=datetime.utcfromtimestamp(message.created_utc).strftime(
+            "%Y-%m-%d %H:%M:%S"
+        ),
+    )
+
+    if len(parsed_text) < 2:
+        return text.CONVERT["no_amount_specified"]
+    try:
+        amount = parse_raw_amount(parsed_text)
+    except TipError:
+        return text.SEND_TEXT[120] % parsed_text[1]
+    return text.CONVERT["success"] % (parsed_text[1], from_raw(amount))
+
+
 def handle_projects(message):
+    """
+    Handles creation and updates of crowdfunding (NanoCenter) projects
+    """
     parsed_text = parse_text(str(message.body))
     response = text.CROWD_FUNDING["projects"]
     if (str(message.author).lower() in DONATION_ADMINS + TIPBOT_OWNER) and len(
