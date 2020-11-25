@@ -109,7 +109,7 @@ def send_from_comment(message):
     val = (response["subreddit"],)
     results = tipper_functions.query_sql(sql, val)
     if len(results) == 0:
-        results = [["untracked"], "1"]
+        results = [["untracked", "1"]]
     response["subreddit_status"] = results[0][0]
     response["subreddit_minimum"] = float(results[0][1])
 

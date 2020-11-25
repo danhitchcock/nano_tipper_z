@@ -186,12 +186,12 @@ def mock_parse_recipient_username(recipient_text):
 
 def mock_query_sql(sql, val=None):
     # subreddits
-    if sql == "SELECT status FROM subreddits WHERE subreddit=%s":
+    if sql == "SELECT status, minimum FROM subreddits WHERE subreddit=%s":
         val = val[0]
         vals = {
-            "friendly_sub": [["full"]],
-            "minimal_sub": [["minimal"]],
-            "hostile_sub": [["silent"]],
+            "friendly_sub": [["full", ".001"]],
+            "minimal_sub": [["minimal", ".001"]],
+            "hostile_sub": [["silent", "1"]],
             "not_tracked_sub": [],
         }
         return vals[val]
@@ -551,7 +551,7 @@ def test_handle_send_from_comment_and_text(handle_send_from_comment_mocks):
         "status": 100,
         "username": "DNE",
         "subreddit": "friendly_sub",
-        "subreddit_minimum": 0,
+        "subreddit_minimum": 0.001,
         "subreddit_status": "full",
     }
     assert (
@@ -566,7 +566,7 @@ def test_handle_send_from_comment_and_text(handle_send_from_comment_mocks):
         "status": 110,
         "username": "rich",
         "subreddit": "friendly_sub",
-        "subreddit_minimum": 0,
+        "subreddit_minimum": 0.001,
         "subreddit_status": "full",
     }
     assert (
@@ -582,7 +582,7 @@ def test_handle_send_from_comment_and_text(handle_send_from_comment_mocks):
         "username": "rich",
         "amount": "0.0sdf1",
         "subreddit": "friendly_sub",
-        "subreddit_minimum": 0,
+        "subreddit_minimum": 0.001,
         "subreddit_status": "full",
     }
     assert (
@@ -597,7 +597,7 @@ def test_handle_send_from_comment_and_text(handle_send_from_comment_mocks):
         "status": 130,
         "username": "rich",
         "subreddit": "friendly_sub",
-        "subreddit_minimum": 0,
+        "subreddit_minimum": 0.001,
         "subreddit_status": "full",
     }
     assert (
@@ -611,7 +611,7 @@ def test_handle_send_from_comment_and_text(handle_send_from_comment_mocks):
         "status": 140,
         "username": "rich",
         "subreddit": "friendly_sub",
-        "subreddit_minimum": 0,
+        "subreddit_minimum": 0.001,
         "subreddit_status": "full",
     }
     assert (
@@ -649,7 +649,7 @@ def test_handle_send_from_comment_and_text(handle_send_from_comment_mocks):
         "status": 160,
         "username": "poor",
         "subreddit": "friendly_sub",
-        "subreddit_minimum": 0,
+        "subreddit_minimum": 0.001,
         "subreddit_status": "full",
     }
     assert (
@@ -671,7 +671,7 @@ def test_handle_send_from_comment_and_text(handle_send_from_comment_mocks):
         "amount": 10000000000000000000000000000,
         "status": 190,
         "subreddit": "friendly_sub",
-        "subreddit_minimum": 0,
+        "subreddit_minimum": 0.001,
         "username": "rich",
         "recipient": "out",
         "subreddit_status": "full",
@@ -696,7 +696,7 @@ def test_handle_send_from_comment_and_text(handle_send_from_comment_mocks):
         "minimum": 100000000000000000000000000000000,
         "status": 180,
         "subreddit": "friendly_sub",
-        "subreddit_minimum": 0,
+        "subreddit_minimum": 0.001,
         "subreddit_status": "full",
         "username": "rich",
         "recipient": "high_min",
@@ -720,7 +720,7 @@ def test_handle_send_from_comment_and_text(handle_send_from_comment_mocks):
         "amount": 10000000000000000000000000000,
         "status": 20,
         "subreddit": "friendly_sub",
-        "subreddit_minimum": 0,
+        "subreddit_minimum": 0.001,
         "subreddit_status": "full",
         "username": "rich",
         "hash": "success!",
@@ -755,7 +755,7 @@ def test_handle_send_from_comment_and_text(handle_send_from_comment_mocks):
         "amount": 10000000000000000000000000000,
         "status": 10,
         "subreddit": "friendly_sub",
-        "subreddit_minimum": 0,
+        "subreddit_minimum": 0.001,
         "username": "rich",
         "hash": "success!",
         "recipient": "poor",
@@ -790,7 +790,7 @@ def test_handle_send_from_comment_and_text(handle_send_from_comment_mocks):
         "amount": 10000000000000000000000000000,
         "status": 10,
         "subreddit": "friendly_sub",
-        "subreddit_minimum": 0,
+        "subreddit_minimum": 0.001,
         "username": "rich",
         "hash": "success!",
         "recipient": "poor",
@@ -816,7 +816,7 @@ def test_handle_send_from_comment_and_text(handle_send_from_comment_mocks):
         "amount": 10000000000000000000000000000,
         "status": 10,
         "subreddit": "friendly_sub",
-        "subreddit_minimum": 0,
+        "subreddit_minimum": 0.001,
         "username": "rich",
         "hash": "success!",
         "recipient": "poor",
@@ -842,7 +842,7 @@ def test_handle_send_from_comment_and_text(handle_send_from_comment_mocks):
         "amount": 10000000000000000000000000000,
         "status": 10,
         "subreddit": "friendly_sub",
-        "subreddit_minimum": 0,
+        "subreddit_minimum": 0.001,
         "username": "rich",
         "hash": "success!",
         "recipient": "poor",
@@ -863,7 +863,7 @@ def test_handle_send_from_comment_and_text(handle_send_from_comment_mocks):
         "status": 110,
         "username": "rich",
         "subreddit": "friendly_sub",
-        "subreddit_minimum": 0,
+        "subreddit_minimum": 0.001,
         "subreddit_status": "full",
     }
     assert (
@@ -885,7 +885,7 @@ def test_handle_send_from_comment_and_text(handle_send_from_comment_mocks):
         "recipient": "project_does_not_exist",
         "status": 210,
         "subreddit": "friendly_sub",
-        "subreddit_minimum": 0,
+        "subreddit_minimum": 0.001,
         "username": "rich",
         "subreddit_status": "full",
     }
@@ -908,7 +908,7 @@ def test_handle_send_from_comment_and_text(handle_send_from_comment_mocks):
         "hash": "success!",
         "status": 40,
         "subreddit": "friendly_sub",
-        "subreddit_minimum": 0,
+        "subreddit_minimum": 0.001,
         "username": "rich",
         "recipient": "project_exists",
         "subreddit_status": "full",
