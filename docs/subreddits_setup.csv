@@ -1,1 +1,1 @@
-subreddit [varchar(255)] primary key, reply_to_comments [BOOL],footer [varchar(255)], status [varchar(255)]
+subreddit [varchar(255)] primary key, reply_to_comments [BOOL],footer [varchar(255)], status [varchar(255)], minimum [varchar(255)]
