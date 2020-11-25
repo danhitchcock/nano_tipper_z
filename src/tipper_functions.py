@@ -162,6 +162,7 @@ def allowed_request(username, seconds=30, num_requests=5):
     :param num_requests: int (number of allowed requests)
     :return:
     """
+
     sql = "SELECT sql_time FROM history WHERE username=%s"
     val = (str(username),)
     MYCURSOR.execute(sql, val)

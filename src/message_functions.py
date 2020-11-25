@@ -150,7 +150,7 @@ def handle_percentage(message):
     try:
         amount = float(parsed_text[1])
     except:
-        response = text.NAN
+        response = text.NAN % parsed_text[1]
         return response
 
     # check that it's greater than 0.01
@@ -430,7 +430,7 @@ def handle_minimum(message):
     try:
         amount = float(parsed_text[1])
     except:
-        response = text.NAN
+        response = text.NAN % parsed_text[1]
         return response
 
     # check that it's greater than 0.01
@@ -557,15 +557,45 @@ def handle_silence(message):
 
 def handle_subreddit(message):
     parsed_text = parse_text(str(message.body))
-    # check if there are at least 3 items (command, sub, action, option)
+    # If it is just the subreddit, return all the subreddits
+    if len(parsed_text) < 2:
+        response = text.SUBREDDIT["all"]
+        MYCURSOR.execute("SELECT subreddit, status, minimum FROM subreddits")
+        myresult = MYCURSOR.fetchall()
+        for result in myresult:
+            result = [str(i) for i in result]
+            response += ", ".join(result)
+            response += "\n\n"
+        return response
+
+    # Return the subreddit stats
     if len(parsed_text) < 3:
-        return text.SUBREDDIT["missing"]
+        response = text.SUBREDDIT["one"]
+        sql = "SELECT subreddit, status, minimum FROM subreddits WHERE subreddit=%s"
+        val = (parsed_text[1],)
+        MYCURSOR.execute(sql, val)
+        myresult = MYCURSOR.fetchall()
+        for result in myresult:
+            result = [str(i) for i in result]
+            response += ", ".join(result)
+        return response % parsed_text[1]
+
     # check if the user is a moderator of the subreddit
     if message.author not in REDDIT.subreddit(parsed_text[1]).moderator():
         return text.SUBREDDIT["not_mod"] % parsed_text[1]
 
-    if parsed_text[2] == "minimum":
-        return text.SUBREDDIT["min"]
+    # change the subreddit minimum
+    if parsed_text[2] in ["minimum", "min"]:
+        try:
+            float(parsed_text[3])
+        except:
+            return text.NAN % parsed_text[3]
+        sql = "UPDATE subreddits SET minimum = %s WHERE subreddit = %s"
+        val = (parsed_text[3], parsed_text[1])
+        MYCURSOR.execute(sql, val)
+        MYDB.commit()
+
+        return text.SUBREDDIT["minimum"] % (parsed_text[1], parsed_text[3])
 
     if parsed_text[2] in ("disable", "deactivate"):
         # disable the bot

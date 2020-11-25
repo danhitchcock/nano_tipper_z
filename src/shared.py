@@ -21,13 +21,12 @@ ch.setFormatter(formatter)
 LOGGER.addHandler(fh)
 LOGGER.addHandler(ch)
 config = configparser.ConfigParser()
-config.read("tipper.ini")
+config.read(
+    os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "tipper.ini")
+)
 
 # if we have a file, use it. Otherwise, load testing defaults
 try:
-    SQL_PASSWORD = config["SQL"]["sql_password"]
-    DATABASE_NAME = config["SQL"]["database_name"]
-
     TIP_BOT_ON = config["BOT"]["tip_bot_on"]
     TIP_BOT_USERNAME = config["BOT"]["tip_bot_username"]
     PROGRAM_MINIMUM = float(config["BOT"]["program_minimum"])
@@ -50,6 +49,10 @@ try:
     USE_DPOW = config["NODE"]["use_dpow"]
 
     CMC_TOKEN = config["OTHER"]["cmc_token"]
+
+    SQL_PASSWORD = config["SQL"]["sql_password"]
+    DATABASE_NAME = config["SQL"]["database_name"]
+
 except KeyError as e:
     LOGGER.info("Failed to read tipper.ini. Falling back to test-defaults...")
     LOGGER.info("Failed on: ", e)

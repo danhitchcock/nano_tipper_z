@@ -12,7 +12,7 @@ COMMENT_FOOTER = """\n\n
 """
 
 HELP = """
-Help from Nano Tipper! This bot was handles tips via the Nano currency.
+Help from Nano Tipper! This bot handles tips via the Nano currency.
 [Visit us on GitHub](https://github.com/danhitchcock/nano_tipper_z), the [Wiki](http://reddit.com/r/nano_tipper/wiki/) 
 or /r/nano_tipper for more information on its use and its status. Be sure to read the 
 [Terms of Service](https://github.com/danhitchcock/nano_tipper_z#terms-of-service)\n\n
@@ -241,10 +241,12 @@ SUBREDDIT = {
     "missing": "Your command seems to be missing something. Make sure it follow the format `subreddit <subreddit> "
     "<command> <option>.`",
     "not_mod": "You are not a moderator of /r/%s.",
-    "min": "Subreddit-specific minimums aren't enabled yet. Check back soon!",
+    "minimum": "Sucessfully set your /r/%s minimum to %s, active immediately.",
     "deactivate": "Within 5 minutes, tipping will be deactivated in your subreddit %s.",
-    "activate": "Within 5 minutes, the tipbot response in your Subreddit will be set to %s.",
+    "activate": "Within 5 minutes, the Nano Tipper response in your Subreddit will be set to %s.",
     "error": "There was something wrong with your activate or minimum command.",
+    "all": "Here is a list of every subreddit and its status:\n\nName, Status, Minimum\n\n",
+    "one": "Here are the settings for subreddit /r/%s:\n\nName, Status, Minimum\n\n",
 }
 
 SILENCE = {
