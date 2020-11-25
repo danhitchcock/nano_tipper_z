@@ -241,10 +241,12 @@ SUBREDDIT = {
     "missing": "Your command seems to be missing something. Make sure it follow the format `subreddit <subreddit> "
     "<command> <option>.`",
     "not_mod": "You are not a moderator of /r/%s.",
-    "min": "Subreddit-specific minimums aren't enabled yet. Check back soon!",
+    "minimum": "Sucessfully set your /r/%s minimum to %s, active immediately.",
     "deactivate": "Within 5 minutes, tipping will be deactivated in your subreddit %s.",
     "activate": "Within 5 minutes, the tipbot response in your Subreddit will be set to %s.",
     "error": "There was something wrong with your activate or minimum command.",
+    "all": "Here is a list of every subreddit and its status:\n\nName, Status, Minimum\n\n",
+    "one": "Here are the settings for subreddit /r/%s:\n\nName, Status, Minimum\n\n",
 }
 
 SILENCE = {
