@@ -6,6 +6,7 @@ log
 ./src/log
 venv
 tip.db
+.vscode
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
