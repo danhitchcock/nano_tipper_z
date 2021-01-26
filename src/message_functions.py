@@ -20,8 +20,6 @@ from tipper_rpc import (
 from text import WELCOME_CREATE, WELCOME_TIP, COMMENT_FOOTER, NEW_TIP
 import shared
 from shared import (
-    MYCURSOR,
-    MYDB,
     TIP_BOT_USERNAME,
     PROGRAM_MINIMUM,
     REDDIT,
@@ -30,6 +28,10 @@ from shared import (
     TIPBOT_OWNER,
     to_raw,
     from_raw,
+    Account,
+    Message,
+    History,
+    Subreddit
 )
 
 
@@ -83,25 +85,10 @@ def handle_message(message):
         LOGGER.info("opting in")
         subject = text.SUBJECTS["opt-in"]
         response = handle_opt_in(message)
-    elif command in ["value", "price", "convert"]:
-        LOGGER.info("converting")
-        subject = text.SUBJECTS["convert"]
-        response = handle_convert(message)
-    # nanocenter donation commands
-    elif command in ("project", "projects"):
-
-        subject = text.SUBJECTS["cf_projects"]
-        response = handle_projects(message)
-
-    elif command == "delete_project":
-        subject = text.SUBJECTS["cf_projects"]
-        response = handle_delete_project(message)
-
     # a few administrative tasks
     elif command in ["restart", "stop", "disable", "deactivate"]:
         if str(message.author).lower() in [
             TIPBOT_OWNER,
-            "rockmsockmjesus",
         ]:  # "joohansson"]:
             add_history_record(
                 username=str(message.author),
@@ -136,23 +123,20 @@ def handle_balance(message):
         comment_id=message.name,
         comment_text=str(message.body)[:255],
     )
-    sql = "SELECT address FROM accounts WHERE username=%s"
-    val = (username,)
-    MYCURSOR.execute(sql, val)
-    result = MYCURSOR.fetchall()
-    if len(result) > 0:
-        results = check_balance(result[0][0])
+    try:
+        acct = Account.get(username=username)
+        results = check_balance(acct.address)
 
         response = text.BALANCE % (
-            result[0][0],
+            acct.address,
             from_raw(results[0]),
             from_raw(results[1]),
-            result[0][0],
+            acct.address,
         )
 
-        return response
-    return text.NOT_OPEN
-
+        return response        
+    except Account.DoesNotExist:
+        return text.NOT_OPEN
 
 def handle_create(message):
     message_time = datetime.utcfromtimestamp(
@@ -168,25 +152,17 @@ def handle_create(message):
     )
 
     username = str(message.author)
-    sql = "SELECT address FROM accounts WHERE username=%s"
-    val = (username,)
-    MYCURSOR.execute(sql, val)
-    result = MYCURSOR.fetchall()
-    if len(result) is 0:
+    try:
+        acct = Account.get(username=username)
+        response = text.ALREADY_EXISTS % (acct.address, acct.address)
+    except Account.DoesNotExist:
         address = tipper_functions.add_new_account(username)
-        response = WELCOME_CREATE % (address, address)
-        message_recipient = TIP_BOT_USERNAME
-        subject = "send"
-        message_text = "send 0.001 %s" % username
-        sql = "INSERT INTO messages (username, subject, message) VALUES (%s, %s, %s)"
-        val = (message_recipient, subject, message_text)
-        MYCURSOR.execute(sql, val)
-        MYDB.commit()
-
+        if address is None:
+            response = text.ACCOUNT_MAKE_ERROR_ERROR
+        else:
+            response = WELCOME_CREATE % (address, address)
         # reddit.redditor(message_recipient).message(subject, message_text)
 
-    else:
-        response = text.ALREADY_EXISTS % (result[0][0], result[0][0])
     return response
 
 
@@ -228,90 +204,82 @@ def handle_history(message):
         num_records = 50
 
     # check if the user is in the database
-    sql = "SELECT address FROM accounts WHERE username=%s"
-    val = (username,)
-    MYCURSOR.execute(sql, val)
-    result = MYCURSOR.fetchall()
-    if len(result) > 0:
+    try:
+        acct = Account.get(username=username)
         # open_or_receive(result[0][0], result[0][1])
         # balance = check_balance(result[0][0])
         add_history_record(
             username=username,
             action="history",
             amount=num_records,
-            address=result[0][0],
+            address=acct.address,
             comment_or_message="message",
             comment_id=message.name,
             reddit_time=message_time,
             comment_text=str(message.body)[:255],
         )
         response = "Here are your last %s historical records:\n\n" % num_records
-        sql = (
-            "SELECT reddit_time, action, amount, comment_id, notes, recipient_"
-            "username, recipient_address FROM history WHERE username=%s ORDER BY "
-            "id DESC limit %s"
-        )
-        val = (username, num_records)
-        MYCURSOR.execute(sql, val)
-        results = MYCURSOR.fetchall()
-        for result in results:
+        history = History.select(History.reddit_time, History.action, History.amount,
+                    History.comment_id, History.notes, History.recipient_username,
+                    History.recipient_address).where(History.username == username).order_by(History.id.desc())
+        for result in history:
             try:
-                amount = result[2]
-                if (result[1] == "send") and amount:
-                    amount = from_raw(int(result[2]))
+                amount = result.amount
+                if (result.action == "send") and amount:
+                    amount = from_raw(int(result.amount))
                     if (
-                        result[4] == "sent to registered redditor"
-                        or result[4] == "new user created"
+                        result.notes == "sent to registered redditor"
+                        or result.notes == "new user created"
                     ):
                         response += (
                             "%s: %s | %s Nano to %s | reddit object: %s | %s\n\n"
                             % (
-                                result[0],
-                                result[1],
+                                result.reddit_time.strftime("%Y-%m-%d %H:%M:%S"),
+                                result.action,
                                 amount,
-                                result[5],
-                                result[3],
-                                result[4],
+                                result.recipient_username,
+                                result.comment_id,
+                                result.notes,
                             )
                         )
                     elif (
-                        result[4] == "sent to registered address"
-                        or result[4] == "sent to unregistered address"
+                        result.notes == "sent to registered address"
+                        or result.notes == "sent to unregistered address"
                     ):
                         response += (
                             "%s: %s | %s Nano to %s | reddit object: %s | %s\n\n"
                             % (
-                                result[0],
-                                result[1],
+                                result.reddit_time.strftime("%Y-%m-%d %H:%M:%S"),
+                                result.action,
                                 amount,
-                                result[6],
-                                result[3],
-                                result[4],
+                                result.recipient_address,
+                                result.comment_id,
+                                result.notes,
                             )
                         )
-                elif result[1] == "send":
+                elif result.action == "send":
                     response += "%s: %s | reddit object: %s | %s\n\n" % (
-                        result[0],
-                        result[1],
-                        result[3],
-                        result[4],
+                        result.reddit_time.strftime("%Y-%m-%d %H:%M:%S"),
+                        result.action,
+                        result.comment_id,
+                        result.notes,
                     )
-                elif (result[1] == "minimum") and amount:
+                elif (result.action == "minimum") and amount:
                     amount = from_raw(int(result[2]))
                     response += "%s: %s | %s | %s | %s\n\n" % (
-                        result[0],
-                        result[1],
+                        result.reddit_time.strftime("%Y-%m-%d %H:%M:%S"),
+                        result.action,
                         amount,
-                        result[3],
-                        result[4],
+                        result.comment_id,
+                        result.notes,
                     )
                 else:
                     response += "%s: %s | %s | %s | %s\n\n" % (
-                        result[0],
-                        result[1],
+                        result.reddit_time.strftime("%Y-%m-%d %H:%M:%S"),
+                        result.action,
                         amount,
-                        result[3],
-                        result[4],
+                        result.comment_id,
+                        result.notes,
                     )
             except:
                 response += (
@@ -319,8 +287,8 @@ def handle_history(message):
                     "parse this record properly.\n\n"
                 )
 
-        return response
-    else:
+        return response        
+    except Account.DoesNotExist:
         add_history_record(
             username=username,
             action="history",
@@ -363,30 +331,24 @@ def handle_minimum(message):
         return response
 
     # check if the user is in the database
-    sql = "SELECT address FROM accounts WHERE username=%s"
-    val = (username,)
-    MYCURSOR.execute(sql, val)
-    result = MYCURSOR.fetchall()
-    if len(result) > 0:
+    try:
+        acct = Account.get(username=username)
         # open_or_receive(result[0][0], result[0][1])
         # balance = check_balance(result[0][0])
         add_history_record(
             username=username,
             action="minimum",
             amount=to_raw(amount),
-            address=result[0][0],
+            address=acct.address,
             comment_or_message="message",
             comment_id=message.name,
             reddit_time=message_time,
             comment_text=str(message.body)[:255],
         )
-        sql = "UPDATE accounts SET minimum = %s WHERE username = %s"
-        val = (str(to_raw(amount)), username)
-        MYCURSOR.execute(sql, val)
-        MYDB.commit()
+        Account.update(minimum=str(to_raw(amount))).where(Account.username == username).execute()
         response = text.MINIMUM["set_min"] % amount
-        return response
-    else:
+        return response        
+    except Account.DoesNotExist:
         add_history_record(
             username=username,
             action="minimum",
@@ -408,13 +370,10 @@ def handle_receive(message):
     message_time = datetime.utcfromtimestamp(message.created_utc)
     username = str(message.author)
     # find any accounts associated with the redditor
-    sql = "SELECT address, private_key FROM accounts WHERE username=%s"
-    val = (username,)
-    MYCURSOR.execute(sql, val)
-    result = MYCURSOR.fetchall()
-    if len(result) > 0:
-        address = result[0][0]
-        open_or_receive(address, result[0][1])
+    try:
+        acct = Account.get(username=username)
+        address = acct.address
+        open_or_receive(address, acct.private_key)
         balance = check_balance(address)
         add_history_record(
             username=username,
@@ -430,8 +389,8 @@ def handle_receive(message):
             from_raw(balance[1]),
             address,
         )
-        return response
-    else:
+        return response        
+    except Account.DoesNotExist:
         add_history_record(
             username=username,
             action="receive",
@@ -463,18 +422,13 @@ def handle_silence(message):
         return response
 
     if parsed_text[1] == "yes":
-        sql = "UPDATE accounts SET silence = TRUE WHERE username = %s "
-        val = (username,)
-        MYCURSOR.execute(sql, val)
+        Account.update(silence=True).where(Account.username == username).execute()
         response = text.SILENCE["yes"]
     elif parsed_text[1] == "no":
-        sql = "UPDATE accounts SET silence = FALSE WHERE username = %s"
-        val = (username,)
-        MYCURSOR.execute(sql, val)
+        Account.update(silence=False).where(Account.username == username).execute()
         response = text.SILENCE["no"]
     else:
         response = text.SILENCE["yes_no"]
-    MYDB.commit()
 
     return response
 
@@ -484,24 +438,21 @@ def handle_subreddit(message):
     # If it is just the subreddit, return all the subreddits
     if len(parsed_text) < 2:
         response = text.SUBREDDIT["all"]
-        MYCURSOR.execute("SELECT subreddit, status, minimum FROM subreddits")
-        myresult = MYCURSOR.fetchall()
-        for result in myresult:
+        subreddits = Subreddit.select(Subreddit.subreddit, Subreddit.status, Subreddit.minimum)
+        for result in subreddits:
             result = [str(i) for i in result]
-            response += ", ".join(result)
+            response += f"{result.subreddit}, {result.status}, {result.minimum}"
             response += "\n\n"
         return response
 
     # Return the subreddit stats
     if len(parsed_text) < 3:
         response = text.SUBREDDIT["one"]
-        sql = "SELECT subreddit, status, minimum FROM subreddits WHERE subreddit=%s"
-        val = (parsed_text[1],)
-        MYCURSOR.execute(sql, val)
-        myresult = MYCURSOR.fetchall()
-        for result in myresult:
-            result = [str(i) for i in result]
-            response += ", ".join(result)
+        try:
+            result = Subreddit.select(Subreddit.subreddit, Subreddit.status, Subreddit.minimum).where(Subreddit.subreddit == parsed_text[1]).get()
+            response += f"{result.subreddit}, {result.status}, {result.minimum}"
+        except Subreddit.DoesNotExist:
+            pass
         return response % parsed_text[1]
 
     # check if the user is a moderator of the subreddit
@@ -514,20 +465,14 @@ def handle_subreddit(message):
             float(parsed_text[3])
         except:
             return text.NAN % parsed_text[3]
-        sql = "UPDATE subreddits SET minimum = %s WHERE subreddit = %s"
-        val = (parsed_text[3], parsed_text[1])
-        MYCURSOR.execute(sql, val)
-        MYDB.commit()
+        Subreddit.update(minimum=parsed_text[3]).where(Subreddit.subreddit == parsed_text[1]).execute()
 
         return text.SUBREDDIT["minimum"] % (parsed_text[1], parsed_text[3])
 
     if parsed_text[2] in ("disable", "deactivate"):
         # disable the bot
         try:
-            sql = "DELETE FROM subreddits WHERE subreddit=%s"
-            val = (parsed_text[1],)
-            MYCURSOR.execute(sql, val)
-            MYDB.commit()
+            Subreddit.delete().where(Subreddit.subreddit == parsed_text[1]).execute()
         except:
             pass
         return text.SUBREDDIT["deactivate"] % parsed_text[1]
@@ -540,15 +485,16 @@ def handle_subreddit(message):
             status = "full"
         # sql to change subreddit to that status
         try:
-            sql = "INSERT INTO subreddits (subreddit, reply_to_comments, footer, status) VALUES (%s, %s, %s, %s)"
-            val = (parsed_text[1], True, None, status)
-            MYCURSOR.execute(sql, val)
-            MYDB.commit()
-        except:
-            sql = "UPDATE subreddits SET status = %s WHERE subreddit = %s"
-            val = (status, parsed_text[1])
-            MYCURSOR.execute(sql, val)
-            MYDB.commit()
+            subreddit = Subreddit.get(subreddit=parsed_text[1])
+            Subreddit.update(status=status).where(Subreddit.subreddit == parsed_text[1]).execute()
+        except Subreddit.DoesNotExist:
+            subreddit = Subreddit(
+                subreddit=parsed_text[1],
+                reply_to_comments=True,
+                footer=None,
+                status=status
+            )
+            await subreddit.save(force_insert=True)        
         return text.SUBREDDIT["activate"] % status
 
     # only 4 word commands after this point
@@ -635,6 +581,8 @@ def handle_send(message):
         response["status"] = 10
         if recipient_info is None:
             recipient_info = tipper_functions.add_new_account(response["recipient"])
+            if recipient_info is None:
+                return text.TIP_CREATE_ACCT_ERROR
             response["status"] = 20
         elif not recipient_info["opt_in"]:
             response["status"] = 190
@@ -662,43 +610,16 @@ def handle_send(message):
     )["hash"]
     # if it was an address, just send to the address
     if "username" not in recipient_info.keys():
-        sql = (
-            "UPDATE history SET notes = %s, address = %s, username = %s, recipient_username = %s, "
-            "recipient_address = %s, amount = %s, return_status = %s WHERE id = %s"
-        )
-        val = (
-            "send to address",
-            sender_info["address"],
-            sender_info["username"],
-            None,
-            recipient_info["address"],
-            str(response["amount"]),
-            "cleared",
-            entry_id,
-        )
-        tipper_functions.exec_sql(sql, val)
+        History.update(notes="send to address", address=sender_info["address"], username=sender_info["username"], recipient_username=None, recipient_address=recipient_info["address"],
+                    amount=str(response["amount"]), return_status="cleared").where(History.id == entry_id).execute()
         LOGGER.info(
             f"Sending Nano: {sender_info['address']} {sender_info['private_key']} {response['amount']} {recipient_info['address']}"
         )
         return response
 
     # Update the sql and send the PMs
-    sql = (
-        "UPDATE history SET notes = %s, address = %s, username = %s, recipient_username = %s, "
-        "recipient_address = %s, amount = %s, hash = %s, return_status = %s WHERE id = %s"
-    )
-    val = (
-        "sent to user",
-        sender_info["address"],
-        sender_info["username"],
-        recipient_info["username"],
-        recipient_info["address"],
-        str(response["amount"]),
-        response["hash"],
-        "cleared",
-        entry_id,
-    )
-    tipper_functions.exec_sql(sql, val)
+    History.update(notes="send to address", address=sender_info["address"], username=sender_info["username"], recipient_username=recipient_info["username"], recipient_address=recipient_info["address"],
+                amount=str(response["amount"]), return_status="cleared").where(History.id == entry_id).execute()
     LOGGER.info(
         f"Sending Nano: {sender_info['address']} {sender_info['private_key']} {response['amount']} {recipient_info['address']} {recipient_info['username']}"
     )
@@ -744,9 +665,7 @@ def handle_opt_out(message):
         reddit_time=datetime.utcfromtimestamp(message.created_utc),
     )
 
-    sql = "UPDATE accounts SET opt_in = FALSE WHERE username = %s"
-    MYCURSOR.execute(sql, (str(message.author),))
-    MYDB.commit()
+    Account.update(opt_in=False).where(Account.username == str(message.author)).execute()
 
     response = text.OPT_OUT
     return response
@@ -760,34 +679,9 @@ def handle_opt_in(message):
         comment_id=message.name,
         reddit_time=datetime.utcfromtimestamp(message.created_utc),
     )
-    sql = "UPDATE accounts SET opt_in = TRUE WHERE username = %s"
-    MYCURSOR.execute(sql, (str(message.author),))
-    MYDB.commit()
+    Account.update(opt_in=True).where(Account.username == str(message.author)).execute()
     response = text.OPT_IN
     return response
-
-
-def handle_convert(message):
-    """
-    Returns the Nano amount of a currency.
-    """
-    parsed_text = parse_text(str(message.body))
-
-    add_history_record(
-        username=str(message.author),
-        action="convert",
-        comment_or_message="message",
-        comment_id=message.name,
-        reddit_time=datetime.utcfromtimestamp(message.created_utc),
-    )
-
-    if len(parsed_text) < 2:
-        return text.CONVERT["no_amount_specified"]
-    try:
-        amount = parse_raw_amount(parsed_text)
-    except TipError:
-        return text.SEND_TEXT[120] % parsed_text[1]
-    return text.CONVERT["success"] % (parsed_text[1], from_raw(amount))
 
 def parse_recipient_username(recipient_text):
     """

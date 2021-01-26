@@ -1,6 +1,7 @@
 import json
 import qrcode
 import requests
+import nanopy
 from shared import (
     DPOW_TOKEN,
     DEFAULT_URL,
@@ -9,8 +10,16 @@ from shared import (
     REP,
     DPOW_ENDPOINT,
     USE_DPOW,
+    CURRENCY,
+    WALLET_ID,
+    RandomUtil
 )
 
+if CURRENCY == "Banano":
+    nanopy.account_prefix = 'ban_'
+    nanopy.standard_exponent = 29
+else:
+    nanopy.account_prefix = 'nano_'
 
 def perform_curl(data=None, URL=None, timeout=30):
     if URL is None:
@@ -205,9 +214,12 @@ def check_balance(account, amount=None, URL=None):
 
 
 def generate_account():
-    data = {"action": "key_create"}
-    return perform_curl(data)
-
+    pk = RandomUtil.generate_seed()
+    data = {"action": "wallet_add", "wallet": WALLET_ID, "key": pk}
+    res = perform_curl(data)
+    if "account" in res:
+        return res["account"], pk
+    return None, pk
 
 def get_previous_hash(account):
     data = {"action": "account_info", "account": account}

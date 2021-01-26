@@ -9,7 +9,8 @@ from shared import (
     from_raw,
     to_raw,
     Message,
-    Subreddit
+    Subreddit,
+    History
 )
 from tipper_functions import (
     add_history_record,
@@ -167,6 +168,8 @@ def send_from_comment(message):
         if not recipient_info:
             response["status"] = 20
             recipient_info = tipper_functions.add_new_account(response["recipient"])
+            if recipient_info is None:
+                return text.TIP_CREATE_ACCT_ERROR
         elif recipient_info["silence"]:
             response["status"] = 11
         elif not recipient_info["opt_in"]:
@@ -193,58 +196,20 @@ def send_from_comment(message):
     )["hash"]
 
     # Update the sql and send the PMs
-    sql = (
-        "UPDATE history SET notes = %s, address = %s, username = %s, recipient_username = %s, "
-        "recipient_address = %s, amount = %s, hash = %s, return_status = %s WHERE id = %s"
-    )
-    val = (
-        "sent to user",
-        sender_info["address"],
-        sender_info["username"],
-        recipient_info["username"],
-        recipient_info["address"],
-        str(response["amount"]),
-        response["hash"],
-        "cleared",
-        entry_id,
-    )
-    tipper_functions.exec_sql(sql, val)
+    History.update(
+        notes = "sent to user",
+        address = sender_info["address"],
+        username = sender_info["username"],
+        recipient_username = recipient_info["username"],
+        recipient_address = recipient_info["address"],
+        amount = str(response["amount"]),
+        hash = response["hash"],
+        return_status = "cleared"
+    ).where(History.id == entry_id).execute()
+    
     LOGGER.info(
         f"Sending Nano: {sender_info['address']} {sender_info['private_key']} {response['amount']} {recipient_info['address']} {recipient_info['username']}"
     )
-
-    # Update the sql and send the PMs if needed
-    # if there is no private key, it's a donation. No PMs to send
-    if "private_key" not in recipient_info.keys():
-        sql = "UPDATE history SET notes = %s, address = %s, username = %s, recipient_address = %s, amount = %s WHERE id = %s"
-        val = (
-            "sent to nanocenter address",
-            sender_info["address"],
-            sender_info["username"],
-            recipient_info["address"],
-            str(response["amount"]),
-            entry_id,
-        )
-        tipper_functions.exec_sql(sql, val)
-        response["status"] = 40
-        return response
-
-    # update the sql database and send
-    sql = (
-        "UPDATE history SET notes = %s, address = %s, username = %s, recipient_username = %s, "
-        "recipient_address = %s, amount = %s, return_status = %s WHERE id = %s"
-    )
-    val = (
-        "sent to user",
-        sender_info["address"],
-        sender_info["username"],
-        recipient_info["username"],
-        recipient_info["address"],
-        str(response["amount"]),
-        "cleared",
-        entry_id,
-    )
-    tipper_functions.exec_sql(sql, val)
 
     if response["status"] == 20:
         subject = text.SUBJECTS["first_tip"]

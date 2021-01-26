@@ -4,6 +4,8 @@ import configparser
 import praw
 import logging
 import sys
+import secrets
+import string
 from peewee import *
 from playhouse.pool  import PooledPostgresqlExtDatabase
 
@@ -31,14 +33,9 @@ try:
     MESSENGER_OPTIONS = config["BOT"]["messenger_options"]
     CURRENCY = config["BOT"]["currency"]
 
-    DPOW_ENDPOINT = config["NODE"]["dpow_endpoint"]
-    DPOW_TOKEN = config["NODE"]["dpow_token"]
-    DPOW_USERNAME = config["NODE"]["dpow_username"]
     DEFAULT_URL = config["NODE"]["default_url"]
     REP = config["NODE"]["rep"]
-    USE_DPOW = config["NODE"]["use_dpow"]
-
-    CMC_TOKEN = config["OTHER"]["cmc_token"]
+    WALLET_ID = config["NODE"]["wallet_id"]
 
     USE_SQLITE = config["SQL"]["use_sqlite"]
     DATABASE_HOST = config["SQL"]["database_host"]
@@ -48,7 +45,7 @@ try:
 
 except KeyError as e:
     LOGGER.info("Failed to read tipper.ini. Falling back to test-defaults...")
-    LOGGER.info("Failed on: ", e)
+    LOGGER.info(f"Failed on: {e}")
     SQL_PASSWORD = ""
     DATABASE_NAME = ""
     TIP_BOT_ON = True
@@ -57,17 +54,13 @@ except KeyError as e:
     RECIPIENT_MINIMUM = 0
     TIP_COMMANDS = ["!ntipz", "!nano_tipz"]
     TIPBOT_OWNER = "zily88"
-    CMC_TOKEN = ""
-    DPOW_TOKEN = ""
-    DPOW_USERNAME = ""
     DEFAULT_URL = ""
     PYTHON_COMMAND = ""
     TIPPER_OPTIONS = ""
     MESSENGER_OPTIONS = ""
     CURRENCY = "Nano"
     REP = ""
-    DPOW_ENDPOINT = ""
-    USE_DPOW = False
+    WALLET_ID = config["NODE"]["wallet_id"]
     USE_SQLITE = True
 
 if USE_SQLITE:
@@ -82,6 +75,12 @@ try:
 except:
     REDDIT = None
 
+class RandomUtil(object):
+    @staticmethod
+    def generate_seed() -> str:
+        """Generate a random seed and return it"""
+        seed = "".join([secrets.choice(string.hexdigits) for i in range(64)]).upper()
+        return seed
 
 if CURRENCY == "Nano":
 
@@ -321,7 +320,6 @@ class Account(BaseModel):
     key_released = BooleanField()
     minimum = CharField(default=to_raw(RECIPIENT_MINIMUM))
     notes = CharField()
-    auto_receive = BooleanField(default=True)
     silence = BooleanField(default=False)
     active = BooleanField(default=False)
     opt_in = BooleanField(default=True)

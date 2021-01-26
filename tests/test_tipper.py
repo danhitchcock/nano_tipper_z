@@ -913,29 +913,3 @@ class StoreStuff:
     def store(self, *args, **kwargs):
         self.stuff.append([args, kwargs])
         return self.returns
-
-
-def test_return_transactions(monkeypatch):
-    monkeypatch.setattr(tipper_functions, "query_sql", mock_query_sql)
-    monkeypatch.setattr(tipper_functions, "exec_sql", lambda *args: None)
-    pm_responses = StoreStuff()
-
-    monkeypatch.setattr(tipper_functions, "send_pm", pm_responses.store)
-    send_responses = StoreStuff({"hash": "hash"})
-    monkeypatch.setattr(tipper_functions, "send", send_responses.store)
-    monkeypatch.setattr(
-        tipper_functions, "add_history_record", lambda *args, **kwargs: None
-    )
-    tipper_functions.return_transactions()
-    assert send_responses.stuff == [
-        [("one", "two", 500000000000000000000000000, "one"), {}],
-        [
-            (
-                "one",
-                "two",
-                500000000000000000000000000,
-                "nano_3jy9954gncxbhuieujc3pg5t1h36e7tyqfapw1y6zukn9y1g6dj5xr7r6pij",
-            ),
-            {},
-        ],
-    ]

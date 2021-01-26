@@ -4,11 +4,11 @@ from time import sleep
 
 from tipper_rpc import get_pendings, open_or_receive_block
 import shared
-from shared import MYCURSOR, MYDB, REDDIT, PROGRAM_MINIMUM, SUBREDDITS, to_raw
+from shared import REDDIT, PROGRAM_MINIMUM, SUBREDDITS, to_raw
 
 from message_functions import handle_message
 
-from tipper_functions import parse_action, return_transactions
+from tipper_functions import parse_action
 from comment_functions import handle_comment
 
 
@@ -49,37 +49,6 @@ def stream_comments_messages():
         else:
             yield None
 
-
-def auto_receive():
-    count = 0
-    MYCURSOR.execute("SELECT username, address, private_key FROM accounts")
-    myresult = MYCURSOR.fetchall()
-
-    addresses = [str(result[1]) for result in myresult]
-    private_keys = [str(result[2]) for result in myresult]
-    MYDB.commit()
-    pendings = get_pendings(addresses, threshold=to_raw(PROGRAM_MINIMUM))
-    # get any pending blocks from our address
-    for address, private_key in zip(addresses, private_keys):
-        # allow 5 transactions to be received per cycle. If the bot gets transaction spammed, at least it won't be
-        # locked up receiving.
-        if count >= 5:
-            break
-        try:
-            if pendings["blocks"][address]:
-                for sent_hash in pendings["blocks"][address]:
-                    # address, private_key, dictionary where the blocks are the keys
-                    open_or_receive_block(address, private_key, sent_hash)
-                    count += 1
-                    if count >= 2:
-                        break
-
-        except KeyError:
-            pass
-        except Exception as e:
-            print(e)
-
-
 def main_loop():
     global SUBREDDITS
     actions = {
@@ -90,23 +59,10 @@ def main_loop():
         "replay": lambda x: None,
         None: lambda x: None,
     }
-    inactive_timer = time.time()
-    receive_timer = time.time()
     subreddit_timer = time.time()
-    return_transactions()
     for action_item in stream_comments_messages():
         action = parse_action(action_item)
         actions[action](action_item)
-
-        # run the inactive script at the end of the loop; every 12 hours
-        if time.time() - inactive_timer > 43200:
-            inactive_timer = time.time()
-            return_transactions()
-
-        # run the receive script every 20 seconds
-        if time.time() - receive_timer > 20:
-            receive_timer = time.time()
-            auto_receive()
 
         # refresh subreddit status every 5 minutes
         if time.time() - subreddit_timer > 300:

@@ -10,7 +10,8 @@ from shared import (
     TIP_COMMANDS,
     to_raw,
     from_raw,
-    History
+    History,
+    Account
 )
 
 from text import HELP, RETURN_WARNING, SUBJECTS
@@ -109,27 +110,24 @@ def parse_text(text):
 
 
 def add_new_account(username):
-    address = generate_account()
-    private = address["private"]
-    address = address["account"]
-    sql = "INSERT INTO accounts (username, private_key, address, minimum, auto_receive, silence, active, opt_in) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)"
-    val = (
-        username,
-        private,
-        address,
-        to_raw(RECIPIENT_MINIMUM),
-        True,
-        False,
-        False,
-        10,
-        True,
+    address, pk = generate_account()
+    if address is None:
+        LOGGER.error("Failed to create account!")
+        return None
+    acct = Account(
+        username=username,
+        private_key=pk,
+        address=address,
+        minimum=to_raw(RECIPIENT_MINIMUM),
+        silence=False,
+        active=False,
+        opt_in=True
     )
-    MYCURSOR.execute(sql, val)
-    MYDB.commit()
+    await acct.save()
     return {
         "username": username,
         "address": address,
-        "private_key": private,
+        "private_key": pk,
         "minimum": to_raw(RECIPIENT_MINIMUM),
         "silence": False,
         "balance": 0,
@@ -138,11 +136,7 @@ def add_new_account(username):
 
 
 def activate(author):
-    sql = "UPDATE accounts SET active = TRUE WHERE username = %s"
-    val = (str(author),)
-    MYCURSOR.execute(sql, val)
-    MYDB.commit()
-
+    Account.update(active=True).where(Account.username == str(author)).execute()
 
 def allowed_request(username, seconds=30, num_requests=5):
     """Spam prevention
@@ -151,43 +145,41 @@ def allowed_request(username, seconds=30, num_requests=5):
     :param num_requests: int (number of allowed requests)
     :return:
     """
-
-    sql = "SELECT sql_time FROM history WHERE username=%s"
-    val = (str(username),)
-    MYCURSOR.execute(sql, val)
-    myresults = MYCURSOR.fetchall()
-    if len(myresults) < num_requests:
+    historyQ = History.select(History.sql_time).where(History.username == str(username)).order_by(History.id)
+    if historyQ.count() < num_requests:
         return True
     else:
-        return (
-            datetime.fromtimestamp(time.time()) - myresults[-5][0]
-        ).total_seconds() > seconds
+        i = 0
+        for h in historyQ:
+            i+=1
+            if i == 5:
+                return (
+                    datetime.utcnow() - h.sql_time
+                ).total_seconds() > seconds
 
 
 def check_registered_by_address(address):
     address = address.split("_")[1]
 
     if shared.CURRENCY == "Nano":
-        sql = "SELECT username FROM accounts WHERE address=%s"
-        val = ("nano_" + address,)
-        MYCURSOR.execute(sql, val)
-        result = MYCURSOR.fetchall()
-        if len(result) > 0:
-            return result[0][0]
+        try:
+            acct = Account.get(address=f"nano_{address}")
+            return acct.address
+        except Account.DoesNotExist:
+            pass
 
-        sql = "SELECT username FROM accounts WHERE address=%s"
-        val = ("xrb_" + address,)
-        MYCURSOR.execute(sql, val)
-        result = MYCURSOR.fetchall()
-        if len(result) > 0:
-            return result[0][0]
+        try:
+            acct = Account.get(address=f"xrb_{address}")
+            return acct.address
+        except Account.DoesNotExist:
+            pass
     elif shared.CURRENCY == "Banano":
-        sql = "SELECT username FROM accounts WHERE address=%s"
-        val = ("ban_" + address,)
-        MYCURSOR.execute(sql, val)
-        result = MYCURSOR.fetchall()
-        if len(result) > 0:
-            return result[0][0]
+        try:
+            acct = Account.get(address=f"ban_{address}")
+            return acct.address
+        except Account.DoesNotExist:
+            pass
+
     return None
 
 
@@ -382,147 +374,3 @@ def message_in_database(message):
             LOGGER.info(result)
         return True
     return False
-
-
-def exec_sql(sql, val):
-    """
-    Makes sql stuff easier to mock, rather than mocking execute and fetchall
-    :param sql:
-    :param val:
-    :return:
-    """
-    MYCURSOR.execute(sql, val)
-    MYDB.commit()
-
-
-def query_sql(sql, val=None):
-    if val:
-        MYCURSOR.execute(sql, val)
-    else:
-        MYCURSOR.execute(sql)
-    results = MYCURSOR.fetchall()
-    MYDB.commit()
-    return results
-
-
-def return_transactions():
-    LOGGER.info("Running inactive script")
-    myresults = query_sql("SELECT username FROM accounts WHERE active IS NOT TRUE")
-    inactivated_accounts = {item[0] for item in myresults}
-    results = query_sql(
-        "SELECT recipient_username FROM history WHERE action = 'send' "
-        "AND hash IS NOT NULL "
-        "AND `sql_time` <= SUBDATE( CURRENT_DATE, INTERVAL 31 DAY) "
-        "AND ("
-        "return_status = 'cleared' "
-        "OR return_status = 'warned'"
-        ")"
-    )
-    tipped_accounts = {item[0] for item in results}
-    tipped_inactivated_accounts = inactivated_accounts.intersection(tipped_accounts)
-    LOGGER.info(f"Accounts on warning: {sorted(tipped_inactivated_accounts)}")
-    returns = {}
-    # scrolls through our inactive members and check if they have unclaimed tips
-    for i, recipient in enumerate(tipped_inactivated_accounts):
-        # send warning messages on day 31
-        sql = (
-            "SELECT id, username, amount FROM history WHERE action = 'send' "
-            "AND hash IS NOT NULL "
-            "AND recipient_username = %s "
-            "AND `sql_time` <= SUBDATE( CURRENT_DATE, INTERVAL 31 DAY) "
-            "AND return_status = 'cleared'"
-        )
-        txns = query_sql(sql, (recipient,))
-        if len(txns) >= 1:
-            LOGGER.info(f"Warning Message to {recipient}")
-
-            send_pm(recipient, SUBJECTS["RETURN_WARNING"], RETURN_WARNING + HELP)
-            for txn in txns:
-                sql = "UPDATE history SET return_status = 'warned' WHERE id = %s"
-                val = (txn[0],)
-                exec_sql(sql, val)
-
-        # return transactions over 35 days old
-        sql = (
-            "SELECT id, username, amount FROM history WHERE action = 'send' "
-            "AND hash IS NOT NULL "
-            "AND recipient_username = %s "
-            "AND `sql_time` <= SUBDATE( CURRENT_DATE, INTERVAL 35 DAY) "
-            "AND return_status = 'warned'"
-        )
-        val = (recipient,)
-        txns = query_sql(sql, val)
-        if len(txns) >= 1:
-            sql = "SELECT address, private_key FROM accounts WHERE username = %s"
-            inactive_results = query_sql(sql, (recipient,))
-            address = inactive_results[0][0]
-            private_key = inactive_results[0][1]
-
-            for txn in txns:
-                # set the pre-update message to 'return failed'. This will be changed
-                # to 'returned' upon success
-                sql = "UPDATE history SET return_status = 'return failed' WHERE id = %s"
-                val = (txn[0],)
-                exec_sql(sql, val)
-                # get the transaction information and find out to whom we are returning
-                # the tip
-                sql = "SELECT address, percentage FROM accounts WHERE username = %s"
-                val = (txn[1],)
-                returned_results = query_sql(sql, val)
-                recipient_address = returned_results[0][0]
-                percentage = returned_results[0][1]
-                percentage = float(percentage) / 100
-                # send it back
-                donation_amount = from_raw(int(txn[2]))
-                donation_amount = donation_amount * percentage
-                donation_amount = to_raw(donation_amount)
-
-                return_amount = int(txn[2]) - donation_amount
-                if (return_amount > 0) and (return_amount <= int(txn[2])):
-                    hash = send(address, private_key, return_amount, recipient_address)[
-                        "hash"
-                    ]
-                    add_history_record(
-                        action="return",
-                        hash=hash,
-                        amount=return_amount,
-                        notes="Returned transaction from history record %s" % txn[0],
-                    )
-
-                if (donation_amount > 0) and (donation_amount <= int(txn[2])):
-                    hash2 = send(
-                        address,
-                        private_key,
-                        donation_amount,
-                    )["hash"]
-                    add_history_record(
-                        action="donate",
-                        hash=hash2,
-                        amount=donation_amount,
-                        notes="Donation from returned tip %s" % txn[0],
-                    )
-                # update database if everything goes through
-                sql = "UPDATE history SET return_status = 'returned' WHERE id = %s"
-                val = (txn[0],)
-                exec_sql(sql, val)
-                # add transactions to the messaging queue to build a single message
-                message_recipient = txn[1]
-                if message_recipient not in returns.keys():
-                    returns[message_recipient] = {
-                        "percent": round(percentage * 100, 2),
-                        "transactions": [],
-                    }
-                returns[message_recipient]["transactions"].append(
-                    [
-                        recipient,
-                        from_raw(int(txn[2])),
-                        from_raw(return_amount),
-                        from_raw(donation_amount),
-                    ]
-                )
-
-        # send out our return messages
-    for user in returns:
-        message = text.make_return_message(returns[user])
-        send_pm(user, SUBJECTS["RETURN_MESSAGE"], message)
-    LOGGER.info("Inactivated script complete.")

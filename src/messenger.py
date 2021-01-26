@@ -1,22 +1,15 @@
 from time import sleep
-from shared import MYDB, MYCURSOR, REDDIT, LOGGER
+from shared import REDDIT, LOGGER, Message
 
 while True:
-    sql = "SELECT * FROM messages"
-    MYCURSOR.execute(sql)
-    results = MYCURSOR.fetchall()
-    MYDB.commit()
+    results = Message.select()
     for result in results:
-        LOGGER.info("%s %s %s" % (result[1], result[2], repr(result[3])[:50]))
+        LOGGER.info("%s %s %s" % (result.username, result.subject, repr(result.message)[:50]))
 
         try:
-            REDDIT.redditor(str(result[1])).message(str(result[2]), str(result[3]))
+            REDDIT.redditor(str(result.username)).message(str(result.subject), str(result.message))
         except:
-
             pass
-        sql = "DELETE FROM messages WHERE id = %s"
-        val = (result[0],)
-        MYCURSOR.execute(sql, val)
-        MYDB.commit()
+        Message.delete().where(Message.id == result.id).execute()
 
     sleep(6)

@@ -152,6 +152,8 @@ MINIMUM = {
 
 NAN = "'%s' didn't look like a number to me. If it is blank, there might be extra spaces in the command."
 
+ACCOUNT_MAKE_ERROR_ERROR = "I've experienced an error creating your account, please check with my owner or try again later."
+TIP_CREATE_ACCT_ERROR = "I failed to create an account for your intended recipient, please check with my owner or try again later."
 
 # full responses
 SEND_TEXT = {
@@ -290,7 +292,6 @@ CONVERT = {
     "no_amount_specified": "You must specify an amount, for example `convert 0.01USD`.",
     "success": "%s converts to %s Nano.",
 }
-
 
 def make_response_text(message, response):
 

@@ -15,4 +15,6 @@ dependencies:
       - peewee
       - pymysql
       - psycopg2-binary
+      - pylint
+      - nanopy
 
