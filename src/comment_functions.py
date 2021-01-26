@@ -1,9 +1,6 @@
 import datetime
 import text
 from shared import (
-    MYDB,
-    MYCURSOR,
-    DONATE_COMMANDS,
     TIP_COMMANDS,
     PROGRAM_MINIMUM,
     LOGGER,
@@ -11,6 +8,8 @@ from shared import (
     EXCLUDED_REDDITORS,
     from_raw,
     to_raw,
+    Message,
+    Subreddit
 )
 from tipper_functions import (
     add_history_record,
@@ -39,10 +38,12 @@ def handle_comment(message):
         else:
             subject = text.SUBJECTS["failure"]
         message_text = response_text + text.COMMENT_FOOTER
-        sql = "INSERT INTO messages (username, subject, message) VALUES (%s, %s, %s)"
-        val = (message_recipient, subject, message_text)
-        MYCURSOR.execute(sql, val)
-        MYDB.commit()
+        msg = Message(
+            username=message_recipient,
+            subject=subject,
+            message_text=message_text
+        )
+        msg.save()
     else:
         message.reply(response_text + text.COMMENT_FOOTER)
 
@@ -85,15 +86,12 @@ def send_from_comment(message):
         action="send",
         comment_or_message="comment",
         comment_id=message.name,
-        reddit_time=message_time.strftime("%Y-%m-%d %H:%M:%S"),
+        reddit_time=message_time,
         comment_text=str(message.body)[:255],
     )
 
-    # check if it's a donate command at the end
-    if parsed_text[-3] in DONATE_COMMANDS:
-        parsed_text = parsed_text[-3:]
     # don't do anything if the first word is a tip command or username
-    elif (parsed_text[0] in [f"/u/{TIP_BOT_USERNAME}", f"u/{TIP_BOT_USERNAME}"]) or (
+    if (parsed_text[0] in [f"/u/{TIP_BOT_USERNAME}", f"u/{TIP_BOT_USERNAME}"]) or (
         parsed_text[0] in TIP_COMMANDS
     ):
         pass
@@ -105,13 +103,13 @@ def send_from_comment(message):
 
     # before we can do anything, check the subreddit status for generating the response
     response["subreddit"] = str(message.subreddit).lower()
-    sql = "SELECT status, minimum FROM subreddits WHERE subreddit=%s"
-    val = (response["subreddit"],)
-    results = tipper_functions.query_sql(sql, val)
-    if len(results) == 0:
-        results = [["untracked", "1"]]
-    response["subreddit_status"] = results[0][0]
-    response["subreddit_minimum"] = float(results[0][1])
+    try:
+        sr = Subreddit.select(Subreddit.status, Subreddit.minimum).where(Subreddit.subreddit == response["subreddit"]).get()
+        response["subreddit_status"] = sr.status
+        response["subreddit_minimum"] = sr.minimum            
+    except Subreddit.DoesNotExist:
+        response["subreddit_status"] = "untracked"
+        response["subreddit_minimum"] = "1"        
 
     # check that it wasn't a mistyped currency code or something
     if parsed_text[2] in EXCLUDED_REDDITORS:
@@ -121,11 +119,6 @@ def send_from_comment(message):
     if parsed_text[0] in TIP_COMMANDS and len(parsed_text) <= 1:
         update_history_notes(entry_id, "no recipient or amount specified")
         response["status"] = 110
-        return response
-
-    if parsed_text[0] in DONATE_COMMANDS and len(parsed_text) <= 2:
-        response["status"] = 110
-        update_history_notes(entry_id, "no recipient or amount specified")
         return response
 
     # pull sender account info
@@ -179,22 +172,6 @@ def send_from_comment(message):
         elif not recipient_info["opt_in"]:
             response["status"] = 190
             return response
-
-    elif parsed_text[0] in DONATE_COMMANDS:
-        response["recipient"] = parsed_text[2]
-        results = tipper_functions.query_sql(
-            "FROM projects SELECT address WHERE project = %s", (parsed_text[2],)
-        )
-        if len(results) <= 0:
-            response["status"] = 210
-            return response
-
-        recipient_info = {
-            "username": parsed_text[2],
-            "address": results[0][0],
-            "minimum": -1,
-        }
-        response["status"] = 40
     else:
         response["status"] = 999
         return response

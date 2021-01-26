@@ -28,7 +28,6 @@ from shared import (
     EXCLUDED_REDDITORS,
     LOGGER,
     TIPBOT_OWNER,
-    DONATION_ADMINS,
     to_raw,
     from_raw,
 )
@@ -55,10 +54,6 @@ def handle_message(message):
         LOGGER.info("Setting Minimum")
         subject = text.SUBJECTS["minimum"]
         response = handle_minimum(message)
-    elif command in ["percentage", "percent"]:
-        LOGGER.info("Setting Percentage")
-        subject = text.SUBJECTS["percentage"]
-        response = handle_percentage(message)
     elif command in ["create", "register"]:
         LOGGER.info("Creating")
         subject = text.SUBJECTS["create"]
@@ -128,77 +123,6 @@ def handle_message(message):
     message_text = response + COMMENT_FOOTER
     send_pm(message_recipient, subject, message_text, bypass_opt_out=True)
 
-
-def handle_percentage(message):
-    message_time = datetime.utcfromtimestamp(
-        message.created_utc
-    )  # time the reddit message was created
-    # user may select a minimum tip amount to avoid spamming. Tipbot minimum is 0.001
-    username = str(message.author)
-    # find any accounts associated with the redditor
-    parsed_text = parse_text(str(message.body))
-
-    # there should be at least 2 words, a minimum and an amount.
-    if len(parsed_text) < 2:
-        response = text.PERCENTAGE["parse_error"]
-        return response
-    # check that the minimum is a number
-
-    if parsed_text[1].lower() == "nan" or ("inf" in parsed_text[1].lower()):
-        response = text.NAN
-        return response
-    try:
-        amount = float(parsed_text[1])
-    except:
-        response = text.NAN % parsed_text[1]
-        return response
-
-    # check that it's greater than 0.01
-    if round(amount, 2) < 0:
-        response = text.PERCENTAGE["neg"]
-        return response
-
-    if round(amount, 2) > 100:
-        response = text.PERCENTAGE["100"]
-        return response
-
-    # check if the user is in the database
-    sql = "SELECT address FROM accounts WHERE username=%s"
-    val = (username,)
-    MYCURSOR.execute(sql, val)
-    result = MYCURSOR.fetchall()
-    if len(result) > 0:
-        # open_or_receive(result[0][0], result[0][1])
-        # balance = check_balance(result[0][0])
-        add_history_record(
-            username=username,
-            action="percentage",
-            amount=round(amount, 2),
-            address=result[0][0],
-            comment_or_message="message",
-            comment_id=message.name,
-            reddit_time=message_time.strftime("%Y-%m-%d %H:%M:%S"),
-            comment_text=str(message.body)[:255],
-        )
-        sql = "UPDATE accounts SET percentage = %s WHERE username = %s"
-        val = (round(amount, 2), username)
-        MYCURSOR.execute(sql, val)
-        MYDB.commit()
-        response = text.PERCENTAGE["updating"] % round(amount, 2)
-        return response
-    else:
-        add_history_record(
-            username=username,
-            action="percentage",
-            reddit_time=message_time.strftime("%Y-%m-%d %H:%M:%S"),
-            amount=round(amount, 2),
-            comment_id=message.name,
-            comment_text=str(message.body)[:255],
-        )
-        response = text.NOT_OPEN
-        return response
-
-
 def handle_balance(message):
     username = str(message.author)
     message_time = datetime.utcfromtimestamp(
@@ -207,7 +131,7 @@ def handle_balance(message):
     add_history_record(
         username=str(message.author),
         comment_or_message="message",
-        reddit_time=message_time.strftime("%Y-%m-%d %H:%M:%S"),
+        reddit_time=message_time,
         action="balance",
         comment_id=message.name,
         comment_text=str(message.body)[:255],
@@ -237,7 +161,7 @@ def handle_create(message):
     add_history_record(
         username=str(message.author),
         comment_or_message="message",
-        reddit_time=message_time.strftime("%Y-%m-%d %H:%M:%S"),
+        reddit_time=message_time,
         action="create",
         comment_id=message.name,
         comment_text=str(message.body)[:255],
@@ -275,7 +199,7 @@ def handle_help(message):
         action="help",
         comment_or_message="message",
         comment_id=message.name,
-        reddit_time=message_time.strftime("%Y-%m-%d %H:%M:%S"),
+        reddit_time=message_time,
     )
     response = text.HELP
     return response
@@ -318,7 +242,7 @@ def handle_history(message):
             address=result[0][0],
             comment_or_message="message",
             comment_id=message.name,
-            reddit_time=message_time.strftime("%Y-%m-%d %H:%M:%S"),
+            reddit_time=message_time,
             comment_text=str(message.body)[:255],
         )
         response = "Here are your last %s historical records:\n\n" % num_records
@@ -400,7 +324,7 @@ def handle_history(message):
         add_history_record(
             username=username,
             action="history",
-            reddit_time=message_time.strftime("%Y-%m-%d %H:%M:%S"),
+            reddit_time=message_time,
             amount=num_records,
             comment_id=message.name,
             comment_text=str(message.body)[:255],
@@ -453,7 +377,7 @@ def handle_minimum(message):
             address=result[0][0],
             comment_or_message="message",
             comment_id=message.name,
-            reddit_time=message_time.strftime("%Y-%m-%d %H:%M:%S"),
+            reddit_time=message_time,
             comment_text=str(message.body)[:255],
         )
         sql = "UPDATE accounts SET minimum = %s WHERE username = %s"
@@ -466,7 +390,7 @@ def handle_minimum(message):
         add_history_record(
             username=username,
             action="minimum",
-            reddit_time=message_time.strftime("%Y-%m-%d %H:%M:%S"),
+            reddit_time=message_time,
             amount=to_raw(amount),
             comment_id=message.name,
             comment_text=str(message.body)[:255],
@@ -495,7 +419,7 @@ def handle_receive(message):
         add_history_record(
             username=username,
             action="receive",
-            reddit_time=message_time.strftime("%Y-%m-%d %H:%M:%S"),
+            reddit_time=message_time,
             address=address,
             comment_id=message.name,
             comment_or_message="message",
@@ -511,7 +435,7 @@ def handle_receive(message):
         add_history_record(
             username=username,
             action="receive",
-            reddit_time=message_time.strftime("%Y-%m-%d %H:%M:%S"),
+            reddit_time=message_time,
             comment_id=message.name,
             comment_or_message="message",
         )
@@ -529,7 +453,7 @@ def handle_silence(message):
         action="silence",
         comment_or_message="message",
         comment_id=message.name,
-        reddit_time=message_time.strftime("%Y-%m-%d %H:%M:%S"),
+        reddit_time=message_time,
     )
 
     parsed_text = parse_text(str(message.body))
@@ -648,7 +572,7 @@ def handle_send(message):
         action="send",
         comment_or_message="message",
         comment_id=message.name,
-        reddit_time=message_time.strftime("%Y-%m-%d %H:%M:%S"),
+        reddit_time=message_time,
         comment_text=str(message.body)[:255],
     )
     response = {"username": username}
@@ -817,9 +741,7 @@ def handle_opt_out(message):
         action="opt-out",
         comment_or_message="message",
         comment_id=message.name,
-        reddit_time=datetime.utcfromtimestamp(message.created_utc).strftime(
-            "%Y-%m-%d %H:%M:%S"
-        ),
+        reddit_time=datetime.utcfromtimestamp(message.created_utc),
     )
 
     sql = "UPDATE accounts SET opt_in = FALSE WHERE username = %s"
@@ -836,9 +758,7 @@ def handle_opt_in(message):
         action="opt-in",
         comment_or_message="message",
         comment_id=message.name,
-        reddit_time=datetime.utcfromtimestamp(message.created_utc).strftime(
-            "%Y-%m-%d %H:%M:%S"
-        ),
+        reddit_time=datetime.utcfromtimestamp(message.created_utc),
     )
     sql = "UPDATE accounts SET opt_in = TRUE WHERE username = %s"
     MYCURSOR.execute(sql, (str(message.author),))
@@ -858,9 +778,7 @@ def handle_convert(message):
         action="convert",
         comment_or_message="message",
         comment_id=message.name,
-        reddit_time=datetime.utcfromtimestamp(message.created_utc).strftime(
-            "%Y-%m-%d %H:%M:%S"
-        ),
+        reddit_time=datetime.utcfromtimestamp(message.created_utc),
     )
 
     if len(parsed_text) < 2:
@@ -870,55 +788,6 @@ def handle_convert(message):
     except TipError:
         return text.SEND_TEXT[120] % parsed_text[1]
     return text.CONVERT["success"] % (parsed_text[1], from_raw(amount))
-
-
-def handle_projects(message):
-    """
-    Handles creation and updates of crowdfunding (NanoCenter) projects
-    """
-    parsed_text = parse_text(str(message.body))
-    response = text.CROWD_FUNDING["projects"]
-    if (str(message.author).lower() in DONATION_ADMINS + TIPBOT_OWNER) and len(
-        parsed_text
-    ) > 2:
-        sql = "INSERT INTO projects (project, address) VALUES(%s, %s) ON DUPLICATE KEY UPDATE address=%s"
-        val = (parsed_text[1], parsed_text[2], parsed_text[2])
-        MYCURSOR.execute(sql, val)
-        MYDB.commit()
-    add_history_record(
-        username=str(message.author),
-        action="project",
-        comment_text=str(message.body)[:255],
-        comment_or_message="message",
-        comment_id=message.name,
-    )
-
-    sql = "SELECT project, address FROM projects"
-    MYCURSOR.execute(sql)
-    results = MYCURSOR.fetchall()
-    for result in results:
-        response += "%s %s  \n" % (result[0], result[1])
-    return response
-
-
-def handle_delete_project(message):
-    parsed_text = parse_text(str(message.body))
-    if (
-        (str(message.author) == TIPBOT_OWNER)
-        or (str(message.author).lower() == "rockmsockmjesus")
-    ) and len(parsed_text) > 1:
-        sql = "DELETE FROM projects WHERE project=%s"
-        val = (parsed_text[1],)
-        MYCURSOR.execute(sql, val)
-        MYDB.commit()
-    response = text.CROWD_FUNDING["projects"]
-    sql = "SELECT project, address FROM projects"
-    MYCURSOR.execute(sql)
-    results = MYCURSOR.fetchall()
-    for result in results:
-        response += "%s %s  \n" % (result[0], result[1])
-    return response
-
 
 def parse_recipient_username(recipient_text):
     """

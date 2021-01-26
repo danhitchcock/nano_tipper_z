@@ -3,17 +3,14 @@ import requests
 import json
 from datetime import datetime
 from shared import (
-    MYCURSOR,
-    MYDB,
     RECIPIENT_MINIMUM,
     EXCLUDED_REDDITORS,
     TIP_BOT_USERNAME,
     LOGGER,
     TIP_COMMANDS,
-    DONATE_COMMANDS,
-    TIPBOT_DONATION_ADDRESS,
     to_raw,
     from_raw,
+    History
 )
 
 from text import HELP, RETURN_WARNING, SUBJECTS
@@ -26,7 +23,6 @@ import shared
 def add_history_record(
     username=None,
     action=None,
-    sql_time=None,
     address=None,
     comment_or_message=None,
     recipient_username=None,
@@ -38,33 +34,26 @@ def add_history_record(
     reddit_time=None,
     comment_text=None,
 ):
-    if sql_time is None:
-        sql_time = time.strftime("%Y-%m-%d %H:%M:%S")
-
-    sql = (
-        "INSERT INTO history (username, action, sql_time, address, comment_or_message, recipient_username, "
-        "recipient_address, amount, hash, comment_id, notes, reddit_time, comment_text) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
+    history = History(
+        username=username,
+        action=action,
+        address=address,
+        comment_or_message=comment_or_message,
+        recipient_username=recipient_username,
+        recipient_address=recipient_address,
+        amount=amount,
+        hash=hash,
+        comment_id=comment_id,
+        notes=notes,
+        reddit_time=reddit_time,
+        comment_text=comment_text
+        
     )
 
-    val = (
-        username,
-        action,
-        sql_time,
-        address,
-        comment_or_message,
-        recipient_username,
-        recipient_address,
-        amount,
-        hash,
-        comment_id,
-        notes,
-        reddit_time,
-        comment_text,
-    )
-    # todo make sure the rowid is atomic
-    MYCURSOR.execute(sql, val)
-    MYDB.commit()
-    return MYCURSOR.lastrowid
+    if history.save() < 1:
+        print(f"Failed saving history item {username}")
+
+    return history.id
 
 
 def make_graceful(func):
@@ -123,7 +112,7 @@ def add_new_account(username):
     address = generate_account()
     private = address["private"]
     address = address["account"]
-    sql = "INSERT INTO accounts (username, private_key, address, minimum, auto_receive, silence, active, percentage, opt_in) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)"
+    sql = "INSERT INTO accounts (username, private_key, address, minimum, auto_receive, silence, active, opt_in) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)"
     val = (
         username,
         private,
@@ -356,7 +345,7 @@ def parse_action(action_item):
     elif action_item.name.startswith("t1_") and bool(
         {parsed_text[0], parsed_text[-2], parsed_text[-3]}
         & (
-            set(TIP_COMMANDS + DONATE_COMMANDS).union(
+            set(TIP_COMMANDS).union(
                 {"/u/%s" % TIP_BOT_USERNAME, "u/%s" % TIP_BOT_USERNAME}
             )
         )
@@ -505,7 +494,6 @@ def return_transactions():
                         address,
                         private_key,
                         donation_amount,
-                        TIPBOT_DONATION_ADDRESS,
                     )["hash"]
                     add_history_record(
                         action="donate",

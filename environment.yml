@@ -1,4 +1,4 @@
-name: reddit-tipbot
+name: banano-reddit-tipbot
 channels:
   - defaults
 dependencies:
@@ -9,7 +9,10 @@ dependencies:
   - pip:
       - praw==6.4.0
       - qrcode==6.1
-      - mysql-connector-python==8.0.18
       - click
       - black
       - pytest
+      - peewee
+      - pymysql
+      - psycopg2-binary
+

@@ -67,8 +67,6 @@ There are many other commands.
 'minimum <amount>' - (default 0.0001) Sets a minimum amount for receiving tips
 'send <amount or all, optional: Currency> <user/address>' - Send Nano to a reddit user or an address
 'silence <yes/no>' - (default 'no') Prevents the bot from sending you tip notifications or tagging in posts
-'percentage <percent>' - (default 10 percent) Sets a percentage of returned tips to donate to TipBot development
-'projects' - Retrives a list of NanoCenter donation projects
 'subreddit <subreddit> <'activate'/'deactivate'> <option>' - Subreddit Moderator Controls - Enabled Tipping on Your Sub (`silent`, `minimal`, `full`)
 'withdraw <amount or all> <user/address>' - Same as send
 'convert <amountcurrency>' - Calculates the Nano value of the specified curency. e.g. `convert 1USD`. Also works with "price" and "value".

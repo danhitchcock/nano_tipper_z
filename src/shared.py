@@ -1,25 +1,18 @@
+import datetime
 import os
-import mysql.connector
 import configparser
 import praw
 import logging
+import sys
+from peewee import *
+from playhouse.pool  import PooledPostgresqlExtDatabase
 
+LOGGER = logging.getLogger("banano-reddit-tipbot")
+handler = logging.StreamHandler(sys.stdout)
+formatter = logging.Formatter("%(asctime)s;%(levelname)s;%(message)s", "%Y-%m-%d %H:%M:%S %z")
+handler.setFormatter(formatter)
+LOGGER.addHandler(handler)
 
-LOGGER = logging.getLogger("reddit-tipbot")
-LOGGER.setLevel(logging.DEBUG)
-try:
-    os.makedirs("log", exist_ok=True)
-except:
-    pass
-fh = logging.FileHandler("log/info.log")
-fh.setLevel(logging.DEBUG)
-ch = logging.StreamHandler()
-ch.setLevel(logging.DEBUG)
-formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
-fh.setFormatter(formatter)
-ch.setFormatter(formatter)
-LOGGER.addHandler(fh)
-LOGGER.addHandler(ch)
 config = configparser.ConfigParser()
 config.read(
     os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "tipper.ini")
@@ -32,13 +25,10 @@ try:
     PROGRAM_MINIMUM = float(config["BOT"]["program_minimum"])
     RECIPIENT_MINIMUM = float(config["BOT"]["recipient_minimum"])
     TIP_COMMANDS = config["BOT"]["tip_commands"].split(",")
-    DONATE_COMMANDS = config["BOT"]["donate_commands"].split(",")
     TIPBOT_OWNER = config["BOT"]["tipbot_owner"]
-    TIPBOT_DONATION_ADDRESS = config["BOT"]["tipbot_donation_address"]
     PYTHON_COMMAND = config["BOT"]["python_command"]
     TIPPER_OPTIONS = config["BOT"]["tipper_options"]
     MESSENGER_OPTIONS = config["BOT"]["messenger_options"]
-    DONATION_ADMINS = config["BOT"]["donation_admins"]
     CURRENCY = config["BOT"]["currency"]
 
     DPOW_ENDPOINT = config["NODE"]["dpow_endpoint"]
@@ -50,8 +40,11 @@ try:
 
     CMC_TOKEN = config["OTHER"]["cmc_token"]
 
-    SQL_PASSWORD = config["SQL"]["sql_password"]
+    USE_SQLITE = config["SQL"]["use_sqlite"]
+    DATABASE_HOST = config["SQL"]["database_host"]
     DATABASE_NAME = config["SQL"]["database_name"]
+    DATABASE_USER = config["SQL"]["database_user"]
+    DATABASE_PASSWORD = config["SQL"]["database_password"]
 
 except KeyError as e:
     LOGGER.info("Failed to read tipper.ini. Falling back to test-defaults...")
@@ -63,11 +56,7 @@ except KeyError as e:
     PROGRAM_MINIMUM = 0.0001
     RECIPIENT_MINIMUM = 0
     TIP_COMMANDS = ["!ntipz", "!nano_tipz"]
-    DONATE_COMMANDS = ["!nanocenterz"]
     TIPBOT_OWNER = "zily88"
-    TIPBOT_DONATION_ADDRESS = (
-        "nano_3jy9954gncxbhuieujc3pg5t1h36e7tyqfapw1y6zukn9y1g6dj5xr7r6pij"
-    )
     CMC_TOKEN = ""
     DPOW_TOKEN = ""
     DPOW_USERNAME = ""
@@ -75,34 +64,18 @@ except KeyError as e:
     PYTHON_COMMAND = ""
     TIPPER_OPTIONS = ""
     MESSENGER_OPTIONS = ""
-    DONATION_ADMINS = []
     CURRENCY = "Nano"
     REP = ""
     DPOW_ENDPOINT = ""
     USE_DPOW = False
+    USE_SQLITE = True
 
-# only fails if no databases have been created
-try:
-    MYDB = mysql.connector.connect(
-        user="root",
-        password=SQL_PASSWORD,
-        host="localhost",
-        auth_plugin="mysql_native_password",
-        database=DATABASE_NAME,
-    )
-    MYCURSOR = MYDB.cursor()
-except mysql.connector.errors.DatabaseError:
-    try:
-        MYDB = mysql.connector.connect(
-            user="root",
-            password=SQL_PASSWORD,
-            host="localhost",
-            auth_plugin="mysql_native_password",
-        )
-        MYCURSOR = MYDB.cursor()
-    except mysql.connector.errors.DatabaseError:
-        MYDB = None
-        MYCURSOR = None
+if USE_SQLITE:
+    APP_DIR = os.path.abspath(os.path.dirname(__file__))  # This directory
+    PROJECT_ROOT = os.path.abspath(os.path.join(APP_DIR, os.pardir))
+    db = SqliteDatabase(os.path.join(PROJECT_ROOT, 'tip.db'))
+else:
+    db = PooledPostgresqlExtDatabase(DATABASE_NAME, user=DATABASE_USER, password=DATABASE_PASSWORD, host=DATABASE_HOST, port=5432, max_connections=4)
 
 try:
     REDDIT = praw.Reddit("bot1")
@@ -126,24 +99,6 @@ elif CURRENCY == "Banano":
 
     def from_raw(amount):
         return amount / 10 ** 24
-
-
-# initiate the bot and all friendly subreddits
-def get_subreddits():
-    MYCURSOR.execute("SELECT subreddit FROM subreddits")
-    results = MYCURSOR.fetchall()
-    MYDB.commit()
-    if len(results) == 0:
-        return None
-    subreddits = "+".join(result[0] for result in results)
-    return REDDIT.subreddit(subreddits)
-
-
-# disable for testing
-try:
-    SUBREDDITS = get_subreddits()
-except AttributeError:
-    SUBREDDITS = None
 
 
 EXCLUDED_REDDITORS = [
@@ -329,3 +284,78 @@ EXCLUDED_REDDITORS = [
     "zmw",
     "zwl",
 ]
+
+# Base Model
+class BaseModel(Model):
+	class Meta:
+		database = db
+
+class History(BaseModel):
+    username = CharField()
+    action = CharField()
+    reddit_time = DateTimeField(default=datetime.datetime.utcnow)
+    sql_time = DateTimeField()
+    address = CharField()
+    comment_or_message = CharField()
+    recipient_username = CharField()
+    recipient_address = CharField()
+    amount = CharField()
+    hash = CharField()
+    comment_id = CharField()
+    comment_text = CharField()
+    notes = CharField()
+    return_status = CharField()
+
+class Message(BaseModel):
+    username = CharField()
+    subject = CharField()
+    message = TextField()
+
+    class Meta:
+        db_table = 'messages'
+
+class Account(BaseModel):
+    username = CharField(primary_key=True)
+    address = CharField(unique=True)
+    private_key = CharField(unique=True)
+    key_released = BooleanField()
+    minimum = CharField(default=to_raw(RECIPIENT_MINIMUM))
+    notes = CharField()
+    auto_receive = BooleanField(default=True)
+    silence = BooleanField(default=False)
+    active = BooleanField(default=False)
+    opt_in = BooleanField(default=True)
+
+    class Meta:
+        db_table = 'accounts'
+
+class Subreddit(BaseModel):
+    subreddit = CharField(primary_key=True)
+    reply_to_comments = BooleanField(default=True)
+    footer = CharField()
+    status = CharField()
+    minimum = CharField()
+
+    class Meta:
+        db_table = 'subreddits'
+
+def create_db():
+	with db.connection_context():
+		db.create_tables([History, Message, Account, Subreddit], safe=True)
+
+create_db()
+
+# initiate the bot and all friendly subreddits
+def get_subreddits():
+    results = Subreddit.select()
+    if results.count() == 0:
+        return None
+    subreddits = "+".join(result.subreddit for result in results)
+    return REDDIT.subreddit(subreddits)
+
+
+# disable for testing
+try:
+    SUBREDDITS = get_subreddits()
+except AttributeError:
+    SUBREDDITS = None

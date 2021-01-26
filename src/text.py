@@ -37,7 +37,6 @@ For PM commands, create a new message with any of the following commands (be sur
     'minimum <amount>' - (default 0.0001) Sets a minimum amount for receiving tips
     'silence <yes/no>' - (default 'no') Prevents the bot from sending you tip notifications or tagging in posts 
     'history <optional: number of records>' - Retrieves tipbot commands. Default 10, maximum is 50.
-    'percentage <percent>' - (default 10 percent) Sets a percentage of returned tips to donate to TipBot development.
     'convert <amountcurrency>' - Calculates the Nano value of the specified curency. e.g. `convert 1USD`. Also works with "price" and "value".
     'opt-out' - Disables your account and donates your remaining Nano to the tipbot. 
     'opt-in' - Reenables your account. Your Nano may or may not still be available. 
@@ -130,7 +129,6 @@ SUBJECTS = {
     "help": "Nano Tipper - Help",
     "balance": "Nano Tipper - Account Balance",
     "minimum": "Nano Tipper - Tip Minimum",
-    "percentage": "Nano Tipper - Returned Tip Percentage for Donation",
     "create": "Nano Tipper - Create",
     "send": "Nano Tipper - Send",
     "history": "Nano Tipper - History",
@@ -337,16 +335,6 @@ def make_response_text(message, response):
             from_raw(response["amount"]),
         )
     return None
-
-
-PERCENTAGE = {
-    "parse_error": "I couldn't parse your command. I was expecting 'percentage <amount>'. "
-    "Be sure to check your spacing.",
-    "neg": "Did not update. Your percentage cannot be negative.",
-    "100": "Did not update. Your percentage must be 100 or lower.",
-    "updating": "Updating donation percentage to %s.",
-}
-
 
 def make_return_message(user):
     return_message = (

@@ -31,7 +31,7 @@ import text
 import tipbot
 from tipbot import stream_comments_messages
 import pytest
-from shared import TIP_COMMANDS, TIP_BOT_USERNAME, DONATE_COMMANDS, to_raw
+from shared import TIP_COMMANDS, TIP_BOT_USERNAME, to_raw
 import message_functions
 from message_functions import handle_send
 import comment_functions
@@ -853,72 +853,6 @@ def test_handle_send_from_comment_and_text(handle_send_from_comment_mocks):
         == "Sent ```0.01 Nano``` to /u/poor -- [Transaction on Nano Crawler](https"
         "://nanocrawler.cc/explorer/block/success!)"
     )
-
-    # no amount specified
-    message = RedditMessage(
-        "t4_5", "rich", "", f"{DONATE_COMMANDS[0]} 1", subreddit="friendly_sub"
-    )
-    response = send_from_comment(message)
-    assert response == {
-        "status": 110,
-        "username": "rich",
-        "subreddit": "friendly_sub",
-        "subreddit_minimum": 0.001,
-        "subreddit_status": "full",
-    }
-    assert (
-        text.make_response_text(message, response)
-        == "You must specify an amount and a user, e.g. `send 1 nano_tipper`."
-    )
-
-    # send to non-existent nanocenter project
-    message = RedditMessage(
-        "t4_5",
-        "rich",
-        "",
-        f"{DONATE_COMMANDS[0]} 0.01 project_does_not_exist",
-        subreddit="friendly_sub",
-    )
-    response = send_from_comment(message)
-    assert response == {
-        "amount": 10000000000000000000000000000,
-        "recipient": "project_does_not_exist",
-        "status": 210,
-        "subreddit": "friendly_sub",
-        "subreddit_minimum": 0.001,
-        "username": "rich",
-        "subreddit_status": "full",
-    }
-    assert (
-        text.make_response_text(message, response)
-        == "No Nanocenter project named project_does_not_exist was found."
-    )
-
-    # nanocenter project does exist
-    message = RedditMessage(
-        "t4_5",
-        "rich",
-        "",
-        f"{DONATE_COMMANDS[0]} 0.01 project_exists",
-        subreddit="friendly_sub",
-    )
-    response = send_from_comment(message)
-    assert response == {
-        "amount": 10000000000000000000000000000,
-        "hash": "success!",
-        "status": 40,
-        "subreddit": "friendly_sub",
-        "subreddit_minimum": 0.001,
-        "username": "rich",
-        "recipient": "project_exists",
-        "subreddit_status": "full",
-    }
-    assert (
-        text.make_response_text(message, response)
-        == "Donated ```0.01 Nano``` to Nanocenter Project project_exists -- [Tran"
-        "saction on Nano Crawler](https://nanocrawler.cc/explorer/block/success!)"
-    )
-
 
 # Test the streaming of comments and methods
 class MockRedditInbox:
