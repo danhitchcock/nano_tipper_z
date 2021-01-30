@@ -6,6 +6,11 @@ import logging
 import sys
 import secrets
 import string
+import re
+
+from bitstring import BitArray
+from hashlib import blake2b
+
 from peewee import *
 from playhouse.pool  import PooledPostgresqlExtDatabase
 
@@ -99,191 +104,6 @@ elif CURRENCY == "Banano":
     def from_raw(amount):
         return amount / 10 ** 24
 
-
-EXCLUDED_REDDITORS = [
-    "nano",
-    "nanos",
-    "btc",
-    "xrb",
-    "eth",
-    "xrp",
-    "eos",
-    "ltc",
-    "bch",
-    "xlm",
-    "etc",
-    "neo",
-    "bat",
-    "aed",
-    "afn",
-    "all",
-    "amd",
-    "ang",
-    "aoa",
-    "ars",
-    "aud",
-    "awg",
-    "azn",
-    "bam",
-    "bbd",
-    "bdt",
-    "bgn",
-    "bhd",
-    "bif",
-    "bmd",
-    "bnd",
-    "bob",
-    "bov",
-    "brl",
-    "bsd",
-    "btn",
-    "bwp",
-    "byr",
-    "bzd",
-    "cad",
-    "cdf",
-    "che",
-    "chf",
-    "chw",
-    "clf",
-    "clp",
-    "cny",
-    "cop",
-    "cou",
-    "crc",
-    "cuc",
-    "cup",
-    "cve",
-    "czk",
-    "djf",
-    "dkk",
-    "dop",
-    "dzd",
-    "egp",
-    "ern",
-    "etb",
-    "eur",
-    "fjd",
-    "fkp",
-    "gbp",
-    "gel",
-    "ghs",
-    "gip",
-    "gmd",
-    "gnf",
-    "gtq",
-    "gyd",
-    "hkd",
-    "hnl",
-    "hrk",
-    "htg",
-    "huf",
-    "idr",
-    "ils",
-    "inr",
-    "iqd",
-    "irr",
-    "isk",
-    "jmd",
-    "jod",
-    "jpy",
-    "kes",
-    "kgs",
-    "khr",
-    "kmf",
-    "kpw",
-    "krw",
-    "kwd",
-    "kyd",
-    "kzt",
-    "lak",
-    "lbp",
-    "lkr",
-    "lrd",
-    "lsl",
-    "lyd",
-    "mad",
-    "mdl",
-    "mga",
-    "mkd",
-    "mmk",
-    "mnt",
-    "mop",
-    "mru",
-    "mur",
-    "mvr",
-    "mwk",
-    "mxn",
-    "mxv",
-    "myr",
-    "mzn",
-    "nad",
-    "ngn",
-    "nio",
-    "nok",
-    "npr",
-    "nzd",
-    "omr",
-    "pab",
-    "pen",
-    "pgk",
-    "php",
-    "pkr",
-    "pln",
-    "pyg",
-    "qar",
-    "ron",
-    "rsd",
-    "rub",
-    "rwf",
-    "sar",
-    "sbd",
-    "scr",
-    "sdg",
-    "sek",
-    "sgd",
-    "shp",
-    "sll",
-    "sos",
-    "srd",
-    "ssp",
-    "stn",
-    "svc",
-    "syp",
-    "szl",
-    "thb",
-    "tjs",
-    "tmt",
-    "tnd",
-    "top",
-    "try",
-    "ttd",
-    "twd",
-    "tzs",
-    "uah",
-    "ugx",
-    "usd",
-    "usn",
-    "uyi",
-    "uyu",
-    "uzs",
-    "vef",
-    "vnd",
-    "vuv",
-    "wst",
-    "xaf",
-    "xcd",
-    "xdr",
-    "xof",
-    "xpf",
-    "xsu",
-    "xua",
-    "yer",
-    "zar",
-    "zmw",
-    "zwl",
-]
-
 # Base Model
 class BaseModel(Model):
 	class Meta:
@@ -346,10 +166,11 @@ create_db()
 # initiate the bot and all friendly subreddits
 def get_subreddits():
     results = Subreddit.select()
-    if results.count() == 0:
+    subreddits = [subreddit for subreddit in results]
+    if len(subreddits) == 0:
         return None
-    subreddits = "+".join(result.subreddit for result in results)
-    return REDDIT.subreddit(subreddits)
+    subreddits_str = "+".join(result.subreddit for result in subreddits)
+    return REDDIT.subreddit(subreddits_str)
 
 
 # disable for testing
@@ -357,3 +178,56 @@ try:
     SUBREDDITS = get_subreddits()
 except AttributeError:
     SUBREDDITS = None
+
+class Validators():
+    @classmethod
+    def is_valid_address(cls, input_text: str) -> bool:
+        """Return True if address is valid, false otherwise"""
+        if input_text is None:
+            return False
+        return cls.validate_checksum_xrb(input_text)
+
+    @staticmethod
+    def is_valid_block_hash(block_hash: str) -> bool:
+        if block_hash is None or len(block_hash) != 64:
+            return False
+        try:
+            int(block_hash, 16)
+        except ValueError:
+            return False
+        return True
+
+    @staticmethod
+    def validate_checksum_xrb(address: str) -> bool:
+        """Given an xrb/nano/ban address validate the checksum"""
+        if (CURRENCY == "Nano" and ((address[:5] == 'nano_' and len(address) == 65) or (address[:4] == 'xrb_' and len(address) == 64))) or (CURRENCY == "Banano" and (address[:4] == 'ban_'  and len(address) == 64)):
+            # Populate 32-char account index
+            account_map = "13456789abcdefghijkmnopqrstuwxyz"
+            account_lookup = {}
+            for i in range(0, 32):
+                account_lookup[account_map[i]] = BitArray(uint=i, length=5)
+
+            # Extract key from address (everything after prefix)
+            if CURRENCY == "Nano":
+                acrop_key = address[4:-8] if address[:5] != 'nano_' else address[5:-8]
+            else:
+                acrop_key = address[5:-8]
+            # Extract checksum from address
+            acrop_check = address[-8:]
+
+            # Convert base-32 (5-bit) values to byte string by appending each 5-bit value to the bitstring, essentially bitshifting << 5 and then adding the 5-bit value.
+            number_l = BitArray()
+            for x in range(0, len(acrop_key)):
+                number_l.append(account_lookup[acrop_key[x]])
+            number_l = number_l[4:]  # reduce from 260 to 256 bit (upper 4 bits are never used as account is a uint256)
+
+            check_l = BitArray()
+            for x in range(0, len(acrop_check)):
+                check_l.append(account_lookup[acrop_check[x]])
+            check_l.byteswap()  # reverse byte order to match hashing format
+
+            # verify checksum
+            h = blake2b(digest_size=5)
+            h.update(number_l.bytes)
+            return h.hexdigest() == check_l.hex
+        return False

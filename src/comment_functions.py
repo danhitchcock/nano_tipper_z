@@ -5,7 +5,6 @@ from shared import (
     PROGRAM_MINIMUM,
     LOGGER,
     TIP_BOT_USERNAME,
-    EXCLUDED_REDDITORS,
     from_raw,
     to_raw,
     Message,
@@ -112,11 +111,6 @@ def send_from_comment(message):
         response["subreddit_status"] = "untracked"
         response["subreddit_minimum"] = "1"        
 
-    # check that it wasn't a mistyped currency code or something
-    if parsed_text[2] in EXCLUDED_REDDITORS:
-        response["status"] = 140
-        return response
-
     if parsed_text[0] in TIP_COMMANDS and len(parsed_text) <= 1:
         update_history_notes(entry_id, "no recipient or amount specified")
         response["status"] = 110
@@ -190,10 +184,9 @@ def send_from_comment(message):
     # send the nanos!!
     response["hash"] = send(
         sender_info["address"],
-        sender_info["private_key"],
         response["amount"],
         recipient_info["address"],
-    )["hash"]
+    )["block"]
 
     # Update the sql and send the PMs
     History.update(

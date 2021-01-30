@@ -13,23 +13,19 @@ from tipper_functions import (
 )
 from tipper_rpc import (
     check_balance,
-    open_or_receive,
     validate_address,
     send,
 )
 from text import WELCOME_CREATE, WELCOME_TIP, COMMENT_FOOTER, NEW_TIP
 import shared
 from shared import (
-    TIP_BOT_USERNAME,
     PROGRAM_MINIMUM,
     REDDIT,
-    EXCLUDED_REDDITORS,
     LOGGER,
     TIPBOT_OWNER,
     to_raw,
     from_raw,
     Account,
-    Message,
     History,
     Subreddit
 )
@@ -361,47 +357,6 @@ def handle_minimum(message):
         return response
 
 
-def handle_receive(message):
-    """
-
-    :param message:
-    :return:
-    """
-    message_time = datetime.utcfromtimestamp(message.created_utc)
-    username = str(message.author)
-    # find any accounts associated with the redditor
-    try:
-        acct = Account.get(username=username)
-        address = acct.address
-        open_or_receive(address, acct.private_key)
-        balance = check_balance(address)
-        add_history_record(
-            username=username,
-            action="receive",
-            reddit_time=message_time,
-            address=address,
-            comment_id=message.name,
-            comment_or_message="message",
-        )
-        response = text.RECEIVE["balance"] % (
-            address,
-            from_raw(balance[0]),
-            from_raw(balance[1]),
-            address,
-        )
-        return response        
-    except Account.DoesNotExist:
-        add_history_record(
-            username=username,
-            action="receive",
-            reddit_time=message_time,
-            comment_id=message.name,
-            comment_or_message="message",
-        )
-        response = text.NOT_OPEN
-        return response
-
-
 def handle_silence(message):
     message_time = datetime.utcfromtimestamp(
         message.created_utc
@@ -529,11 +484,6 @@ def handle_send(message):
         response["status"] = 110
         return response
 
-    # check that it wasn't a mistyped currency code or something
-    if parsed_text[2] in EXCLUDED_REDDITORS:
-        response["status"] = 140
-        return response
-
     # pull sender account info
     sender_info = tipper_functions.account_info(response["username"])
     if not sender_info:
@@ -604,10 +554,9 @@ def handle_send(message):
 
     response["hash"] = send(
         sender_info["address"],
-        sender_info["private_key"],
         response["amount"],
         recipient_info["address"],
-    )["hash"]
+    )["block"]
     # if it was an address, just send to the address
     if "username" not in recipient_info.keys():
         History.update(notes="send to address", address=sender_info["address"], username=sender_info["username"], recipient_username=None, recipient_address=recipient_info["address"],

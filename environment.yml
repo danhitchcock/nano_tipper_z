@@ -17,4 +17,5 @@ dependencies:
       - psycopg2-binary
       - pylint
       - nanopy
+      - bitstring
 

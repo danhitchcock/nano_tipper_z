@@ -1,20 +1,16 @@
-import time
-import requests
-import json
 from datetime import datetime
 from shared import (
     RECIPIENT_MINIMUM,
-    EXCLUDED_REDDITORS,
     TIP_BOT_USERNAME,
     LOGGER,
     TIP_COMMANDS,
     to_raw,
-    from_raw,
     History,
-    Account
+    Account,
+    Message
 )
 
-from text import HELP, RETURN_WARNING, SUBJECTS
+from text import RETURN_WARNING, SUBJECTS
 
 from tipper_rpc import generate_account, check_balance, send
 import text
@@ -146,11 +142,12 @@ def allowed_request(username, seconds=30, num_requests=5):
     :return:
     """
     historyQ = History.select(History.sql_time).where(History.username == str(username)).order_by(History.id)
-    if historyQ.count() < num_requests:
+    history_list = [h for h in historyQ]
+    if len(history_list) < num_requests:
         return True
     else:
         i = 0
-        for h in historyQ:
+        for h in history_list:
             i+=1
             if i == 5:
                 return (
@@ -193,15 +190,14 @@ def get_user_settings(recipient_username, recipient_address=""):
     user_minimum = -1
     silence = False
     if recipient_username:
-        sql = "SELECT minimum, address, silence FROM accounts WHERE username = %s"
-        val = (recipient_username,)
-        MYCURSOR.execute(sql, val)
-        myresult = MYCURSOR.fetchall()
-        if len(myresult) > 0:
-            user_minimum = int(myresult[0][0])
-            silence = myresult[0][2]
+        try:
+            acct = Account.select(Account.minimum, Account.address, Account.silence).where(Account.username == recipient_username).get()
+            user_minimum = acct.minimum
+            silence = acct.silence
             if not recipient_address:
-                recipient_address = myresult[0][1]
+                recipient_address = acct.address
+        except Account.DoesNotExist:
+            pass
     return {
         "name": recipient_username,
         "minimum": user_minimum,
@@ -216,48 +212,52 @@ def account_info(key, by_address=False):
     :param username: string - redditors username
     :return: dict - name, address, private_key, balance
     """
+    foundAccount = True
     if not by_address:
-        sql = "SELECT username, address, private_key, minimum, silence, opt_in FROM accounts WHERE username=%s"
+        try:
+            acct = Account.select().where(Account.username == val).get()
+        except Account.DoesNotExist:
+            foundAccount = False
     else:
-        sql = "SELECT username, address, private_key, minimum, silence, opt_in FROM accounts WHERE address=%s"
-    val = (key,)
-    result = query_sql(sql, val)
-    if len(result) > 0:
+        try:
+            acct = Account.select().where(Account.address == val).get()
+        except Account.DoesNotExist:
+            foundAccount = False
+    if foundAccount:
         return {
-            "username": result[0][0],
-            "address": result[0][1],
-            "private_key": result[0][2],
-            "minimum": int(result[0][3]),
-            "silence": result[0][4],
-            "balance": check_balance(result[0][1])[0],
+            "username": acct.username,
+            "address": acct.address,
+            "private_key": acct.private_key,
+            "minimum": int(acct.minimum),
+            "silence": acct.silence,
+            "balance": check_balance(acct.address)[0],
             "account_exists": True,
-            "opt_in": result[0][5],
+            "opt_in": acct.opt_in,
         }
     return None
 
 
 def update_history_notes(entry_id, text):
-    sql = "UPDATE history SET notes = %s WHERE id = %s"
-    val = (text, entry_id)
-    MYCURSOR.execute(sql, val)
-    MYDB.commit()
+    History.update(notes=text).where(History.id == entry_id).execute()
 
 
 def send_pm(recipient, subject, body, bypass_opt_out=False):
     opt_in = True
     # If there is not a bypass to opt in, check the status
     if not bypass_opt_out:
-        sql = "SELECT opt_in FROM accounts WHERE username=%s"
-        MYCURSOR.execute(sql, (recipient,))
-        opt_in = MYCURSOR.fetchall()[0][0]
-        MYDB.commit()
-
+        try:
+            acct = Account.select(Account.opt_in).where(Account.username == recipient).get()
+            opt_in = acct.opt_in
+        except Account.DoesNotExist:
+            pass
     # if the user has opted in, or if there is an override to send the PM even if they have not
     if opt_in or not bypass_opt_out:
-        sql = "INSERT INTO messages (username, subject, message) VALUES (%s, %s, %s)"
-        val = (recipient, subject, body)
-        MYCURSOR.execute(sql, val)
-        MYDB.commit()
+        msg = Message(
+            username = recipient,
+            subject = subject,
+            body = body
+        )
+        msg.save()
 
 
 def parse_raw_amount(parsed_text, username=None):
@@ -270,40 +270,15 @@ def parse_raw_amount(parsed_text, username=None):
     conversion = 1
     # check if the amount is 'all'. This will convert it to the proper int
     if parsed_text[1].lower() == "all":
-        sql = "SELECT address FROM accounts WHERE username = %s"
-        val = (username,)
-        MYCURSOR.execute(sql, val)
-        result = MYCURSOR.fetchall()
-        if len(result) > 0:
-            address = result[0][0]
+        try:
+            acct = Account.select(Account.address).where(Account.username == username).get()
+            address = acct.address
             balance = check_balance(address)
             return balance[0]
-        else:
+        except Account.DoesNotExist:
             raise (TipError(None, text.NOT_OPEN))
 
-    # check if there is a currency code in the amount; if so, get the conversion
-    if parsed_text[1][-3:].lower() in EXCLUDED_REDDITORS:
-        currency = parsed_text[1][-3:].upper()
-        url = "https://min-api.cryptocompare.com/data/price?fsym={}&tsyms={}".format(
-            shared.CURRENCY, currency
-        )
-        try:
-            results = requests.get(url, timeout=1)
-            results = json.loads(results.text)
-            conversion = float(results[currency])
-            amount = parsed_text[1][:-3].lower()
-        except requests.exceptions.Timeout:
-            raise TipError(
-                "Could not reach conversion server.",
-                "Could not reach conversion server. Tip not sent.",
-            )
-        except:
-            raise TipError(
-                "Could not reach conversion server.",
-                f"Currency {currency.upper()} not supported. Tip not sent.",
-            )
-    else:
-        amount = parsed_text[1].lower()
+    amount = parsed_text[1].lower()
 
     # before converting to a number, make sure the amount doesn't have nan or inf in it
     if amount == "nan" or ("inf" in amount):
@@ -364,13 +339,9 @@ def parse_action(action_item):
 
 
 def message_in_database(message):
-    sql = "SELECT * FROM history WHERE comment_id = %s"
-    val = (message.name,)
-    MYCURSOR.execute(sql, val)
-    results = MYCURSOR.fetchall()
+    query = History.select(History.comment_id == message.name)
+    results = [r for r in query]
     if len(results) > 0:
         LOGGER.info("Found previous messages for %s: " % message.name)
-        for result in results:
-            LOGGER.info(result)
         return True
     return False
