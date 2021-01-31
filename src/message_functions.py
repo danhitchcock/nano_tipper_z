@@ -14,11 +14,11 @@ from tipper_functions import (
 from tipper_rpc import (
     check_balance,
     open_or_receive,
-    nano_to_raw,
     validate_address,
     send,
 )
-from text import WELCOME_CREATE, HELP, WELCOME_TIP, COMMENT_FOOTER, NEW_TIP
+from text import WELCOME_CREATE, WELCOME_TIP, COMMENT_FOOTER, NEW_TIP
+import shared
 from shared import (
     MYCURSOR,
     MYDB,
@@ -29,6 +29,8 @@ from shared import (
     LOGGER,
     TIPBOT_OWNER,
     DONATION_ADMINS,
+    to_raw,
+    from_raw,
 )
 
 
@@ -43,90 +45,63 @@ def handle_message(message):
     # normal commands
     if command in ["help", "!help"]:
         LOGGER.info("Helping")
-        subject = "Nano Tipper - Help"
+        subject = text.SUBJECTS["help"]
         response = handle_help(message)
     elif command in ["balance", "address"]:
         LOGGER.info("balance")
-        subject = "Nano Tipper - Account Balance"
+        subject = text.SUBJECTS["balance"]
         response = handle_balance(message)
     elif command == "minimum":
         LOGGER.info("Setting Minimum")
-        subject = "Nano Tipper - Tip Minimum"
+        subject = text.SUBJECTS["minimum"]
         response = handle_minimum(message)
     elif command in ["percentage", "percent"]:
         LOGGER.info("Setting Percentage")
-        subject = "Nano Tipper - Returned Tip Percentage for Donation"
+        subject = text.SUBJECTS["percentage"]
         response = handle_percentage(message)
     elif command in ["create", "register"]:
         LOGGER.info("Creating")
-        subject = "Nano Tipper - Create"
+        subject = text.SUBJECTS["create"]
         response = handle_create(message)
     elif command in ["send", "withdraw"]:
-        subject = "Nano Tipper - Send"
+        subject = text.SUBJECTS["send"]
         LOGGER.info("send via PM")
         response = handle_send(message)
         response = text.make_response_text(message, response)
     elif command == "history":
         LOGGER.info("history")
-        subject = "Nano Tipper - History"
+        subject = text.SUBJECTS["history"]
         response = handle_history(message)
     elif command == "silence":
         LOGGER.info("silencing")
-        subject = "Nano Tipper - Silence"
+        subject = text.SUBJECTS["silence"]
         response = handle_silence(message)
     elif command == "subreddit":
         LOGGER.info("subredditing")
-        subject = "Nano Tipper - Subreddit"
+        subject = text.SUBJECTS["subreddit"]
         response = handle_subreddit(message)
     elif command == "opt-out":
         LOGGER.info("opting out")
         response = handle_opt_out(message)
-        subject = "Nano Tipper - Opt Out"
+        subject = text.SUBJECTS["opt-out"]
     elif command == "opt-in":
         LOGGER.info("opting in")
-        subject = "Nano Tipper - Opt In"
+        subject = text.SUBJECTS["opt-in"]
         response = handle_opt_in(message)
-
+    elif command in ["value", "price", "convert"]:
+        LOGGER.info("converting")
+        subject = text.SUBJECTS["convert"]
+        response = handle_convert(message)
     # nanocenter donation commands
     elif command in ("project", "projects"):
-        if (str(message.author).lower() in DONATION_ADMINS + TIPBOT_OWNER) and len(
-            parsed_text
-        ) > 2:
-            sql = "INSERT INTO projects (project, address) VALUES(%s, %s) ON DUPLICATE KEY UPDATE address=%s"
-            val = (parsed_text[1], parsed_text[2], parsed_text[2])
-            MYCURSOR.execute(sql, val)
-            MYDB.commit()
-        add_history_record(
-            username=str(message.author),
-            action="project",
-            comment_text=str(message.body)[:255],
-            comment_or_message="message",
-            comment_id=message.name,
-        )
 
-        response = "Current NanoCenter Donation Projects: \n\n"
-        subject = "Nanocenter Projects"
-        sql = "SELECT project, address FROM projects"
-        MYCURSOR.execute(sql)
-        results = MYCURSOR.fetchall()
-        for result in results:
-            response += "%s %s  \n" % (result[0], result[1])
+        subject = text.SUBJECTS["cf_projects"]
+        response = handle_projects(message)
+
     elif command == "delete_project":
-        if (
-            (str(message.author) == TIPBOT_OWNER)
-            or (str(message.author).lower() == "rockmsockmjesus")
-        ) and len(parsed_text) > 1:
-            sql = "DELETE FROM projects WHERE project=%s"
-            val = (parsed_text[1],)
-            MYCURSOR.execute(sql, val)
-            MYDB.commit()
-        response = "Current NanoCenter Donation Projects: \n\n"
-        subject = "Nanocenter Projects"
-        sql = "SELECT project, address FROM projects"
-        MYCURSOR.execute(sql)
-        results = MYCURSOR.fetchall()
-        for result in results:
-            response += "%s %s  \n" % (result[0], result[1])
+        subject = text.SUBJECTS["cf_projects"]
+        response = handle_delete_project(message)
+
     # a few administrative tasks
     elif command in ["restart", "stop", "disable", "deactivate"]:
         if str(message.author).lower() in [
@@ -141,20 +116,6 @@ def handle_message(message):
                 comment_id=message.name,
             )
             sys.exit()
-    elif command == "test_welcome_tipped":
-        subject = "Nano Tipper - Welcome By Tip"
-        response = WELCOME_TIP % (
-            0.01,
-            "xrb_3jy9954gncxbhuieujc3pg5t1h36e7tyqfapw1y6zukn9y1g6dj5xr7r6pij",
-            "xrb_3jy9954gncxbhuieujc3pg5t1h36e7tyqfapw1y6zukn9y1g6dj5xr7r6pij",
-        )
-    elif command == "test_welcome_create":
-        subject = "Nano Tipper - Create"
-        response = WELCOME_CREATE % (
-            "xrb_3jy9954gncxbhuieujc3pg5t1h36e7tyqfapw1y6zukn9y1g6dj5xr7r6pij",
-            "xrb_3jy9954gncxbhuieujc3pg5t1h36e7tyqfapw1y6zukn9y1g6dj5xr7r6pij",
-        )
-
     else:
         add_history_record(
             username=str(message.author),
@@ -179,26 +140,26 @@ def handle_percentage(message):
 
     # there should be at least 2 words, a minimum and an amount.
     if len(parsed_text) < 2:
-        response = "I couldn't parse your command. I was expecting 'percentage <amount>'. Be sure to check your spacing."
+        response = text.PERCENTAGE["parse_error"]
         return response
     # check that the minimum is a number
 
     if parsed_text[1].lower() == "nan" or ("inf" in parsed_text[1].lower()):
-        response = "'%s' didn't look like a number to me. If it is blank, there might be extra spaces in the command."
+        response = text.NAN
         return response
     try:
         amount = float(parsed_text[1])
     except:
-        response = "'%s' didn't look like a number to me. If it is blank, there might be extra spaces in the command."
+        response = text.NAN % parsed_text[1]
         return response
 
     # check that it's greater than 0.01
     if round(amount, 2) < 0:
-        response = "Did not update. Your percentage cannot be negative."
+        response = text.PERCENTAGE["neg"]
         return response
 
     if round(amount, 2) > 100:
-        response = "Did not update. Your percentage must be 100 or lower."
+        response = text.PERCENTAGE["100"]
         return response
 
     # check if the user is in the database
@@ -223,7 +184,7 @@ def handle_percentage(message):
         val = (round(amount, 2), username)
         MYCURSOR.execute(sql, val)
         MYDB.commit()
-        response = "Updating donation percentage to %s" % round(amount, 2)
+        response = text.PERCENTAGE["updating"] % round(amount, 2)
         return response
     else:
         add_history_record(
@@ -234,10 +195,7 @@ def handle_percentage(message):
             comment_id=message.name,
             comment_text=str(message.body)[:255],
         )
-        response = (
-            "You do not currently have an account open. To create one, "
-            "respond with the text 'create' in the message body."
-        )
+        response = text.NOT_OPEN
         return response
 
 
@@ -261,16 +219,15 @@ def handle_balance(message):
     if len(result) > 0:
         results = check_balance(result[0][0])
 
-        response = (
-            "At address %s:\n\nAvailable: %s Nano\n\nUnpocketed: %s Nano\n\nNano "
-            "will be pocketed automatically unless the transaction is below "
-            "0.0001 Nano."
-            "\n\nhttps://nanocrawler.cc/explorer/account/%s"
-            % (result[0][0], results[0] / 10 ** 30, results[1] / 10 ** 30, result[0][0])
+        response = text.BALANCE % (
+            result[0][0],
+            from_raw(results[0]),
+            from_raw(results[1]),
+            result[0][0],
         )
 
         return response
-    return "You do not have an open account yet"
+    return text.NOT_OPEN
 
 
 def handle_create(message):
@@ -305,12 +262,7 @@ def handle_create(message):
         # reddit.redditor(message_recipient).message(subject, message_text)
 
     else:
-        response = (
-            "It looks like you already have an account. In any case it is now "
-            "**active**. Your Nano address is %s."
-            "\n\nhttps://nanocrawler.cc/explorer/account/%s"
-            % (result[0][0], result[0][0])
-        )
+        response = text.ALREADY_EXISTS % (result[0][0], result[0][0])
     return response
 
 
@@ -325,7 +277,7 @@ def handle_help(message):
         comment_id=message.name,
         reddit_time=message_time.strftime("%Y-%m-%d %H:%M:%S"),
     )
-    response = HELP
+    response = text.HELP
     return response
 
 
@@ -339,18 +291,12 @@ def handle_history(message):
     # if there are more than 2 words, one of the words is a number for the number of records
     if len(parsed_text) >= 2:
         if parsed_text[1].lower() == "nan" or ("inf" in parsed_text[1].lower()):
-            response = (
-                "'%s' didn't look like a number to me. If it is blank, "
-                "there might be extra spaces in the command."
-            )
+            response = text.NAN
             return response
         try:
             num_records = int(parsed_text[1])
         except:
-            response = (
-                "'%s' didn't look like a number to me. If it is blank, "
-                "there might be extra spaces in the command."
-            )
+            response = text.NAN
             return response
 
     # check that it's greater than 50
@@ -388,7 +334,7 @@ def handle_history(message):
             try:
                 amount = result[2]
                 if (result[1] == "send") and amount:
-                    amount = int(result[2]) / 10 ** 30
+                    amount = from_raw(int(result[2]))
                     if (
                         result[4] == "sent to registered redditor"
                         or result[4] == "new user created"
@@ -427,7 +373,7 @@ def handle_history(message):
                         result[4],
                     )
                 elif (result[1] == "minimum") and amount:
-                    amount = int(result[2]) / 10 ** 30
+                    amount = from_raw(int(result[2]))
                     response += "%s: %s | %s | %s | %s\n\n" % (
                         result[0],
                         result[1],
@@ -459,10 +405,7 @@ def handle_history(message):
             comment_id=message.name,
             comment_text=str(message.body)[:255],
         )
-        response = (
-            "You do not currently have an account open. To create one, "
-            "respond with the text 'create' in the message body."
-        )
+        response = text.NOT_OPEN
         return response
 
 
@@ -477,34 +420,22 @@ def handle_minimum(message):
 
     # there should be at least 2 words, a minimum and an amount.
     if len(parsed_text) < 2:
-        response = (
-            "I couldn't parse your command. I was expecting 'minimum "
-            "<amount>'. Be sure to check your spacing."
-        )
+        response = text.MINIMUM["parse_error"]
         return response
     # check that the minimum is a number
 
     if parsed_text[1].lower() == "nan" or ("inf" in parsed_text[1].lower()):
-        response = (
-            "'%s' didn't look like a number to me. If it is blank, "
-            "there might be extra spaces in the command."
-        )
+        response = text.NAN
         return response
     try:
         amount = float(parsed_text[1])
     except:
-        response = (
-            "'%s' didn't look like a number to me. If it is blank, "
-            "there might be extra spaces in the command."
-        )
+        response = text.NAN % parsed_text[1]
         return response
 
     # check that it's greater than 0.01
-    if nano_to_raw(amount) < nano_to_raw(PROGRAM_MINIMUM):
-        response = (
-            "Did not update. The amount you specified is below the program minimum "
-            "of %s Nano." % PROGRAM_MINIMUM
-        )
+    if to_raw(amount) < to_raw(PROGRAM_MINIMUM):
+        response = text.MINIMUM["below_program"] % PROGRAM_MINIMUM
         return response
 
     # check if the user is in the database
@@ -518,7 +449,7 @@ def handle_minimum(message):
         add_history_record(
             username=username,
             action="minimum",
-            amount=nano_to_raw(amount),
+            amount=to_raw(amount),
             address=result[0][0],
             comment_or_message="message",
             comment_id=message.name,
@@ -526,24 +457,21 @@ def handle_minimum(message):
             comment_text=str(message.body)[:255],
         )
         sql = "UPDATE accounts SET minimum = %s WHERE username = %s"
-        val = (str(nano_to_raw(amount)), username)
+        val = (str(to_raw(amount)), username)
         MYCURSOR.execute(sql, val)
         MYDB.commit()
-        response = "Updating tip minimum to %s" % amount
+        response = text.MINIMUM["set_min"] % amount
         return response
     else:
         add_history_record(
             username=username,
             action="minimum",
             reddit_time=message_time.strftime("%Y-%m-%d %H:%M:%S"),
-            amount=nano_to_raw(amount),
+            amount=to_raw(amount),
             comment_id=message.name,
             comment_text=str(message.body)[:255],
         )
-        response = (
-            "You do not currently have an account open. To create one, "
-            "respond with the text 'create' in the message body."
-        )
+        response = text.NOT_OPEN
         return response
 
 
@@ -572,12 +500,11 @@ def handle_receive(message):
             comment_id=message.name,
             comment_or_message="message",
         )
-        response = (
-            "At address %s, you currently have %s Nano available, and %s Nano "
-            "unpocketed. If you have any unpocketed, create a new "
-            "message containing the word "
-            "'receive'\n\nhttps://nanocrawler.cc/explorer/account/%s"
-            % (address, balance[0] / 10 ** 30, balance[1] / 10 ** 30, address)
+        response = text.RECEIVE["balance"] % (
+            address,
+            from_raw(balance[0]),
+            from_raw(balance[1]),
+            address,
         )
         return response
     else:
@@ -588,10 +515,7 @@ def handle_receive(message):
             comment_id=message.name,
             comment_or_message="message",
         )
-        response = (
-            "You do not currently have an account open. To create one, "
-            "respond with the text 'create' in the message body."
-        )
+        response = text.NOT_OPEN
         return response
 
 
@@ -611,50 +535,67 @@ def handle_silence(message):
     parsed_text = parse_text(str(message.body))
 
     if len(parsed_text) < 2:
-        response = (
-            "I couldn't parse your command. I was expecting 'silence "
-            "<yes/no>'. Be sure to check your spacing."
-        )
+        response = text.SILENCE["parse_error"]
         return response
 
     if parsed_text[1] == "yes":
         sql = "UPDATE accounts SET silence = TRUE WHERE username = %s "
         val = (username,)
         MYCURSOR.execute(sql, val)
-        response = (
-            "Silence set to 'yes'. You will no longer receive tip "
-            "notifications or be tagged by the bot."
-        )
+        response = text.SILENCE["yes"]
     elif parsed_text[1] == "no":
         sql = "UPDATE accounts SET silence = FALSE WHERE username = %s"
         val = (username,)
         MYCURSOR.execute(sql, val)
-        response = (
-            "Silence set to 'no'. You will receive tip notifications and be "
-            "tagged by the bot in replies."
-        )
+        response = text.SILENCE["no"]
     else:
-        response = (
-            "I did not see 'no' or 'yes' after 'silence'. If you did type "
-            "that, check your spacing."
-        )
+        response = text.SILENCE["yes_no"]
     MYDB.commit()
 
     return response
 
 
 def handle_subreddit(message):
-
     parsed_text = parse_text(str(message.body))
-    # check if there are at least 3 items (command, sub, action, option)
+    # If it is just the subreddit, return all the subreddits
+    if len(parsed_text) < 2:
+        response = text.SUBREDDIT["all"]
+        MYCURSOR.execute("SELECT subreddit, status, minimum FROM subreddits")
+        myresult = MYCURSOR.fetchall()
+        for result in myresult:
+            result = [str(i) for i in result]
+            response += ", ".join(result)
+            response += "\n\n"
+        return response
+
+    # Return the subreddit stats
     if len(parsed_text) < 3:
-        return "Your command seems to be missing something. Make sure it follow the format `subreddit <subreddit> <command> <option>.`"
+        response = text.SUBREDDIT["one"]
+        sql = "SELECT subreddit, status, minimum FROM subreddits WHERE subreddit=%s"
+        val = (parsed_text[1],)
+        MYCURSOR.execute(sql, val)
+        myresult = MYCURSOR.fetchall()
+        for result in myresult:
+            result = [str(i) for i in result]
+            response += ", ".join(result)
+        return response % parsed_text[1]
+
     # check if the user is a moderator of the subreddit
     if message.author not in REDDIT.subreddit(parsed_text[1]).moderator():
-        return "You are not a moderator of /r/%s." % parsed_text[1]
+        return text.SUBREDDIT["not_mod"] % parsed_text[1]
 
-    if parsed_text[2] == "minimum":
-        return "Subreddit-specific minimums aren't enabled yet. Check back soon!"
+    # change the subreddit minimum
+    if parsed_text[2] in ["minimum", "min"]:
+        try:
+            float(parsed_text[3])
+        except:
+            return text.NAN % parsed_text[3]
+        sql = "UPDATE subreddits SET minimum = %s WHERE subreddit = %s"
+        val = (parsed_text[3], parsed_text[1])
+        MYCURSOR.execute(sql, val)
+        MYDB.commit()
+
+        return text.SUBREDDIT["minimum"] % (parsed_text[1], parsed_text[3])
 
     if parsed_text[2] in ("disable", "deactivate"):
         # disable the bot
@@ -665,10 +606,7 @@ def handle_subreddit(message):
             MYDB.commit()
         except:
             pass
-        return (
-            "Within 5 minutes, tipping will be deactivated in your subreddit %s."
-            % parsed_text[1]
-        )
+        return text.SUBREDDIT["deactivate"] % parsed_text[1]
 
     if parsed_text[2] in ("enable", "activate"):
         # if it's at least 4 words, set the status to that one
@@ -687,14 +625,11 @@ def handle_subreddit(message):
             val = (status, parsed_text[1])
             MYCURSOR.execute(sql, val)
             MYDB.commit()
-        return (
-            "Within 5 minutes, the tipbot response in your Subreddit will be set to %s."
-            % status
-        )
+        return text.SUBREDDIT["activate"] % status
 
     # only 4 word commands after this point
     if len(parsed_text) < 4:
-        return "There was something wrong with your activate or minimum command."
+        return text.SUBREDDIT["error"]
 
 
 def handle_send(message):
@@ -746,7 +681,7 @@ def handle_send(message):
         return response
 
     # check if it's above the program minimum
-    if response["amount"] < nano_to_raw(PROGRAM_MINIMUM):
+    if response["amount"] < to_raw(PROGRAM_MINIMUM):
         update_history_notes(entry_id, "amount below program limit")
         response["status"] = 130
         return response
@@ -845,11 +780,11 @@ def handle_send(message):
     )
 
     if response["status"] == 20:
-        subject = "Congrats on receiving your first Nano Tip!"
+        subject = text.SUBJECTS["first_tip"]
         message_text = (
             WELCOME_TIP
             % (
-                response["amount"] / 10 ** 30,
+                from_raw(response["amount"]),
                 recipient_info["address"],
                 recipient_info["address"],
             )
@@ -860,14 +795,14 @@ def handle_send(message):
     else:
         if not recipient_info["silence"]:
             receiving_new_balance = check_balance(recipient_info["address"])
-            subject = "You just received a new Nano tip!"
+            subject = text.SUBJECTS["new_tip"]
             message_text = (
                 NEW_TIP
                 % (
-                    response["amount"] / 10 ** 30,
+                    from_raw(response["amount"]),
                     recipient_info["address"],
-                    receiving_new_balance[0] / 10 ** 30,
-                    receiving_new_balance[1] / 10 ** 30,
+                    from_raw(receiving_new_balance[0]),
+                    from_raw(receiving_new_balance[1]),
                     response["hash"],
                 )
                 + COMMENT_FOOTER
@@ -891,11 +826,7 @@ def handle_opt_out(message):
     MYCURSOR.execute(sql, (str(message.author),))
     MYDB.commit()
 
-    response = (
-        "You have opted-out and I promise not to bother you anymore.\n\nReturnable Nano will be returned "
-        "to the tippers, and the remaining balance will be donated to the tipbot fund.\n\nIf this was in "
-        "error, please respond immediately with the text `opt-in`."
-    )
+    response = text.OPT_OUT
     return response
 
 
@@ -912,10 +843,80 @@ def handle_opt_in(message):
     sql = "UPDATE accounts SET opt_in = TRUE WHERE username = %s"
     MYCURSOR.execute(sql, (str(message.author),))
     MYDB.commit()
-    response = (
-        "Welcome back! You have opted back in. Your account will be restored with the same address, "
-        "though any Nano you had may have already been returned or donated already."
+    response = text.OPT_IN
+    return response
+
+
+def handle_convert(message):
+    """
+    Returns the Nano amount of a currency.
+    """
+    parsed_text = parse_text(str(message.body))
+
+    add_history_record(
+        username=str(message.author),
+        action="convert",
+        comment_or_message="message",
+        comment_id=message.name,
+        reddit_time=datetime.utcfromtimestamp(message.created_utc).strftime(
+            "%Y-%m-%d %H:%M:%S"
+        ),
     )
+
+    if len(parsed_text) < 2:
+        return text.CONVERT["no_amount_specified"]
+    try:
+        amount = parse_raw_amount(parsed_text)
+    except TipError:
+        return text.SEND_TEXT[120] % parsed_text[1]
+    return text.CONVERT["success"] % (parsed_text[1], from_raw(amount))
+
+
+def handle_projects(message):
+    """
+    Handles creation and updates of crowdfunding (NanoCenter) projects
+    """
+    parsed_text = parse_text(str(message.body))
+    response = text.CROWD_FUNDING["projects"]
+    if (str(message.author).lower() in DONATION_ADMINS + TIPBOT_OWNER) and len(
+        parsed_text
+    ) > 2:
+        sql = "INSERT INTO projects (project, address) VALUES(%s, %s) ON DUPLICATE KEY UPDATE address=%s"
+        val = (parsed_text[1], parsed_text[2], parsed_text[2])
+        MYCURSOR.execute(sql, val)
+        MYDB.commit()
+    add_history_record(
+        username=str(message.author),
+        action="project",
+        comment_text=str(message.body)[:255],
+        comment_or_message="message",
+        comment_id=message.name,
+    )
+
+    sql = "SELECT project, address FROM projects"
+    MYCURSOR.execute(sql)
+    results = MYCURSOR.fetchall()
+    for result in results:
+        response += "%s %s  \n" % (result[0], result[1])
+    return response
+
+
+def handle_delete_project(message):
+    parsed_text = parse_text(str(message.body))
+    if (
+        (str(message.author) == TIPBOT_OWNER)
+        or (str(message.author).lower() == "rockmsockmjesus")
+    ) and len(parsed_text) > 1:
+        sql = "DELETE FROM projects WHERE project=%s"
+        val = (parsed_text[1],)
+        MYCURSOR.execute(sql, val)
+        MYDB.commit()
+    response = text.CROWD_FUNDING["projects"]
+    sql = "SELECT project, address FROM projects"
+    MYCURSOR.execute(sql)
+    results = MYCURSOR.fetchall()
+    for result in results:
+        response += "%s %s  \n" % (result[0], result[1])
     return response
 
 
@@ -931,8 +932,13 @@ def parse_recipient_username(recipient_text):
     elif recipient_text[:2].lower() == "u/":
         recipient_text = recipient_text[2:]
 
-    if (recipient_text[:5].lower() == "nano_") or (
-        recipient_text[:4].lower() == "xrb_"
+    if (
+        shared.CURRENCY == "Nano"
+        and (
+            recipient_text[:5].lower() == "nano_"
+            or recipient_text[:4].lower() == "xrb_"
+        )
+        or (shared.CURRENCY == "Banano" and recipient_text[:4].lower() == "ban_")
     ):
         # check valid address
         success = validate_address(recipient_text)

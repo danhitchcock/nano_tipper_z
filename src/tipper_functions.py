@@ -12,12 +12,15 @@ from shared import (
     TIP_COMMANDS,
     DONATE_COMMANDS,
     TIPBOT_DONATION_ADDRESS,
+    to_raw,
+    from_raw,
 )
 
 from text import HELP, RETURN_WARNING, SUBJECTS
 
-from tipper_rpc import generate_account, nano_to_raw, check_balance, send
+from tipper_rpc import generate_account, check_balance, send
 import text
+import shared
 
 
 def add_history_record(
@@ -125,7 +128,7 @@ def add_new_account(username):
         username,
         private,
         address,
-        nano_to_raw(RECIPIENT_MINIMUM),
+        to_raw(RECIPIENT_MINIMUM),
         True,
         False,
         False,
@@ -138,7 +141,7 @@ def add_new_account(username):
         "username": username,
         "address": address,
         "private_key": private,
-        "minimum": nano_to_raw(RECIPIENT_MINIMUM),
+        "minimum": to_raw(RECIPIENT_MINIMUM),
         "silence": False,
         "balance": 0,
         "account_exists": True,
@@ -159,6 +162,7 @@ def allowed_request(username, seconds=30, num_requests=5):
     :param num_requests: int (number of allowed requests)
     :return:
     """
+
     sql = "SELECT sql_time FROM history WHERE username=%s"
     val = (str(username),)
     MYCURSOR.execute(sql, val)
@@ -174,19 +178,27 @@ def allowed_request(username, seconds=30, num_requests=5):
 def check_registered_by_address(address):
     address = address.split("_")[1]
 
-    sql = "SELECT username FROM accounts WHERE address=%s"
-    val = ("nano_" + address,)
-    MYCURSOR.execute(sql, val)
-    result = MYCURSOR.fetchall()
-    if len(result) > 0:
-        return result[0][0]
+    if shared.CURRENCY == "Nano":
+        sql = "SELECT username FROM accounts WHERE address=%s"
+        val = ("nano_" + address,)
+        MYCURSOR.execute(sql, val)
+        result = MYCURSOR.fetchall()
+        if len(result) > 0:
+            return result[0][0]
 
-    sql = "SELECT username FROM accounts WHERE address=%s"
-    val = ("xrb_" + address,)
-    MYCURSOR.execute(sql, val)
-    result = MYCURSOR.fetchall()
-    if len(result) > 0:
-        return result[0][0]
+        sql = "SELECT username FROM accounts WHERE address=%s"
+        val = ("xrb_" + address,)
+        MYCURSOR.execute(sql, val)
+        result = MYCURSOR.fetchall()
+        if len(result) > 0:
+            return result[0][0]
+    elif shared.CURRENCY == "Banano":
+        sql = "SELECT username FROM accounts WHERE address=%s"
+        val = ("ban_" + address,)
+        MYCURSOR.execute(sql, val)
+        result = MYCURSOR.fetchall()
+        if len(result) > 0:
+            return result[0][0]
     return None
 
 
@@ -286,15 +298,13 @@ def parse_raw_amount(parsed_text, username=None):
             balance = check_balance(address)
             return balance[0]
         else:
-            raise (
-                TipError(None, 'You do not have a tip bot account yet. PM me "create".')
-            )
+            raise (TipError(None, text.NOT_OPEN))
 
     # check if there is a currency code in the amount; if so, get the conversion
     if parsed_text[1][-3:].lower() in EXCLUDED_REDDITORS:
         currency = parsed_text[1][-3:].upper()
         url = "https://min-api.cryptocompare.com/data/price?fsym={}&tsyms={}".format(
-            "NANO", currency
+            shared.CURRENCY, currency
         )
         try:
             results = requests.get(url, timeout=1)
@@ -322,7 +332,7 @@ def parse_raw_amount(parsed_text, username=None):
         )
     else:
         try:
-            amount = nano_to_raw(float(amount) / conversion)
+            amount = to_raw(float(amount) / conversion)
         except:
             raise TipError(
                 None,
@@ -474,9 +484,9 @@ def return_transactions():
                 percentage = returned_results[0][1]
                 percentage = float(percentage) / 100
                 # send it back
-                donation_amount = int(txn[2]) / 10 ** 30
+                donation_amount = from_raw(int(txn[2]))
                 donation_amount = donation_amount * percentage
-                donation_amount = nano_to_raw(donation_amount)
+                donation_amount = to_raw(donation_amount)
 
                 return_amount = int(txn[2]) - donation_amount
                 if (return_amount > 0) and (return_amount <= int(txn[2])):
@@ -517,9 +527,9 @@ def return_transactions():
                 returns[message_recipient]["transactions"].append(
                     [
                         recipient,
-                        int(txn[2]) / 10 ** 30,
-                        return_amount / 10 ** 30,
-                        donation_amount / 10 ** 30,
+                        from_raw(int(txn[2])),
+                        from_raw(return_amount),
+                        from_raw(donation_amount),
                     ]
                 )
 

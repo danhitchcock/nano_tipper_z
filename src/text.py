@@ -1,6 +1,5 @@
-from tipper_rpc import nano_to_raw, raw_to_nano
-
 import shared
+from shared import from_raw
 
 COMMENT_FOOTER = """\n\n
 ***\n\n
@@ -13,7 +12,7 @@ COMMENT_FOOTER = """\n\n
 """
 
 HELP = """
-Help from Nano Tipper! This bot was handles tips via the Nano currency.
+Help from Nano Tipper! This bot handles tips via the Nano currency.
 [Visit us on GitHub](https://github.com/danhitchcock/nano_tipper_z), the [Wiki](http://reddit.com/r/nano_tipper/wiki/) 
 or /r/nano_tipper for more information on its use and its status. Be sure to read the 
 [Terms of Service](https://github.com/danhitchcock/nano_tipper_z#terms-of-service)\n\n
@@ -39,6 +38,7 @@ For PM commands, create a new message with any of the following commands (be sur
     'silence <yes/no>' - (default 'no') Prevents the bot from sending you tip notifications or tagging in posts 
     'history <optional: number of records>' - Retrieves tipbot commands. Default 10, maximum is 50.
     'percentage <percent>' - (default 10 percent) Sets a percentage of returned tips to donate to TipBot development.
+    'convert <amountcurrency>' - Calculates the Nano value of the specified curency. e.g. `convert 1USD`. Also works with "price" and "value".
     'opt-out' - Disables your account and donates your remaining Nano to the tipbot. 
     'opt-in' - Reenables your account. Your Nano may or may not still be available. 
     'help' - Get this help message\n
@@ -123,9 +123,38 @@ RETURN_WARNING = (
 
 
 SUBJECTS = {
-    "RETURN_WARNING": "Please Activate Your Nano Tipper Account",
-    "RETURN_MESSAGE": "Returned Tips",
+    "RETURN_WARNING": "Nano Tipper - Please Activate Your Nano Tipper Account",
+    "RETURN_MESSAGE": "Nano Tipper - Returned Tips",
+    "first_tip": "Nano Tipper - Congrats on receiving your first Nano Tip!",
+    "new_tip": "Nano Tipper - You just received a new Nano tip!",
+    "help": "Nano Tipper - Help",
+    "balance": "Nano Tipper - Account Balance",
+    "minimum": "Nano Tipper - Tip Minimum",
+    "percentage": "Nano Tipper - Returned Tip Percentage for Donation",
+    "create": "Nano Tipper - Create",
+    "send": "Nano Tipper - Send",
+    "history": "Nano Tipper - History",
+    "silence": "Nano Tipper - Silence",
+    "subreddit": "Nano Tipper - Subreddit",
+    "opt-out": "Nano Tipper - Opt Out",
+    "opt-in": "Nano Tipper - Opt In",
+    "cf_projects": "Nano Tipper - Nanocenter Projects",
+    "success": "Nano Tipper - Your Tip Was Successful",
+    "failure": "Nano Tipper - You Tip Did Not Go Through",
+    "convert": "Nano Tipper - Your Currency Conversion",
 }
+
+MINIMUM = {
+    "set_min": "Updating tip minimum to %s",
+    "below_program": "Did not update. The amount you specified is below the program minimum "
+    "of %s Nano.",
+    "parse_error": "I couldn't parse your command. I was expecting 'minimum "
+    "<amount>'. Be sure to check your spacing.",
+}
+
+NAN = "'%s' didn't look like a number to me. If it is blank, there might be extra spaces in the command."
+
+
 # full responses
 SEND_TEXT = {
     10: (
@@ -152,7 +181,8 @@ SEND_TEXT = {
         "make an account."
     ),
     110: "You must specify an amount and a user, e.g. `send 1 nano_tipper`.",
-    120: "I could not read the amount. Is '%s' a number?",
+    120: "I could not read the amount or the currency code. Is '%s' a number? This could also mean the "
+    "currency converter is down.",
     130: "Program minimum is %s Nano.",
     140: (
         "It wasn't clear if you were trying to perform a currency conversion or "
@@ -196,6 +226,73 @@ SEND_TEXT_MIN = {
     ),
 }
 
+OPT_IN = """
+Welcome back! You have opted back in. Your account will be restored with the same address, 
+though any Nano you had may have already been returned or donated already.
+"""
+
+OPT_OUT = """
+You have opted-out and I promise not to bother you anymore.\n\n
+Returnable Nano will be returned to the tippers, and the remaining balance will be donated to the tipbot fund.\n\n
+If this was in error, please respond immediately with the text `opt-in`.
+"""
+
+SUBREDDIT = {
+    "missing": "Your command seems to be missing something. Make sure it follow the format `subreddit <subreddit> "
+    "<command> <option>.`",
+    "not_mod": "You are not a moderator of /r/%s.",
+    "minimum": "Sucessfully set your /r/%s minimum to %s, active immediately.",
+    "deactivate": "Within 5 minutes, tipping will be deactivated in your subreddit %s.",
+    "activate": "Within 5 minutes, the Nano Tipper response in your Subreddit will be set to %s.",
+    "error": "There was something wrong with your activate or minimum command.",
+    "all": "Here is a list of every subreddit and its status:\n\nName, Status, Minimum\n\n",
+    "one": "Here are the settings for subreddit /r/%s:\n\nName, Status, Minimum\n\n",
+}
+
+SILENCE = {
+    "yes_no": "I did not see 'no' or 'yes' after 'silence'. If you did type "
+    "that, check your spacing.",
+    "no": "Silence set to 'no'. You will receive tip notifications and be "
+    "tagged by the bot in replies.",
+    "yes": "Silence set to 'yes'. You will no longer receive tip "
+    "notifications or be tagged by the bot.",
+    "parse_error": "I couldn't parse your command. I was expecting 'silence "
+    "<yes/no>'. Be sure to check your spacing.",
+}
+
+RECEIVE = {
+    "balance": "At address %s, you currently have %s Nano available, and %s Nano "
+    "unpocketed. If you have any unpocketed, create a new "
+    "message containing the word 'receive'\n\nhttps://nanocrawler.cc/explorer/account/%s",
+}
+
+NOT_OPEN = (
+    "You do not currently have an account open. To create one, "
+    "respond with the text 'create' in the message body."
+)
+
+ALREADY_EXISTS = (
+    "It looks like you already have an account. In any case it is now "
+    "**active**. Your Nano address is %s."
+    "\n\nhttps://nanocrawler.cc/explorer/account/%s"
+)
+
+BALANCE = (
+    "At address %s:\n\nAvailable: %s Nano\n\nUnpocketed: %s Nano\n\nNano "
+    "will be pocketed automatically unless the transaction is below "
+    "0.0001 Nano."
+    "\n\nhttps://nanocrawler.cc/explorer/account/%s"
+)
+
+CROWD_FUNDING = {
+    "projects": "Current NanoCenter Donation Projects: \n\n",
+}
+
+CONVERT = {
+    "no_amount_specified": "You must specify an amount, for example `convert 0.01USD`.",
+    "success": "%s converts to %s Nano.",
+}
+
 
 def make_response_text(message, response):
 
@@ -207,7 +304,7 @@ def make_response_text(message, response):
         if response["status"] < 100:
             return SEND_TEXT_MIN[response["status"]] % (
                 response["hash"],
-                raw_to_nano(response["amount"]),
+                from_raw(response["amount"]),
                 response["recipient"],
             )
         else:
@@ -217,12 +314,12 @@ def make_response_text(message, response):
     if response["status"] == 20:
         return SEND_TEXT[response["status"]] % (
             response["recipient"],
-            raw_to_nano(response["amount"]),
+            from_raw(response["amount"]),
             response["hash"],
         )
     if response["status"] < 100:
         return SEND_TEXT[response["status"]] % (
-            raw_to_nano(response["amount"]),
+            from_raw(response["amount"]),
             response["recipient"],
             response["hash"],
         )
@@ -236,9 +333,19 @@ def make_response_text(message, response):
         return SEND_TEXT[response["status"]] % response["recipient"]
     if response["status"] == 180:
         return SEND_TEXT[response["status"]] % (
-            raw_to_nano(response["minimum"]),
-            raw_to_nano(response["amount"]),
+            from_raw(response["minimum"]),
+            from_raw(response["amount"]),
         )
+    return None
+
+
+PERCENTAGE = {
+    "parse_error": "I couldn't parse your command. I was expecting 'percentage <amount>'. "
+    "Be sure to check your spacing.",
+    "neg": "Did not update. Your percentage cannot be negative.",
+    "100": "Did not update. Your percentage must be 100 or lower.",
+    "updating": "Updating donation percentage to %s.",
+}
 
 
 def make_return_message(user):

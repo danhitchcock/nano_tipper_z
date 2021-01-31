@@ -71,6 +71,7 @@ There are many other commands.
 'projects' - Retrives a list of NanoCenter donation projects
 'subreddit <subreddit> <'activate'/'deactivate'> <option>' - Subreddit Moderator Controls - Enabled Tipping on Your Sub (`silent`, `minimal`, `full`)
 'withdraw <amount or all> <user/address>' - Same as send
+'convert <amountcurrency>' - Calculates the Nano value of the specified curency. e.g. `convert 1USD`. Also works with "price" and "value".
 'opt-out' - Disables your account and donates your remaining Nano to the tipbot.
 'opt-in' - Reenables your account. Your Nano may or may not still be available. 
 ```

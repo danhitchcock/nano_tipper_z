@@ -1,6 +1,6 @@
 import time
 from datetime import datetime
-from shared import DATABASE_NAME, MYDB, MYCURSOR
+from shared import DATABASE_NAME, MYDB, MYCURSOR, PROGRAM_MINIMUM
 
 
 def init_db():
@@ -68,7 +68,8 @@ def init_subreddits():
         "subreddit VARCHAR(255) PRIMARY KEY, "
         "reply_to_comments BOOL, "
         "footer VARCHAR(255), "
-        "status VARCHAR(255) "
+        "status VARCHAR(255), "
+        "minimum VARCHAR(255)"
         ")"
     )
     MYDB.commit()
@@ -172,9 +173,15 @@ def allowed_request(username, seconds=30, num_requests=5):
         ).total_seconds() > seconds
 
 
-def add_subreddit(subreddit, reply_to_comments=True, footer="", status="friendly"):
-    sql = "INSERT INTO subreddits (subreddit, reply_to_comments, footer, status) VALUES (%s, %s, %s, %s)"
-    val = (subreddit, reply_to_comments, footer, status)
+def add_subreddit(
+    subreddit,
+    reply_to_comments=True,
+    footer="",
+    status="friendly",
+    minimum=PROGRAM_MINIMUM,
+):
+    sql = "INSERT INTO subreddits (subreddit, reply_to_comments, footer, status, minimum) VALUES (%s, %s, %s, %s, %s)"
+    val = (subreddit, reply_to_comments, footer, status, minimum)
     MYCURSOR.execute(sql, val)
     MYDB.commit()
 
@@ -298,6 +305,14 @@ def migrate_opt_out():
     sql = "ALTER TABLE accounts ADD opt_in BOOL"
     MYCURSOR.execute(sql)
     sql = "UPDATE accounts SET opt_in = TRUE"
+    MYCURSOR.execute(sql)
+    MYDB.commit()
+
+
+def migrate_subreddit_17():
+    sql = "ALTER TABLE subreddits ADD minimum VARCHAR(255)"
+    MYCURSOR.execute(sql)
+    sql = "UPDATE subreddits SET minimum = 0.001"
     MYCURSOR.execute(sql)
     MYDB.commit()
 

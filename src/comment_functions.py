@@ -9,9 +9,10 @@ from shared import (
     LOGGER,
     TIP_BOT_USERNAME,
     EXCLUDED_REDDITORS,
+    from_raw,
+    to_raw,
 )
 from tipper_functions import (
-    nano_to_raw,
     add_history_record,
     parse_text,
     update_history_notes,
@@ -30,12 +31,13 @@ def handle_comment(message):
     response_text = text.make_response_text(message, response)
 
     # check if subreddit is untracked or silent. If so, PM the users.
-    if response["subreddit_status"] in ["silent", "hostile"]:
+    if response["subreddit_status"] in ["silent", "hostile", "untracked"]:
         message_recipient = str(message.author)
         if response["status"] < 100:
-            subject = "Your Tip Was Successful"
+            subject = text.SUBJECTS["success"]
+
         else:
-            subject = "You Tip Did Not Go Through"
+            subject = text.SUBJECTS["failure"]
         message_text = response_text + text.COMMENT_FOOTER
         sql = "INSERT INTO messages (username, subject, message) VALUES (%s, %s, %s)"
         val = (message_recipient, subject, message_text)
@@ -102,19 +104,14 @@ def send_from_comment(message):
         parsed_text = parsed_text[-2:]
 
     # before we can do anything, check the subreddit status for generating the response
-    # check if amount is above subreddit minimum.
     response["subreddit"] = str(message.subreddit).lower()
-    sql = "SELECT status FROM subreddits WHERE subreddit=%s"
+    sql = "SELECT status, minimum FROM subreddits WHERE subreddit=%s"
     val = (response["subreddit"],)
     results = tipper_functions.query_sql(sql, val)
     if len(results) == 0:
-        response["subreddit_minimum"] = 1
-        results = [["untracked"]]
-    elif results[0][0] in ["full", "friendly", "minimal", "silent"]:
-        response["subreddit_minimum"] = 0
-    else:
-        response["subreddit_minimum"] = 1
+        results = [["untracked", "1"]]
     response["subreddit_status"] = results[0][0]
+    response["subreddit_minimum"] = float(results[0][1])
 
     # check that it wasn't a mistyped currency code or something
     if parsed_text[2] in EXCLUDED_REDDITORS:
@@ -148,7 +145,7 @@ def send_from_comment(message):
         return response
 
     # check if it's above the program minimum
-    if response["amount"] < nano_to_raw(PROGRAM_MINIMUM):
+    if response["amount"] < to_raw(PROGRAM_MINIMUM):
         update_history_notes(entry_id, "amount below program limit")
         response["status"] = 130
         return response
@@ -159,7 +156,8 @@ def send_from_comment(message):
         response["status"] = 160
         return response
 
-    if response["amount"] < nano_to_raw(response["subreddit_minimum"]):
+    # check that it's above the subreddit minimum
+    if response["amount"] < to_raw(response["subreddit_minimum"]):
         update_history_notes(entry_id, "amount below subreddit minimum")
         response["status"] = 150
         return response
@@ -272,11 +270,11 @@ def send_from_comment(message):
     tipper_functions.exec_sql(sql, val)
 
     if response["status"] == 20:
-        subject = "Congrats on receiving your first Nano Tip!"
+        subject = text.SUBJECTS["first_tip"]
         message_text = (
             text.WELCOME_TIP
             % (
-                response["amount"] / 10 ** 30,
+                from_raw(response["amount"]),
                 recipient_info["address"],
                 recipient_info["address"],
             )
@@ -287,14 +285,14 @@ def send_from_comment(message):
     else:
         if not recipient_info["silence"]:
             receiving_new_balance = check_balance(recipient_info["address"])
-            subject = "You just received a new Nano tip!"
+            subject = text.SUBJECTS["new_tip"]
             message_text = (
                 text.NEW_TIP
                 % (
-                    response["amount"] / 10 ** 30,
+                    from_raw(response["amount"]),
                     recipient_info["address"],
-                    receiving_new_balance[0] / 10 ** 30,
-                    receiving_new_balance[1] / 10 ** 30,
+                    from_raw(receiving_new_balance[0]),
+                    from_raw(receiving_new_balance[1]),
                     response["hash"],
                 )
                 + text.COMMENT_FOOTER
