@@ -72,7 +72,7 @@ There are also PM commands by [messaging](https://reddit.com/message/compose/?to
 ```balance``` Check your account balance.\n\n
 ```help``` Receive an in-depth help message.\n\n
 
-View your account on (the block explorer)[https://nanocrawler.cc/explorer/account/%s].\n\n
+View your account on [the block explorer](https://nanocrawler.cc/explorer/account/%s).\n\n
 If you have any questions, please post at /r/nano_tipper
 """
 
