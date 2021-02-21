@@ -288,7 +288,7 @@ def test_parse_action(parse_action_mocks):
             RedditMessage("t4_6", "nano_tipper_z", "", "send 0.001 someone"),
         ),
     ]
-
+    print("*" * 80, TIP_BOT_USERNAME)
     for test in tests:
         assert test[0] == tipper_functions.parse_action(test[1])
 

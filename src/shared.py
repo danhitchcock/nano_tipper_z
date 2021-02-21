@@ -40,6 +40,7 @@ try:
     MESSENGER_OPTIONS = config["BOT"]["messenger_options"]
     DONATION_ADMINS = config["BOT"]["donation_admins"]
     CURRENCY = config["BOT"]["currency"]
+    STATUS_POST_ID = config["BOT"]["status_post_id"]
 
     DPOW_ENDPOINT = config["NODE"]["dpow_endpoint"]
     DPOW_TOKEN = config["NODE"]["dpow_token"]
@@ -56,6 +57,7 @@ try:
 except KeyError as e:
     LOGGER.info("Failed to read tipper.ini. Falling back to test-defaults...")
     LOGGER.info("Failed on: ", e)
+    STATUS_POST_ID = ""
     SQL_PASSWORD = ""
     DATABASE_NAME = ""
     TIP_BOT_ON = True
