@@ -249,7 +249,7 @@ def handle_create(message):
     MYCURSOR.execute(sql, val)
     result = MYCURSOR.fetchall()
     if len(result) is 0:
-        address = tipper_functions.add_new_account(username)['address']
+        address = tipper_functions.add_new_account(username)["address"]
         response = WELCOME_CREATE % (address, address)
         message_recipient = TIP_BOT_USERNAME
         subject = "send"
