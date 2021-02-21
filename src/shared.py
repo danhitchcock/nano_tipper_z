@@ -57,6 +57,7 @@ try:
 except KeyError as e:
     LOGGER.info("Failed to read tipper.ini. Falling back to test-defaults...")
     LOGGER.info("Failed on: ", e)
+    STATUS_POST_ID = ""
     SQL_PASSWORD = ""
     DATABASE_NAME = ""
     TIP_BOT_ON = True
