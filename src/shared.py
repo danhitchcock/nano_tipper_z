@@ -40,6 +40,7 @@ try:
     MESSENGER_OPTIONS = config["BOT"]["messenger_options"]
     DONATION_ADMINS = config["BOT"]["donation_admins"]
     CURRENCY = config["BOT"]["currency"]
+    STATUS_POST_ID = config["BOT"]["status_post_id"]
 
     DPOW_ENDPOINT = config["NODE"]["dpow_endpoint"]
     DPOW_TOKEN = config["NODE"]["dpow_token"]

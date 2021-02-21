@@ -8,7 +8,7 @@ from shared import MYCURSOR, MYDB, REDDIT, PROGRAM_MINIMUM, SUBREDDITS, to_raw
 
 from message_functions import handle_message
 
-from tipper_functions import parse_action, return_transactions
+from tipper_functions import parse_action, return_transactions, update_status_message
 from comment_functions import handle_comment
 
 
@@ -93,6 +93,7 @@ def main_loop():
     inactive_timer = time.time()
     receive_timer = time.time()
     subreddit_timer = time.time()
+    update_status_message()
     return_transactions()
     for action_item in stream_comments_messages():
         action = parse_action(action_item)
@@ -113,6 +114,7 @@ def main_loop():
             subreddit_timer = time.time()
             shared.SUBREDDITS = shared.get_subreddits()
             SUBREDDITS = shared.SUBREDDITS
+            update_status_message()
 
 
 if __name__ == "__main__":

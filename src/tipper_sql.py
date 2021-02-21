@@ -128,6 +128,12 @@ def accounts():
         print(result)
 
 
+def list_subreddits():
+    MYCURSOR.execute("SELECT subreddit, status, minimum FROM subreddits")
+    myresult = MYCURSOR.fetchall()
+    return myresult
+
+
 def subreddits():
     MYCURSOR.execute("SHOW COLUMNS FROM subreddits")
     myresult = MYCURSOR.fetchall()

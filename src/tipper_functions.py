@@ -12,6 +12,8 @@ from shared import (
     TIP_COMMANDS,
     DONATE_COMMANDS,
     TIPBOT_DONATION_ADDRESS,
+    REDDIT,
+    STATUS_POST_ID,
     to_raw,
     from_raw,
 )
@@ -19,6 +21,7 @@ from shared import (
 from text import HELP, RETURN_WARNING, SUBJECTS
 
 from tipper_rpc import generate_account, check_balance, send
+from tipper_sql import list_subreddits
 import text
 import shared
 
@@ -502,10 +505,7 @@ def return_transactions():
 
                 if (donation_amount > 0) and (donation_amount <= int(txn[2])):
                     hash2 = send(
-                        address,
-                        private_key,
-                        donation_amount,
-                        TIPBOT_DONATION_ADDRESS,
+                        address, private_key, donation_amount, TIPBOT_DONATION_ADDRESS,
                     )["hash"]
                     add_history_record(
                         action="donate",
@@ -538,3 +538,11 @@ def return_transactions():
         message = text.make_return_message(returns[user])
         send_pm(user, SUBJECTS["RETURN_MESSAGE"], message)
     LOGGER.info("Inactivated script complete.")
+
+
+def update_status_message():
+    subreddits = list_subreddits()
+    body = "Current Subreddits: \n"
+    body += "\n".join([", ".join([val for val in sub]) for sub in subreddits])
+    submission = REDDIT.submission(STATUS_POST_ID)
+    submission.edit(body)
