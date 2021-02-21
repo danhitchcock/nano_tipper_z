@@ -544,7 +544,7 @@ def update_status_message():
     subreddits = list_subreddits()
     body = "Current Subreddits: \n\n"
     body += "\n".join(
-        [", ".join([str(val) for val in sub] + "  ") for sub in subreddits]
+        [", ".join([str(val) for val in sub]) + "  " for sub in subreddits]
     )
     submission = REDDIT.submission(STATUS_POST_ID)
     submission.edit(body)
