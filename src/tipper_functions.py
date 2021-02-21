@@ -505,10 +505,7 @@ def return_transactions():
 
                 if (donation_amount > 0) and (donation_amount <= int(txn[2])):
                     hash2 = send(
-                        address,
-                        private_key,
-                        donation_amount,
-                        TIPBOT_DONATION_ADDRESS,
+                        address, private_key, donation_amount, TIPBOT_DONATION_ADDRESS,
                     )["hash"]
                     add_history_record(
                         action="donate",
@@ -545,7 +542,9 @@ def return_transactions():
 
 def update_status_message():
     subreddits = list_subreddits()
-    body = "Current Subreddits: \n"
-    body += "\n".join([", ".join([val for val in sub]) for sub in subreddits])
+    body = "Current Subreddits: \n\n"
+    body += "\n".join(
+        [", ".join([str(val) for val in sub]) for sub in subreddits] + "  "
+    )
     submission = REDDIT.submission(STATUS_POST_ID)
     submission.edit(body)
