@@ -581,7 +581,10 @@ def handle_subreddit(message):
         return response % parsed_text[1]
 
     # check if the user is a moderator of the subreddit
-    if message.author not in REDDIT.subreddit(parsed_text[1]).moderator():
+    if (
+        message.author not in REDDIT.subreddit(parsed_text[1]).moderator()
+        or message.author != TIPBOT_OWNER
+    ):
         return text.SUBREDDIT["not_mod"] % parsed_text[1]
 
     # change the subreddit minimum
@@ -616,8 +619,8 @@ def handle_subreddit(message):
             status = "full"
         # sql to change subreddit to that status
         try:
-            sql = "INSERT INTO subreddits (subreddit, reply_to_comments, footer, status) VALUES (%s, %s, %s, %s)"
-            val = (parsed_text[1], True, None, status)
+            sql = "INSERT INTO subreddits (subreddit, reply_to_comments, footer, status, minimum) VALUES (%s, %s, %s, %s, %s)"
+            val = (parsed_text[1], True, None, status, PROGRAM_MINIMUM)
             MYCURSOR.execute(sql, val)
             MYDB.commit()
         except:
