@@ -583,7 +583,7 @@ def handle_subreddit(message):
     # check if the user is a moderator of the subreddit
     if (
         message.author not in REDDIT.subreddit(parsed_text[1]).moderator()
-        or message.author != TIPBOT_OWNER
+        and message.author != TIPBOT_OWNER
     ):
         return text.SUBREDDIT["not_mod"] % parsed_text[1]
 
