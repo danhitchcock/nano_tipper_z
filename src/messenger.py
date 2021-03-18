@@ -1,6 +1,7 @@
 from time import sleep
 from shared import REDDIT, LOGGER, Message
 
+print("Starting messenger")
 while True:
     results = Message.select()
     for result in results:

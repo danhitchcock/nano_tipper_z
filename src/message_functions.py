@@ -449,7 +449,7 @@ def handle_subreddit(message):
                 footer=None,
                 status=status
             )
-            await subreddit.save(force_insert=True)        
+            subreddit.save(force_insert=True)        
         return text.SUBREDDIT["activate"] % status
 
     # only 4 word commands after this point

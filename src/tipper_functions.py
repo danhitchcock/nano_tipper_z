@@ -119,7 +119,7 @@ def add_new_account(username):
         active=False,
         opt_in=True
     )
-    await acct.save()
+    acct.save()
     return {
         "username": username,
         "address": address,

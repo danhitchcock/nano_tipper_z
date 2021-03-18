@@ -22,7 +22,7 @@ LOGGER.addHandler(handler)
 
 config = configparser.ConfigParser()
 config.read(
-    os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "tipper.ini")
+    os.path.join(os.path.dirname(os.path.realpath(__file__)), "tipper.ini")
 )
 
 # if we have a file, use it. Otherwise, load testing defaults
@@ -39,7 +39,6 @@ try:
     CURRENCY = config["BOT"]["currency"]
 
     DEFAULT_URL = config["NODE"]["default_url"]
-    REP = config["NODE"]["rep"]
     WALLET_ID = config["NODE"]["wallet_id"]
 
     USE_SQLITE = config["SQL"]["use_sqlite"]
@@ -64,7 +63,6 @@ except KeyError as e:
     TIPPER_OPTIONS = ""
     MESSENGER_OPTIONS = ""
     CURRENCY = "Nano"
-    REP = ""
     WALLET_ID = config["NODE"]["wallet_id"]
     USE_SQLITE = True
 
@@ -77,7 +75,8 @@ else:
 
 try:
     REDDIT = praw.Reddit("bot1")
-except:
+except Exception as err:
+    raise err
     REDDIT = None
 
 class RandomUtil(object):

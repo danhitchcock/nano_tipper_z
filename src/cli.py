@@ -1,6 +1,12 @@
+import os
 import click
 import tipper_sql
-from shared import LOGGER
+import tipper_rpc
+from shared import LOGGER, to_raw
+
+@click.group()
+def cli():
+    pass
 
 @click.command()
 @click.argument("subreddit")
@@ -23,3 +29,24 @@ def subreddit(subreddit, status, delete):
 @click.command()
 def list_subreddits():
     tipper_sql.subreddits()
+
+@click.command()
+def block_count():
+    data = {"action": "block_count"}
+    print(tipper_rpc.perform_curl(data))
+
+
+@click.command()
+@click.argument("account")
+def address_pendings(account):
+    print(tipper_rpc.get_pending(account))
+
+
+
+cli.add_command(subreddit)
+cli.add_command(list_subreddits)
+cli.add_command(block_count)
+cli.add_command(address_pendings)
+
+if __name__ == '__main__':
+    cli()
