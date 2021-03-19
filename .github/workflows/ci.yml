@@ -1,34 +1,75 @@
-name: Python application
+name: CI
 
-on: push
+on:
+  push:
+    branches: [ master ]
 
 jobs:
-  example-3:
-    name: Test Nano Tipper
-    runs-on: "ubuntu-latest"
+  build_and_publish:
+    name: Build and Publish Docker Image
+    needs: test
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_RUN_ID: ${{ github.run_id }}    
     steps:
-      - uses: actions/checkout@v2
-      - uses: conda-incubator/setup-miniconda@v2
+      - uses: actions/checkout@master   
+
+      - name: Get branch name (merge)
+        if: github.event_name != 'pull_request'
+        shell: bash
+        run: echo "BRANCH_NAME=$(echo ${GITHUB_REF#refs/heads/} | tr / -)" >> $GITHUB_ENV
+
+      - name: Get branch name (pull request)
+        if: github.event_name == 'pull_request'
+        shell: bash
+        run: echo "BRANCH_NAME=$(echo ${GITHUB_HEAD_REF} | tr / -)" >> $GITHUB_ENV
+
+      - name: Login to registry
+        uses: actions-hub/docker/login@master
+        env:
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USER }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build and tag
+        if: success()
+        run: docker build -t bananocoin/reddit-bot:${{ env.BRANCH_NAME }}-${{ env.GITHUB_RUN_ID }} .
+
+      - name: Push image   
+        if: success()
+        uses: actions-hub/docker@master
         with:
-          activate-environment: banano-reddit-tipbot
-          environment-file: environment.yml
-          python-version: 3.7
-          condarc-file: condarc.yml
-          auto-activate-base: false
-      - name: Check conda
-        shell: bash -l {0}
+          args: push bananocoin/reddit-bot:${{ env.BRANCH_NAME }}-${{ env.GITHUB_RUN_ID }}
+
+  deploy:
+    name: Deploy reddit app
+    needs: build_and_publish
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_RUN_ID: ${{ github.run_id }}
+    steps:
+      - uses: actions/checkout@master   
+      - uses: imranismail/setup-kustomize@v1
+        with:
+          kustomize-version: "3.x"
+
+      - name: Get branch name (merge)
+        if: github.event_name != 'pull_request'
+        shell: bash
+        run: echo "BRANCH_NAME=$(echo ${GITHUB_REF#refs/heads/} | tr / -)" >> $GITHUB_ENV
+
+      - name: Get branch name (pull request)
+        if: github.event_name == 'pull_request'
+        shell: bash
+ 
+      - name: Set image
+        working-directory: ./kubernetes
         run: |
-          conda info
-          conda list
-      - name: Setup tipbot module
-        shell: bash -l {0}
-        run: |
-          make module-setup
-      - name: Pytest
-        shell: bash -l {0}
-        run: |
-          make test
-      - name: Black
-        shell: bash -l {0}
-        run: |
-          make black
+          kustomize edit set image replaceme=bananocoin/reddit-bot:${{ env.BRANCH_NAME }}-${{ env.GITHUB_RUN_ID }}
+          kustomize build . > deployment-k.yaml
+
+      - name: Deploy image to k8s cluster
+        uses: bbedward/kubectl@master
+        env:
+          KUBE_CONFIG_DATA: ${{ secrets.KUBE_CONFIG_DATA }}
+        with:
+          args: apply -f ./kubernetes/deployment-k.yaml

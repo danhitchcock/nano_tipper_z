@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: reddit-messenger
+spec:
+  strategy:
+    type: Recreate
+  replicas: 1
+  selector:
+    matchLabels:
+      app: reddit-messenger
+  template:
+    metadata:
+      labels:
+        app: reddit-messenger
+    spec:
+      containers:
+      - name: reddit-messenger
+        image: replaceme
+        command: ["/bin/bash", "-c"]
+        args: ["cp /secrets/*.ini .; python messenger_launcher.py"]
+        volumeMounts:
+        - name: secrets
+          mountPath: /secrets
+          readOnly: true
+      volumes:
+      - name: secrets
+        secret:
+          secretName: reddit-secrets

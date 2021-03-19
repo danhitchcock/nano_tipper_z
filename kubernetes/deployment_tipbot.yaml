@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: reddit-tipbot
+spec:
+  strategy:
+    type: Recreate
+  replicas: 1
+  selector:
+    matchLabels:
+      app: reddit-tipbot
+  template:
+    metadata:
+      labels:
+        app: reddit-tipbot
+    spec:
+      containers:
+      - name: reddit-tipbot
+        image: replaceme
+        command: ["/bin/bash", "-c"]
+        args: ["cp /secrets/*.ini .; python tipbot_launcher.py"]
+        volumeMounts:
+        - name: secrets
+          mountPath: /secrets
+          readOnly: true
+      volumes:
+      - name: secrets
+        secret:
+          secretName: reddit-secrets
