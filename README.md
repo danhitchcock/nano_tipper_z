@@ -4,10 +4,10 @@
 It is a fork and modification of the [Nano](https://nano.org) reddit tipbot created by /u/zily88 - which is available on [GitHub](https://github.com/danhitchcock/nano_tipper_z)
 
 ### To get started with Banano Tipper, either:
-A) **Create an account** by [sending a message](https://reddit.com/message/compose/?to=banano_reddit_tipper&subject=command&message=create) to /u/banano_reddit_tipper with 'create' or 'register' in the message body. You will receive a Banano address, to which you can add Banano\*.
+A) **Create an account** by [sending a message](https://reddit.com/message/compose/?to=banano_tipbot&subject=command&message=create) to /u/banano_tipbot with 'create' or 'register' in the message body. You will receive a Banano address, to which you can add Banano\*.
 \-or-
-B) **Receive a Banano tip** from a fellow redditor, and you will automatically have an account made! be sure to activate it afterwards by [sending a message](https://reddit.com/message/compose/?to=banano_reddit_tipper&subject=command&message=create) to /u/banano_reddit_tipper.
-Once you have funds in your account, you can tip other redditors, or send to any banano address via PM to /u/banano_reddit_tipper.
+B) **Receive a Banano tip** from a fellow redditor, and you will automatically have an account made! be sure to activate it afterwards by [sending a message](https://reddit.com/message/compose/?to=banano_tipbot&subject=command&message=create) to /u/banano_tipbot.
+Once you have funds in your account, you can tip other redditors, or send to any banano address via PM to /u/banano_tipbot.
 # Comment Replies:
 Banano Tipper is intended for tipping on reddit posts and replies.
 
@@ -21,17 +21,17 @@ This will tip a redditor 1 Banano. !bam <amount> must be the first thing in your
 
 Or from anywhere on reddit, you can tip a commenter by:
 
-    /u/banano_reddit_tipper 1 This is great!
+    /u/banano_tipbot 1 This is great!
    
 or
 
-    This is great! /u/banano_reddit_tipper 1
+    This is great! /u/banano_tipbot 1
 
 If the subreddit is a friendly subreddi, the bot will repsond with a message. If the subreddit is not friendly, a PM will be sent to both the sender and the recipient.
     
 # Private Messages
 
-Banano Tipper also works by PM. [Send a message](https://reddit.com/message/compose/?to=banano_reddit_tipper&subject=command&message=type_command_here) to /u/banano_reddit_tipper for a variety of actions.
+Banano Tipper also works by PM. [Send a message](https://reddit.com/message/compose/?to=banano_tipbot&subject=command&message=type_command_here) to /u/banano_tipbot for a variety of actions.
 
 To send 1 Banano to bbedward, include this text in the message body:
 
@@ -64,22 +64,22 @@ There are many other commands.
 'opt-in' - Reenables your account. Your Nano may or may not still be available. 
 ```
 ### Control TipBot Behavior On Your Subreddit
-If you are a moderator of a subreddit, and would like to tipping to your sub, use the `subreddit` command. For example, for me to activate tipping on my /r/banano_reddit_tipper subreddit, I send a PM to the bot saying:
+If you are a moderator of a subreddit, and would like to tipping to your sub, use the `subreddit` command. For example, for me to activate tipping on my /r/banano_tipbot subreddit, I send a PM to the bot saying:
 
-`subreddit banano_reddit_tipper activate`
+`subreddit banano_tipbot activate`
 
 This will allow the bot to look for !ban commands and respond to posts. 
 -or- If I don't want the bot to respond, but still want tips:
 
-`subreddit banano_reddit_tipper activate silent`
+`subreddit banano_tipbot activate silent`
 
 -or- for a cleaner tipbot response:
 
-`subreddit banano_reddit_tipper activate minimal`
+`subreddit banano_tipbot activate minimal`
 
 To deactivate, simply PM
 
-`subreddit banano_reddit_tipper deactivate`
+`subreddit banano_tipbot deactivate`
 
 ### Here's a few other great links:
 [Banano Subreddit](https://reddit.com/r/banano) -- Post any questions about Banano Tipper
@@ -119,7 +119,7 @@ Post on https://reddit.com/r/BananoCoin or reach on on the [Discord](https://cha
 # Error Codes
 If a reddit tip is a reply to a reply, it's better to keep a short message with an error code.
 * 100 - You do not have an account -- Create an account by typing 'create' or by receiving a tip from another redditor.
-* 110 - You must specify an amount and a user, e.g. `send 1 banano_reddit_tipper`.
+* 110 - You must specify an amount and a user, e.g. `send 1 banano_tipbot`.
 * 120 - Could not read the tip amount -- use either a number or the word 'all'.
 * 130 - Tip amount is below program minimum -- This is to prevent spamming other redditors.
 * 150 - You are likely attempting to tip in an unfamiliar sub. The minimum is 1 Nano.
