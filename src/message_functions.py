@@ -320,7 +320,6 @@ def handle_subreddit(message):
         response = text.SUBREDDIT["all"]
         subreddits = Subreddit.select(Subreddit.subreddit, Subreddit.status, Subreddit.minimum)
         for result in subreddits:
-            result = [str(i) for i in result]
             response += f"{result.subreddit}, {result.status}, {result.minimum}"
             response += "\n\n"
         return response
