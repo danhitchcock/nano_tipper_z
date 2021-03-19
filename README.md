@@ -82,32 +82,30 @@ To deactivate, simply PM
 `subreddit banano_reddit_tipper deactivate`
 
 ### Here's a few other great links:
-[Nano Tipper Subreddit](https://reddit.com/r/banano_reddit_tipper) -- Post any questions about Nano Tipper
-[Nano Tipper GitHub](https://github.com/danhitchcock/banano_reddit_tipbot) -- This software is open source!
-[Nano Tipper Wiki](https://www.reddit.com/r/banano_reddit_tipper/wiki) -- The Subreddit Wiki
-[Nano Currency](https://nano.org) -- The Official Nano website
-[Nano Links](https://nanolinks.info) -- has numerous useful links to get to using Nano!
-[Nano Subreddit](https://www.reddit.com/r/nanocurrency) -- The official Nano Subreddit
+[Banano Subreddit](https://reddit.com/r/banano) -- Post any questions about Banano Tipper
+[Banano Tipper GitHub](https://github.com/BananoCoin/banano_reddit_tipbot) -- This software is open source!
+[BANANO](https://banano.cc) -- The Official BANANO website
+[Kalium](https://kalium.banano.cc) -- The Official BANANO Mobile Wallet
 
 # Terms of Service
-* Don't keep a lot of Nano in your Nano Tip Bot account
-* You accept the risks of using this Tip Bot--I won't steal your Nanos, but they might be lost at any point, and I'm under no obligation to replace them. Don't put in more than you're willing to lose.
-* If your account is inactive for more than 3 years, and no meaningful attempt has been made to reach me, the Nanos in your account will be forfeited and I am under no obligation to return them. Why did I write this? Because the tip bot is not a lifelong custodian service -- I don't want people reaching out to me after 20 years for their .032 Nanos the left on the tip bot. I don't want to have to keep the  database with me the rest of my life. After your three years, if the bot is still running, your Nanos will almost certainly be available to you.
+* Don't keep a lot of BANANO in your Tip Bot account!
+* You accept the risks of using this Tip Bot--We won't steal your Bananos, but they might be lost at any point, and we are at no obligation to replace them. Don't put in more than you're willing to lose.
+* If your account is inactive for more than 3 years, and no meaningful attempt has been made to reach me, the Banano in your account are subject to be forfeited and we are under no obligation to return them. The tip bot is not a lifelong custodial service.
 * Don't submit more than 5 requests every 30 seconds. The bot will ignore any commands you issue until 30 seconds have passed.
 * I can change the Terms of Service at any time.
 
 # FAQ
-## Why does the message have to start or end with !nano_tip <amount>?
+## Why does the message have to start or end with !ban <amount>?
 This is to prevent unintentional tips! If the program simply scanned the entire comment, a user might accidentally quote someone else's tip command in a response. In the future I might change this, but for now it's the best way to ensure the program behaves as expected.
 
 ## Are my funds safe?
-**NO! Unless you and you alone control your private keys, your funds are never safe!** Please don't keep more than a few Nanos on the tipbot at any time! While I'm not going to steal your Nanos, this program is in early beta testing and weird things could happen, including lost Nanos! **Use at your own risk!** (sorry for all the exclamation marks)
+**NO! Unless you and you alone control your private keys, your funds are never safe!** Please don't keep more than a small dose of potassium on the tipbot at any time! While I'm not going to steal your Bananos, this program is in early beta testing and weird things could happen, including lost Bananos! **Use at your own risk!** (sorry for all the exclamation marks)
 
 ## I sent a tip to the wrong address. Can I get it back?
-If the address isn't affiliated with a Redditor, **No.** I only have private keys for redditors, not for addresses. If you send Nano to Binance for example, I cannot retrieve it.
+If the address isn't affiliated with a Redditor, **No.** We only have private keys for redditors, not for external addresses.
 
 ## I sent a tip to the wrong redditor. Can I get it back?
-You basically gave a stranger a dollar, and I have no control over that. Yes, I technically control the private keys, but I really don't want to start manually making unauthorized transactions on people's accounts. If the stranger is a redditor and doesn't activate their account, you will get your tip back in 30 days. If they *do* activate their account, it's theirs. You can try asking them for it back.
+Your best bet is to try to reach out to the redditor and ask for it back. Do not harass other redditors or do anything that would violate Reddit's Terms of Service.
 
 ## Have you implemented any spam prevention for your bot?
 Users are allowed 5 requests every 30 seconds. If you do more than that, the bot ignores you until 30 seconds have passed.
@@ -116,7 +114,7 @@ Users are allowed 5 requests every 30 seconds. If you do more than that, the bot
 Probably not. It's most likely the bot was temporarily disconnected. If a command is issued while the bot is offline, the command will not be seen. If no response is received from the bot after a few minutes, send a message to the bot with the text 'history'. If you get a response and the tip isn't in your history, that means it wasn't seen. If you don't get a response, the bot is probably still offline. Try again in a few minutes.
 
 ## I found a bug or I have a concern. Question Mark?
-Send /u/bbedward a PM on reddit, or post on https://reddit.com/r/banano_reddit_tipper
+Post on https://reddit.com/r/BananoCoin or reach on on the [Discord](https://chat.banano.cc)
 
 # Error Codes
 If a reddit tip is a reply to a reply, it's better to keep a short message with an error code.
