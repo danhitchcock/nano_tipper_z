@@ -122,7 +122,7 @@ If a reddit tip is a reply to a reply, it's better to keep a short message with 
 * 110 - You must specify an amount and a user, e.g. `send 1 banano_tipbot`.
 * 120 - Could not read the tip amount -- use either a number or the word 'all'.
 * 130 - Tip amount is below program minimum -- This is to prevent spamming other redditors.
-* 150 - You are likely attempting to tip in an unfamiliar sub. The minimum is 1 Nano.
+* 150 - This subreddit does not accept tips this small, increase your tip or send the bot `subreddit subreddit_name` to see what the minimum is.
 * 160 - You have insufficient funds.
 * 180 - Tip amount is below recipients specified tip minimum.
 * 190 - The recipient has disabled tipping for their account.
