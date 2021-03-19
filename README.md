@@ -60,7 +60,7 @@ There are many other commands.
 'subreddit <subreddit> <'activate'/'deactivate'> <option>' - Subreddit Moderator Controls - Enabled Tipping on Your Sub (`silent`, `minimal`, `full`)
 'withdraw <amount or all> <user/address>' - Same as send
 'convert <amountcurrency>' - Calculates the Nano value of the specified curency. e.g. `convert 1USD`. Also works with "price" and "value".
-'opt-out' - Disables your account and donates your remaining Nano to the tipbot.
+'opt-out' - Disables your account.
 'opt-in' - Reenables your account. Your Nano may or may not still be available. 
 ```
 ### Control TipBot Behavior On Your Subreddit
@@ -124,5 +124,4 @@ If a reddit tip is a reply to a reply, it's better to keep a short message with 
 * 130 - Tip amount is below program minimum -- This is to prevent spamming other redditors.
 * 150 - This subreddit does not accept tips this small, increase your tip or send the bot `subreddit subreddit_name` to see what the minimum is.
 * 160 - You have insufficient funds.
-* 180 - Tip amount is below recipients specified tip minimum.
 * 190 - The recipient has disabled tipping for their account.

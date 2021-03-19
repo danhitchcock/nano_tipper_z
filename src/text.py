@@ -29,7 +29,7 @@ For PM commands, create a new message with any of the following commands (be sur
     'balance' or 'address' - Retrieve your account balance.
     'silence <yes/no>' - (default 'no') Prevents the bot from sending you tip notifications or tagging in posts 
     'history <optional: number of records>' - Retrieves tipbot commands. Default 10, maximum is 50.
-    'opt-out' - Disables your account and donates your remaining Nano to the tipbot. 
+    'opt-out' - Disables your account. 
     'opt-in' - Reenables your account. Your Nano may or may not still be available. 
     'help' - Get this help message\n
 If you wanted to send 0.01 Banano to bbedward, reply:\n
