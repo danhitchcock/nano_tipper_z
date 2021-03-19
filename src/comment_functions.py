@@ -41,7 +41,7 @@ def handle_comment(message):
         msg = Message(
             username=message_recipient,
             subject=subject,
-            message_text=message_text
+            message=message_text
         )
         msg.save()
     else:
@@ -61,7 +61,6 @@ def send_from_comment(message):
     110 - Amount and/or recipient not specified
     120 - could not parse send amount
     130 - below program minimum
-    140 - currency code issue
     150 - below 1 nano for untracked sub
     160 - insufficient funds
     170 - invalid address / recipient
@@ -173,14 +172,6 @@ def send_from_comment(message):
         response["status"] = 999
         return response
 
-    # check the send amount is above the user minimum, if a username is provided
-    # if it was just an address, this would be -1
-    if response["amount"] < recipient_info["minimum"]:
-        update_history_notes(entry_id, "below user minimum")
-        response["status"] = 180
-        response["minimum"] = recipient_info["minimum"]
-        return response
-
     # send the nanos!!
     response["hash"] = send(
         sender_info["address"],
@@ -226,8 +217,7 @@ def send_from_comment(message):
                 % (
                     from_raw(response["amount"]),
                     recipient_info["address"],
-                    from_raw(receiving_new_balance[0]),
-                    from_raw(receiving_new_balance[1]),
+                    from_raw(receiving_new_balance),
                     response["hash"],
                 )
                 + text.COMMENT_FOOTER

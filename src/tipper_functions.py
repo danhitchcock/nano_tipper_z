@@ -1,6 +1,5 @@
 from datetime import datetime
 from shared import (
-    RECIPIENT_MINIMUM,
     TIP_BOT_USERNAME,
     LOGGER,
     TIP_COMMANDS,
@@ -10,7 +9,7 @@ from shared import (
     Message
 )
 
-from text import RETURN_WARNING, SUBJECTS
+from text import SUBJECTS
 
 from tipper_rpc import generate_account, check_balance, send
 import text
@@ -48,7 +47,7 @@ def add_history_record(
     )
 
     if history.save() < 1:
-        print(f"Failed saving history item {username}")
+        LOGGER.error(f"Failed saving history item {username}")
 
     return history.id
 
@@ -114,17 +113,15 @@ def add_new_account(username):
         username=username,
         private_key=pk,
         address=address,
-        minimum=to_raw(RECIPIENT_MINIMUM),
         silence=False,
         active=False,
         opt_in=True
     )
-    acct.save()
+    acct.save(force_insert=True)
     return {
         "username": username,
         "address": address,
         "private_key": pk,
-        "minimum": to_raw(RECIPIENT_MINIMUM),
         "silence": False,
         "balance": 0,
         "account_exists": True,
@@ -187,12 +184,10 @@ def get_user_settings(recipient_username, recipient_address=""):
     :param recipient_address: str
     :return: 3 items to unpack - int, str, bool
     """
-    user_minimum = -1
     silence = False
     if recipient_username:
         try:
             acct = Account.select(Account.minimum, Account.address, Account.silence).where(Account.username == recipient_username).get()
-            user_minimum = acct.minimum
             silence = acct.silence
             if not recipient_address:
                 recipient_address = acct.address
@@ -200,7 +195,6 @@ def get_user_settings(recipient_username, recipient_address=""):
             pass
     return {
         "name": recipient_username,
-        "minimum": user_minimum,
         "address": recipient_address,
         "silence": silence,
     }
@@ -215,12 +209,12 @@ def account_info(key, by_address=False):
     foundAccount = True
     if not by_address:
         try:
-            acct = Account.select().where(Account.username == val).get()
+            acct = Account.select().where(Account.username == key).get()
         except Account.DoesNotExist:
             foundAccount = False
     else:
         try:
-            acct = Account.select().where(Account.address == val).get()
+            acct = Account.select().where(Account.address == key).get()
         except Account.DoesNotExist:
             foundAccount = False
     if foundAccount:
@@ -228,9 +222,8 @@ def account_info(key, by_address=False):
             "username": acct.username,
             "address": acct.address,
             "private_key": acct.private_key,
-            "minimum": int(acct.minimum),
             "silence": acct.silence,
-            "balance": check_balance(acct.address)[0],
+            "balance": check_balance(acct.address),
             "account_exists": True,
             "opt_in": acct.opt_in,
         }
@@ -255,7 +248,7 @@ def send_pm(recipient, subject, body, bypass_opt_out=False):
         msg = Message(
             username = recipient,
             subject = subject,
-            body = body
+            message = body
         )
         msg.save()
 
@@ -274,7 +267,7 @@ def parse_raw_amount(parsed_text, username=None):
             acct = Account.select(Account.address).where(Account.username == username).get()
             address = acct.address
             balance = check_balance(address)
-            return balance[0]
+            return balance
         except Account.DoesNotExist:
             raise (TipError(None, text.NOT_OPEN))
 
@@ -339,7 +332,7 @@ def parse_action(action_item):
 
 
 def message_in_database(message):
-    query = History.select(History.comment_id == message.name)
+    query = History.select().where(History.comment_id == message.name)
     results = [r for r in query]
     if len(results) > 0:
         LOGGER.info("Found previous messages for %s: " % message.name)

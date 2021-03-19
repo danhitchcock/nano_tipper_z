@@ -285,7 +285,7 @@ def test_parse_action(parse_action_mocks):
         ),
         (
             "faucet_tip",
-            RedditMessage("t4_6", "nano_tipper_z", "", "send 0.001 someone"),
+            RedditMessage("t4_6", "banano_reddit_tipbot", "", "send 0.001 someone"),
         ),
     ]
 
@@ -328,7 +328,6 @@ def test_handle_send_from_PM(handle_send_from_message_mocks):
     110 - Amount and/or recipient not specified
     120 - could not parse send amount
     130 - below program minimum
-    140 - currency code issue
     150 - below 1 nano for untracked sub
     160 - insufficient funds
     170 - invalid address / recipient
@@ -351,7 +350,7 @@ def test_handle_send_from_PM(handle_send_from_message_mocks):
     assert response == {"status": 110, "username": "rich"}
     assert (
         text.make_response_text(message, response)
-        == "You must specify an amount and a user, e.g. `send 1 nano_tipper`."
+        == "You must specify an amount and a user, e.g. `send 1 banano_reddit_tipper`."
     )
     # no amount or recipient specified
     message = RedditMessage("t4_5", "rich", "", "send")
@@ -359,7 +358,7 @@ def test_handle_send_from_PM(handle_send_from_message_mocks):
     assert response == {"status": 110, "username": "rich"}
     assert (
         text.make_response_text(message, response)
-        == "You must specify an amount and a user, e.g. `send 1 nano_tipper`."
+        == "You must specify an amount and a user, e.g. `send 1 banano_reddit_tipper`."
     )
 
     # could not parse the amount
@@ -571,7 +570,7 @@ def test_handle_send_from_comment_and_text(handle_send_from_comment_mocks):
     }
     assert (
         text.make_response_text(message, response)
-        == "You must specify an amount and a user, e.g. `send 1 nano_tipper`."
+        == "You must specify an amount and a user, e.g. `send 1 banano_reddit_tipper`."
     )
 
     # could not parse the amount
@@ -738,7 +737,7 @@ def test_handle_send_from_comment_and_text(handle_send_from_comment_mocks):
         text.make_response_text(message, response)
         == "^(Made a new account and )^[sent](https://nanocrawler.cc/explorer/block"
         "/success!) ^0.01 ^Nano ^to ^(/u/dne) ^- [^(Nano Tipper)](https://githu"
-        "b.com/danhitchcock/nano_tipper_z)"
+        "b.com/danhitchcock/banano_reddit_tipbot)"
     )
 
     # send to user

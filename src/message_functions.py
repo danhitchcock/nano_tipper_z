@@ -48,10 +48,6 @@ def handle_message(message):
         LOGGER.info("balance")
         subject = text.SUBJECTS["balance"]
         response = handle_balance(message)
-    elif command == "minimum":
-        LOGGER.info("Setting Minimum")
-        subject = text.SUBJECTS["minimum"]
-        response = handle_minimum(message)
     elif command in ["create", "register"]:
         LOGGER.info("Creating")
         subject = text.SUBJECTS["create"]
@@ -125,8 +121,7 @@ def handle_balance(message):
 
         response = text.BALANCE % (
             acct.address,
-            from_raw(results[0]),
-            from_raw(results[1]),
+            from_raw(results),
             acct.address,
         )
 
@@ -260,15 +255,6 @@ def handle_history(message):
                         result.comment_id,
                         result.notes,
                     )
-                elif (result.action == "minimum") and amount:
-                    amount = from_raw(int(result[2]))
-                    response += "%s: %s | %s | %s | %s\n\n" % (
-                        result.reddit_time.strftime("%Y-%m-%d %H:%M:%S"),
-                        result.action,
-                        amount,
-                        result.comment_id,
-                        result.notes,
-                    )
                 else:
                     response += "%s: %s | %s | %s | %s\n\n" % (
                         result.reddit_time.strftime("%Y-%m-%d %H:%M:%S"),
@@ -295,67 +281,6 @@ def handle_history(message):
         )
         response = text.NOT_OPEN
         return response
-
-
-def handle_minimum(message):
-    message_time = datetime.utcfromtimestamp(
-        message.created_utc
-    )  # time the reddit message was created
-    # user may select a minimum tip amount to avoid spamming. Tipbot minimum is 0.001
-    username = str(message.author)
-    # find any accounts associated with the redditor
-    parsed_text = parse_text(str(message.body))
-
-    # there should be at least 2 words, a minimum and an amount.
-    if len(parsed_text) < 2:
-        response = text.MINIMUM["parse_error"]
-        return response
-    # check that the minimum is a number
-
-    if parsed_text[1].lower() == "nan" or ("inf" in parsed_text[1].lower()):
-        response = text.NAN
-        return response
-    try:
-        amount = float(parsed_text[1])
-    except:
-        response = text.NAN % parsed_text[1]
-        return response
-
-    # check that it's greater than 0.01
-    if to_raw(amount) < to_raw(PROGRAM_MINIMUM):
-        response = text.MINIMUM["below_program"] % PROGRAM_MINIMUM
-        return response
-
-    # check if the user is in the database
-    try:
-        acct = Account.get(username=username)
-        # open_or_receive(result[0][0], result[0][1])
-        # balance = check_balance(result[0][0])
-        add_history_record(
-            username=username,
-            action="minimum",
-            amount=to_raw(amount),
-            address=acct.address,
-            comment_or_message="message",
-            comment_id=message.name,
-            reddit_time=message_time,
-            comment_text=str(message.body)[:255],
-        )
-        Account.update(minimum=str(to_raw(amount))).where(Account.username == username).execute()
-        response = text.MINIMUM["set_min"] % amount
-        return response        
-    except Account.DoesNotExist:
-        add_history_record(
-            username=username,
-            action="minimum",
-            reddit_time=message_time,
-            amount=to_raw(amount),
-            comment_id=message.name,
-            comment_text=str(message.body)[:255],
-        )
-        response = text.NOT_OPEN
-        return response
-
 
 def handle_silence(message):
     message_time = datetime.utcfromtimestamp(
@@ -446,7 +371,7 @@ def handle_subreddit(message):
             subreddit = Subreddit(
                 subreddit=parsed_text[1],
                 reply_to_comments=True,
-                footer=None,
+                footer="",
                 status=status
             )
             subreddit.save(force_insert=True)        
@@ -540,17 +465,8 @@ def handle_send(message):
     # check if it's an address
     else:
         # otherwise, just use the address. Everything is None except address
-        recipient_info["minimum"] = 0
         response["recipient"] = recipient_info["address"]
         response["status"] = 30
-
-    # check the send amount is above the user minimum, if a username is provided
-    # if it was just an address, this would be -1
-    if response["amount"] < recipient_info["minimum"]:
-        update_history_notes(entry_id, "below user minimum")
-        response["status"] = 180
-        response["minimum"] = recipient_info["minimum"]
-        return response
 
     response["hash"] = send(
         sender_info["address"],
@@ -595,8 +511,7 @@ def handle_send(message):
                 % (
                     from_raw(response["amount"]),
                     recipient_info["address"],
-                    from_raw(receiving_new_balance[0]),
-                    from_raw(receiving_new_balance[1]),
+                    from_raw(receiving_new_balance),
                     response["hash"],
                 )
                 + COMMENT_FOOTER
@@ -644,20 +559,13 @@ def parse_recipient_username(recipient_text):
     elif recipient_text[:2].lower() == "u/":
         recipient_text = recipient_text[2:]
 
-    if (
-        shared.CURRENCY == "Nano"
-        and (
-            recipient_text[:5].lower() == "nano_"
-            or recipient_text[:4].lower() == "xrb_"
-        )
-        or (shared.CURRENCY == "Banano" and recipient_text[:4].lower() == "ban_")
-    ):
+    if (shared.CURRENCY == "Nano" and (recipient_text[:5].lower() == "nano_" or recipient_text[:4].lower() == "xrb_")) or (shared.CURRENCY == "Banano" and recipient_text[:4].lower() == "ban_"):
         # check valid address
         success = validate_address(recipient_text)
-        if success["valid"] == "1":
+        if success:
             return {"address": recipient_text}
         # if not, check if it is a redditor disguised as an address (e.g.
-        # nano_is_awesome, nano_tipper_z)
+        # nano_is_awesome, banano_reddit_tipbot)
         else:
             try:
                 _ = getattr(REDDIT.redditor(recipient_text), "is_suspended", False)

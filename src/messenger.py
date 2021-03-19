@@ -1,7 +1,7 @@
 from time import sleep
 from shared import REDDIT, LOGGER, Message
 
-print("Starting messenger")
+LOGGER.info("Starting messenger")
 while True:
     results = Message.select()
     for result in results:

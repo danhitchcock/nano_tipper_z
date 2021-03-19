@@ -3,7 +3,7 @@ import time
 from time import sleep
 
 import shared
-from shared import REDDIT, PROGRAM_MINIMUM, SUBREDDITS, to_raw
+from shared import REDDIT, PROGRAM_MINIMUM, SUBREDDITS, to_raw, LOGGER
 
 from message_functions import handle_message
 
@@ -14,7 +14,7 @@ from comment_functions import handle_comment
 # how often we poll for new transactions
 CYCLE_TIME = 6
 
-
+LOGGER.info("Starting tipbot")
 def stream_comments_messages():
     """
     # generator to stream comments and messages to the main loop at the bottom, and contains the auto_receive functionality.

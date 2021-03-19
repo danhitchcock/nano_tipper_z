@@ -1,70 +1,60 @@
-# Nano Tipper
- is a reddit tipping service to easily give Nano to your favorite redditors! [Nano](https://nano.org) is a fast and feeless cryptocurrency that can be traded at numerous exchanges. Before using Nano Tipper, please take a look at the [Terms of Service](https://github.com/danhitchcock/nano_tipper_z#terms-of-service)
-### To get started with Nano Tipper, either:
-A) **Create an account** by [sending a message](https://reddit.com/message/compose/?to=nano_tipper&subject=command&message=create) to /u/nano_tipper with 'create' or 'register' in the message body. You will receive a Nano address, to which you can add Nano\*. You will receive a 0.001 Nano tip for registering! Also, try any of the faucets at [Nano Links](https://nanolinks.info/#faucets-free-nano) (\**Nano Tipper is in early beta! Only send small amounts of Nano*.)
+# Banano Reddit Tipbot
+ is a reddit tipping service to easily give Banano to your favorite redditors! [Banano](https://banano.cc) is a feeless, instant, rich in potassium cryptocurrency. Before using Banano Tipper, please take a look at the [Terms of Service](https://github.com/BananoCoin/banano_reddit_tipbot#terms-of-service)
+
+It is a fork and modification of the [Nano](https://nano.org) reddit tipbot created by /u/zily88 - which is available on [GitHub](https://github.com/danhitchcock/nano_tipper_z)
+
+### To get started with Banano Tipper, either:
+A) **Create an account** by [sending a message](https://reddit.com/message/compose/?to=banano_reddit_tipper&subject=command&message=create) to /u/banano_reddit_tipper with 'create' or 'register' in the message body. You will receive a Banano address, to which you can add Banano\*.
 \-or-
-B) **Receive a Nano tip** from a fellow redditor, and you will automatically have an account made! be sure to activate it afterwards by [sending a message](https://reddit.com/message/compose/?to=nano_tipper&subject=command&message=create) to /u/nano_tipper.
-Once you have funds in your account, you can tip other redditors, or send to nano address via PM to /u/nano_tipper.
+B) **Receive a Banano tip** from a fellow redditor, and you will automatically have an account made! be sure to activate it afterwards by [sending a message](https://reddit.com/message/compose/?to=banano_reddit_tipper&subject=command&message=create) to /u/banano_reddit_tipper.
+Once you have funds in your account, you can tip other redditors, or send to any banano address via PM to /u/banano_reddit_tipper.
 # Comment Replies:
-Nano Tipper is intended for tipping on reddit posts and replies. On any [tracked subreddit](https://www.reddit.com/r/nano_tipper/comments/hrvr6o/nano_tipper_status/) you can tip and type a message like:
+Banano Tipper is intended for tipping on reddit posts and replies.
 
-    !ntip 0.01 This is great!
+On supported subreddits, you can send a tip like this:
 
-This will tip a redditor 0.01 Nano. !ntip <amount> must be the first thing in your message OR the last thing. Such, this is also a valid tip:
+    !ban 1 This is great!
 
-    This is great! !ntip 0.01
+This will tip a redditor 1 Banano. !bam <amount> must be the first thing in your message OR the last thing. Such, this is also a valid tip:
+
+    This is great! !ban 1
 
 Or from anywhere on reddit, you can tip a commenter by:
 
-    /u/nano_tipper 0.01 This is great!
+    /u/banano_reddit_tipper 1 This is great!
    
 or
 
-    This is great! /u/nano_tipper 0.01
+    This is great! /u/banano_reddit_tipper 1
 
-Even specify a currency!
-
-    !ntip 1USD Enjoy a dollar!
-
-If the subreddit is a [friendly subreddit](https://www.reddit.com/r/nano_tipper/comments/hrvr6o/nano_tipper_status/) (which correlates to [tracked subreddit](https://www.reddit.com/r/nano_tipper/comments/hrvr6o/nano_tipper_status/)), the bot will repsond with a message. If the subreddit is not friendly, a PM will be sent to both the sender and the recipient.
-
-### NEW!
-
-    !nanocenter <amount> <project>
-
-such as
-
-    !nanocenter 1 unity
-    
-for a list of NanoCenter projects, see the PM commands below.
+If the subreddit is a friendly subreddi, the bot will repsond with a message. If the subreddit is not friendly, a PM will be sent to both the sender and the recipient.
     
 # Private Messages
 
-Nano Tipper also works by PM. [Send a message](https://reddit.com/message/compose/?to=nano_tipper&subject=command&message=type_command_here) to /u/nano_tipper for a variety of actions.
+Banano Tipper also works by PM. [Send a message](https://reddit.com/message/compose/?to=banano_reddit_tipper&subject=command&message=type_command_here) to /u/banano_reddit_tipper for a variety of actions.
 
-To send 0.1 Nano to zily88, include this text in the message body:
+To send 1 Banano to bbedward, include this text in the message body:
 
-    send 0.1 /u/zily88
+    send 1 /u/bbedward
 -or-
 
-    send 0.1 zily88
+    send 1 bbedward
 
-To send 0.1 Nano to xrb\_1ssr4sbop5wnkbkpk7y7ekewie7tygtjgdukm9jq7d1m3j6ocfskwyx77awd, include this text in the message body:
+To send 1 Banano to ban\_1ssr4sbop5wnkbkpk7y7ekewie7tygtjgdukm9jq7d1m3j6ocfskwyx77awd, include this text in the message body:
 
-    send 0.1 xrb_1ssr4sbop5wnkbkpk7y7ekewie7tygtjgdukm9jq7d1m3j6ocfskwyx77awd
+    send 1 ban_1ssr4sbop5wnkbkpk7y7ekewie7tygtjgdukm9jq7d1m3j6ocfskwyx77awd
 
 or send all your balance:
 
-    send all xrb_1ssr4sbop5wnkbkpk7y7ekewie7tygtjgdukm9jq7d1m3j6ocfskwyx77awd
+    send all ban_1ssr4sbop5wnkbkpk7y7ekewie7tygtjgdukm9jq7d1m3j6ocfskwyx77awd
 
 There are many other commands.
 
 ```
-'balance' or 'address' - Retrieve your account balance. Includes both pocketed and unpocketed transactions
+'balance' or 'address' - Retrieve your account balance.
 'create' - Create a new account if one does not exist
 'help' - Get this help message
 'history <optional: number of records>' - Retrieves tipbot commands. Default 10, maximum is 50.
-'minimum <amount>' - (default 0.0001) Sets a minimum amount for receiving tips
 'send <amount or all, optional: Currency> <user/address>' - Send Nano to a reddit user or an address
 'silence <yes/no>' - (default 'no') Prevents the bot from sending you tip notifications or tagging in posts
 'subreddit <subreddit> <'activate'/'deactivate'> <option>' - Subreddit Moderator Controls - Enabled Tipping on Your Sub (`silent`, `minimal`, `full`)
@@ -74,27 +64,27 @@ There are many other commands.
 'opt-in' - Reenables your account. Your Nano may or may not still be available. 
 ```
 ### Control TipBot Behavior On Your Subreddit
-If you are a moderator of a subreddit, and would like to tipping to your sub, use the `subreddit` command. For example, for me to activate tipping on my /r/nano_tipper subreddit, I send a PM to the bot saying:
+If you are a moderator of a subreddit, and would like to tipping to your sub, use the `subreddit` command. For example, for me to activate tipping on my /r/banano_reddit_tipper subreddit, I send a PM to the bot saying:
 
-`subreddit nano_tipper activate`
+`subreddit banano_reddit_tipper activate`
 
-This will allow the bot to look for !ntip commands and respond to posts. 
+This will allow the bot to look for !ban commands and respond to posts. 
 -or- If I don't want the bot to respond, but still want tips:
 
-`subreddit nano_tipper activate silent`
+`subreddit banano_reddit_tipper activate silent`
 
 -or- for a cleaner tipbot response:
 
-`subreddit nano_tipper activate minimal`
+`subreddit banano_reddit_tipper activate minimal`
 
 To deactivate, simply PM
 
-`subreddit nano_tipper deactivate`
+`subreddit banano_reddit_tipper deactivate`
 
 ### Here's a few other great links:
-[Nano Tipper Subreddit](https://reddit.com/r/nano_tipper) -- Post any questions about Nano Tipper
-[Nano Tipper GitHub](https://github.com/danhitchcock/nano_tipper_z) -- This software is open source!
-[Nano Tipper Wiki](https://www.reddit.com/r/nano_tipper/wiki) -- The Subreddit Wiki
+[Nano Tipper Subreddit](https://reddit.com/r/banano_reddit_tipper) -- Post any questions about Nano Tipper
+[Nano Tipper GitHub](https://github.com/danhitchcock/banano_reddit_tipbot) -- This software is open source!
+[Nano Tipper Wiki](https://www.reddit.com/r/banano_reddit_tipper/wiki) -- The Subreddit Wiki
 [Nano Currency](https://nano.org) -- The Official Nano website
 [Nano Links](https://nanolinks.info) -- has numerous useful links to get to using Nano!
 [Nano Subreddit](https://www.reddit.com/r/nanocurrency) -- The official Nano Subreddit
@@ -126,18 +116,15 @@ Users are allowed 5 requests every 30 seconds. If you do more than that, the bot
 Probably not. It's most likely the bot was temporarily disconnected. If a command is issued while the bot is offline, the command will not be seen. If no response is received from the bot after a few minutes, send a message to the bot with the text 'history'. If you get a response and the tip isn't in your history, that means it wasn't seen. If you don't get a response, the bot is probably still offline. Try again in a few minutes.
 
 ## I found a bug or I have a concern. Question Mark?
-Send /u/zily88 a PM on reddit, or post on https://reddit.com/r/nano_tipper
+Send /u/bbedward a PM on reddit, or post on https://reddit.com/r/banano_reddit_tipper
 
 # Error Codes
 If a reddit tip is a reply to a reply, it's better to keep a short message with an error code.
 * 100 - You do not have an account -- Create an account by typing 'create' or by receiving a tip from another redditor.
-* 110 - You must specify an amount and a user, e.g. `send 1 nano_tipper`.
+* 110 - You must specify an amount and a user, e.g. `send 1 banano_reddit_tipper`.
 * 120 - Could not read the tip amount -- use either a number or the word 'all'.
 * 130 - Tip amount is below program minimum -- This is to prevent spamming other redditors.
-* 140 - If using currency conversion, make sure there is no space. Example: `!ntip 0.5USD`.
 * 150 - You are likely attempting to tip in an unfamiliar sub. The minimum is 1 Nano.
 * 160 - You have insufficient funds.
 * 180 - Tip amount is below recipients specified tip minimum.
 * 190 - The recipient has disabled tipping for their account.
-* 200 - Please specify a Nanocenter project, e.g. `nanocenter 1 reddit_tipbot`.
-* 210 - The Nanocenter project you attempted to donate to does not exist.

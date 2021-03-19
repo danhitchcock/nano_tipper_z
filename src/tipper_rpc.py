@@ -50,7 +50,7 @@ def check_balance(account, amount=None, URL=None):
     results = perform_curl(data, URL)
     if amount is None:
         # print(results)
-        return [int(results["balance"]), int(results["pending"])]
+        return int(results["balance"]) + int(results["pending"])
     else:
         return int(results["pending"]) == amount
 

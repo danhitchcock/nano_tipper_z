@@ -15,6 +15,7 @@ from peewee import *
 from playhouse.pool  import PooledPostgresqlExtDatabase
 
 LOGGER = logging.getLogger("banano-reddit-tipbot")
+LOGGER.setLevel(logging.INFO)
 handler = logging.StreamHandler(sys.stdout)
 formatter = logging.Formatter("%(asctime)s;%(levelname)s;%(message)s", "%Y-%m-%d %H:%M:%S %z")
 handler.setFormatter(formatter)
@@ -30,7 +31,6 @@ try:
     TIP_BOT_ON = config["BOT"]["tip_bot_on"]
     TIP_BOT_USERNAME = config["BOT"]["tip_bot_username"]
     PROGRAM_MINIMUM = float(config["BOT"]["program_minimum"])
-    RECIPIENT_MINIMUM = float(config["BOT"]["recipient_minimum"])
     TIP_COMMANDS = config["BOT"]["tip_commands"].split(",")
     TIPBOT_OWNER = config["BOT"]["tipbot_owner"]
     PYTHON_COMMAND = config["BOT"]["python_command"]
@@ -53,11 +53,10 @@ except KeyError as e:
     SQL_PASSWORD = ""
     DATABASE_NAME = ""
     TIP_BOT_ON = True
-    TIP_BOT_USERNAME = "nano_tipper_z"
-    PROGRAM_MINIMUM = 0.0001
-    RECIPIENT_MINIMUM = 0
+    TIP_BOT_USERNAME = "banano_reddit_tipbot"
+    PROGRAM_MINIMUM = 0.01
     TIP_COMMANDS = ["!ntipz", "!nano_tipz"]
-    TIPBOT_OWNER = "zily88"
+    TIPBOT_OWNER = "bbedward"
     DEFAULT_URL = ""
     PYTHON_COMMAND = ""
     TIPPER_OPTIONS = ""
@@ -98,10 +97,17 @@ if CURRENCY == "Nano":
 elif CURRENCY == "Banano":
 
     def to_raw(amount):
-        return round(int(amount * 10 ** 24), -20)
+        ban_amt = float(amount)
+        asStr = str(ban_amt).split(".")
+        banAmount = int(asStr[0])
+        if len(asStr[1]) > 2:
+            asStr[1] = asStr[1][:2]
+        asStr[1] = asStr[1].ljust(2, '0')
+        banoshiAmount = int(asStr[1])
+        return (banAmount * (10**29)) + (banoshiAmount * (10 ** 27))
 
     def from_raw(amount):
-        return amount / 10 ** 24
+        return amount / (10 ** 29)
 
 # Base Model
 class BaseModel(Model):
@@ -112,22 +118,22 @@ class History(BaseModel):
     username = CharField()
     action = CharField()
     reddit_time = DateTimeField(default=datetime.datetime.utcnow)
-    sql_time = DateTimeField()
-    address = CharField()
-    comment_or_message = CharField()
-    recipient_username = CharField()
-    recipient_address = CharField()
-    amount = CharField()
-    hash = CharField()
-    comment_id = CharField()
-    comment_text = CharField()
-    notes = CharField()
-    return_status = CharField()
+    sql_time = DateTimeField(default=datetime.datetime.utcnow)
+    address = CharField(null=True)
+    comment_or_message = CharField(null=True)
+    recipient_username = CharField(null=True)
+    recipient_address = CharField(null=True)
+    amount = CharField(null=True)
+    hash = CharField(null=True)
+    comment_id = CharField(null=True)
+    comment_text = CharField(null=True)
+    notes = CharField(null=True)
+    return_status = CharField(null=True)
 
 class Message(BaseModel):
     username = CharField()
     subject = CharField()
-    message = TextField()
+    message = TextField(null=True)
 
     class Meta:
         db_table = 'messages'
@@ -136,9 +142,6 @@ class Account(BaseModel):
     username = CharField(primary_key=True)
     address = CharField(unique=True)
     private_key = CharField(unique=True)
-    key_released = BooleanField()
-    minimum = CharField(default=to_raw(RECIPIENT_MINIMUM))
-    notes = CharField()
     silence = BooleanField(default=False)
     active = BooleanField(default=False)
     opt_in = BooleanField(default=True)
@@ -151,7 +154,7 @@ class Subreddit(BaseModel):
     reply_to_comments = BooleanField(default=True)
     footer = CharField()
     status = CharField()
-    minimum = CharField()
+    minimum = CharField(default=PROGRAM_MINIMUM)
 
     class Meta:
         db_table = 'subreddits'
@@ -210,7 +213,7 @@ class Validators():
             if CURRENCY == "Nano":
                 acrop_key = address[4:-8] if address[:5] != 'nano_' else address[5:-8]
             else:
-                acrop_key = address[5:-8]
+                acrop_key = address[4:-8]
             # Extract checksum from address
             acrop_check = address[-8:]
 
