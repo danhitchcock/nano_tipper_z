@@ -90,7 +90,7 @@ If you have any questions, please post at /r/banano_reddit_tipper
 NEW_TIP = """
 Somebody just tipped you %.2g Banano at your address `%s`. Your new account balance is:\n\n
 **%s Banano**\n\n
-[Transaction on Creeper](https://creeper.banano.cc/explorer/block/%s)\n\n
+[View this transaction on Creeper](https://creeper.banano.cc/explorer/block/%s)\n\n
 To turn off these notifications, reply with "silence yes".
 """
 
@@ -128,19 +128,19 @@ TIP_CREATE_ACCT_ERROR = "I failed to create an account for your intended recipie
 # full responses
 SEND_TEXT = {
     10: (
-        "Sent ```%.2g Banano``` to /u/%s -- [Transaction on Creeper](https://creep"
+        "Sent ```%.2g Banano``` to /u/%s\n\n[View this transaction on Creeper](https://creep"
         "er.banano.cc/explorer/block/%s)"
     ),
     11: (
-        "Sent ```%.2g Banano``` to %s -- [Transaction on Creeper](https://creep"
+        "Sent ```%.2g Banano``` to %s\n\n[View this transaction on Creeper](https://creep"
         "er.banano.cc/explorer/block/%s)"
     ),
     20: (
         "Creating a new account for /u/%s and "
-        "sending ```%.2g Banano```. [Transaction on Creeper](https://creeper.banano.cc"
+        "sending ```%.2g Banano```.\n\n[View this transaction on Creeper](https://creeper.banano.cc"
         "/explorer/block/%s)"
     ),
-    30: "Sent ```%.2g Banano``` to address `%s` -- [Transaction on Creeper](https://creep"
+    30: "Sent ```%.2g Banano``` to address `%s`\n\n[View this transaction on Creeper](https://creep"
     "er.banano.cc/explorer/block/%s)",
     100: (
         "You don't have an account yet. Please PM me with `create` in the body to "
