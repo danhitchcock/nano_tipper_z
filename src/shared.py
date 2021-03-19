@@ -41,7 +41,7 @@ try:
     DEFAULT_URL = config["NODE"]["default_url"]
     WALLET_ID = config["NODE"]["wallet_id"]
 
-    USE_SQLITE = config["SQL"]["use_sqlite"]
+    USE_SQLITE = config["SQL"]["use_sqlite"] == 'True'
     DATABASE_HOST = config["SQL"]["database_host"]
     DATABASE_NAME = config["SQL"]["database_name"]
     DATABASE_USER = config["SQL"]["database_user"]
