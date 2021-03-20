@@ -30,7 +30,7 @@ def handle_comment(message):
     response_text = text.make_response_text(message, response)
 
     # check if subreddit is untracked or silent. If so, PM the users.
-    if response["subreddit_status"] in ["silent", "hostile"]:
+    if response["subreddit_status"] in ["silent", "untracked", "hostile"]:
         message_recipient = str(message.author)
         if response["status"] < 100:
             subject = text.SUBJECTS["success"]
