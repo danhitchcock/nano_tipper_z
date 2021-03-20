@@ -1,5 +1,5 @@
 import shared
-from shared import from_raw
+from shared import from_raw, NumberUtil
 
 COMMENT_FOOTER = """\n\n
 ***\n\n
@@ -64,7 +64,7 @@ If you have any questions, please post at /r/banano_tipbot
 
 WELCOME_TIP = """
 Welcome to Banano Tipper, a reddit tip bot which allows you to tip and send the [BANANO](https://banano.cc) Currency to your favorite redditors! 
-You have just received a Banano tip in the amount of ```%.2g Banano``` at your address `%s`.\n\n
+You have just received a Banano tip in the amount of ```%s BAN``` at your address `%s`.\n\n
 By using this service, you agree to the [Terms of Service](https://github.com/BananoCoin/banano_reddit_tipbot#terms-of-service).\n\n
 
 If you do not accept the Terms of Service, or do not with to participate, please respond with the text `opt-out`.\n\n
@@ -88,7 +88,7 @@ If you have any questions, please post at /r/banano_tipbot
 """
 
 NEW_TIP = """
-Somebody just tipped you %.2g Banano at your address `%s`. Your new account balance is:\n\n
+Somebody just tipped you %s BAN at your address `%s`. Your new account balance is:\n\n
 **%s Banano**\n\n
 [View this transaction on Creeper](https://creeper.banano.cc/explorer/block/%s)\n\n
 To turn off these notifications, reply with "silence yes".
@@ -128,19 +128,19 @@ TIP_CREATE_ACCT_ERROR = "I failed to create an account for your intended recipie
 # full responses
 SEND_TEXT = {
     10: (
-        "Sent ```%.2g Banano``` to /u/%s\n\n[View this transaction on Creeper](https://creep"
+        "Sent ```%s BAN``` to /u/%s\n\n[View this transaction on Creeper](https://creep"
         "er.banano.cc/explorer/block/%s)"
     ),
     11: (
-        "Sent ```%.2g Banano``` to %s\n\n[View this transaction on Creeper](https://creep"
+        "Sent ```%s BAN``` to %s\n\n[View this transaction on Creeper](https://creep"
         "er.banano.cc/explorer/block/%s)"
     ),
     20: (
         "Creating a new account for /u/%s and "
-        "sending ```%.2g Banano```.\n\n[View this transaction on Creeper](https://creeper.banano.cc"
+        "sending ```%s BAN```.\n\n[View this transaction on Creeper](https://creeper.banano.cc"
         "/explorer/block/%s)"
     ),
-    30: "Sent ```%.2g Banano``` to address `%s`\n\n[View this transaction on Creeper](https://creep"
+    30: "Sent ```%s BAN``` to address `%s`\n\n[View this transaction on Creeper](https://creep"
     "er.banano.cc/explorer/block/%s)",
     100: (
         "You don't have an account yet. Please PM me with `create` in the body to "
@@ -163,15 +163,15 @@ SEND_TEXT = {
 # for subreddits who like minimal response, or 2nd level responses
 SEND_TEXT_MIN = {
     10: (
-        "^[Sent](https://creeper.banano.cc/explorer/block/%s) ^%s ^Banano ^to ^(/u/%s) ^- "
+        "^[Sent](https://creeper.banano.cc/explorer/block/%s) ^%s ^BAN ^to ^(/u/%s) ^- "
         "[^(Banano Tipper)](https://github.com/BananoCoin/banano_reddit_tipbot)"
     ),
     11: (
-        "^[Sent](https://creeper.banano.cc/explorer/block/%s) ^%s ^Banano ^to ^%s ^- [^(Bana"
+        "^[Sent](https://creeper.banano.cc/explorer/block/%s) ^%s ^BAN ^to ^%s ^- [^(Bana"
         "no Tipper)](https://github.com/BananoCoin/banano_reddit_tipbot)"
     ),
     20: (
-        "^(Made a new account and )^[sent](https://creeper.banano.cc.cc/explorer/block/%s) ^%s ^Banano ^to ^(/u/%s) ^- [^(Bana"
+        "^(Made a new account and )^[sent](https://creeper.banano.cc.cc/explorer/block/%s) ^%s ^BAN ^to ^(/u/%s) ^- [^(Bana"
         "no Tipper)](https://github.com/BananoCoin/banano_reddit_tipbot)"
     ),
     100: (
@@ -239,7 +239,7 @@ def make_response_text(message, response):
         if response["status"] < 100:
             return SEND_TEXT_MIN[response["status"]] % (
                 response["hash"],
-                from_raw(response["amount"]),
+                NumberUtil.format_float(from_raw(response["amount"])),
                 response["recipient"],
             )
         else:
@@ -249,12 +249,12 @@ def make_response_text(message, response):
     if response["status"] == 20:
         return SEND_TEXT[response["status"]] % (
             response["recipient"],
-            from_raw(response["amount"]),
+            NumberUtil.format_float(from_raw(response["amount"])),
             response["hash"],
         )
     if response["status"] < 100:
         return SEND_TEXT[response["status"]] % (
-            from_raw(response["amount"]),
+            NumberUtil.format_float(from_raw(response["amount"])),
             response["recipient"],
             response["hash"],
         )
@@ -268,8 +268,8 @@ def make_response_text(message, response):
         return SEND_TEXT[response["status"]] % response["recipient"]
     if response["status"] == 180:
         return SEND_TEXT[response["status"]] % (
-            from_raw(response["minimum"]),
-            from_raw(response["amount"]),
+            NumberUtil.format_float(from_raw(response["minimum"])),
+            NumberUtil.format_float(from_raw(response["amount"])),
         )
     if response["status"] == 200:
         return SEND_TEXT[response["status"]]

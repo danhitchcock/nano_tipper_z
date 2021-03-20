@@ -9,7 +9,8 @@ from shared import (
     to_raw,
     Message,
     Subreddit,
-    History
+    History,
+    NumberUtil
 )
 from tipper_functions import (
     add_history_record,
@@ -204,7 +205,7 @@ def send_from_comment(message):
         message_text = (
             text.WELCOME_TIP
             % (
-                from_raw(response["amount"]),
+                NumberUtil.format_float(from_raw(response["amount"])),
                 recipient_info["address"],
                 recipient_info["address"],
             )
@@ -219,7 +220,7 @@ def send_from_comment(message):
             message_text = (
                 text.NEW_TIP
                 % (
-                    from_raw(response["amount"]),
+                    NumberUtil.format_float(from_raw(response["amount"])),
                     recipient_info["address"],
                     from_raw(receiving_new_balance),
                     response["hash"],

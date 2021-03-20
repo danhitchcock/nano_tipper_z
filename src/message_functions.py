@@ -27,7 +27,8 @@ from shared import (
     from_raw,
     Account,
     History,
-    Subreddit
+    Subreddit,
+    NumberUtil
 )
 
 
@@ -498,7 +499,7 @@ def handle_send(message):
         message_text = (
             WELCOME_TIP
             % (
-                from_raw(response["amount"]),
+                NumberUtil.format_float(from_raw(response["amount"])),
                 recipient_info["address"],
                 recipient_info["address"],
             )
@@ -513,7 +514,7 @@ def handle_send(message):
             message_text = (
                 NEW_TIP
                 % (
-                    from_raw(response["amount"]),
+                    NumberUtil.format_float(from_raw(response["amount"])),
                     recipient_info["address"],
                     from_raw(receiving_new_balance),
                     response["hash"],
