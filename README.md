@@ -113,7 +113,7 @@ Users are allowed 5 requests every 30 seconds. If you do more than that, the bot
 Probably not. It's most likely the bot was temporarily disconnected. If a command is issued while the bot is offline, the command will not be seen. If no response is received from the bot after a few minutes, send a message to the bot with the text 'history'. If you get a response and the tip isn't in your history, that means it wasn't seen. If you don't get a response, the bot is probably still offline. Try again in a few minutes.
 
 ## I found a bug or I have a concern. Question Mark?
-Post on https://reddit.com/r/BananoCoin or reach on on the [Discord](https://chat.banano.cc)
+Post on the [Banano subreddit](https://reddit.com/r/Banano) or reach on on the [Discord](https://chat.banano.cc)
 
 # Error Codes
 If a reddit tip is a reply to a reply, it's better to keep a short message with an error code.

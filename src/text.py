@@ -34,7 +34,7 @@ For PM commands, create a new message with any of the following commands (be sur
     'help' - Get this help message\n
 If you wanted to send 0.01 Banano to bbedward, reply:\n
     send 0.01 bbedward\n
-If you have any questions or bug fixes, please reach out on the [Banano Discord](https://chat.banano.cc)."""
+If you have any questions or bug fixes, please reach out on the [Banano subreddit](https://reddit.com/r/banano) or the [Banano Discord](https://chat.banano.cc)."""
 
 WELCOME_CREATE = """
 Welcome to Banano Tipper, a reddit tip bot which allows you to tip and send the [BANANO](https://banano.cc) Currency to your favorite redditors! 
