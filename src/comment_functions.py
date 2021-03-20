@@ -171,6 +171,11 @@ def send_from_comment(message):
         response["status"] = 999
         return response
 
+    if sender_info["address"] == recipient_info["address"]:
+        # Don't allow sends to yourself
+        response["status"] = 200
+        return response
+
     # send the bans!!
     response["hash"] = send(
         sender_info["address"],
