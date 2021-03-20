@@ -55,13 +55,12 @@ There are many other commands.
 'create' - Create a new account if one does not exist
 'help' - Get this help message
 'history <optional: number of records>' - Retrieves tipbot commands. Default 10, maximum is 50.
-'send <amount or all, optional: Currency> <user/address>' - Send Nano to a reddit user or an address
+'send <amount or all, optional: Currency> <user/address>' - Send Banano to a reddit user or an address
 'silence <yes/no>' - (default 'no') Prevents the bot from sending you tip notifications or tagging in posts
 'subreddit <subreddit> <'activate'/'deactivate'> <option>' - Subreddit Moderator Controls - Enabled Tipping on Your Sub (`silent`, `minimal`, `full`)
 'withdraw <amount or all> <user/address>' - Same as send
-'convert <amountcurrency>' - Calculates the Nano value of the specified curency. e.g. `convert 1USD`. Also works with "price" and "value".
 'opt-out' - Disables your account.
-'opt-in' - Reenables your account. Your Nano may or may not still be available. 
+'opt-in' - Re-enables your account.
 ```
 ### Control TipBot Behavior On Your Subreddit
 If you are a moderator of a subreddit, and would like to tipping to your sub, use the `subreddit` command. For example, for me to activate tipping on my /r/banano_tipbot subreddit, I send a PM to the bot saying:
@@ -125,3 +124,4 @@ If a reddit tip is a reply to a reply, it's better to keep a short message with 
 * 150 - This subreddit does not accept tips this small, increase your tip or send the bot `subreddit subreddit_name` to see what the minimum is.
 * 160 - You have insufficient funds.
 * 190 - The recipient has disabled tipping for their account.
+* 200 - You have tried to tip your own comment or withdraw to your own account, which is not allowed.

@@ -223,7 +223,7 @@ def handle_history(message):
                         or result.notes == "new user created"
                     ):
                         response += (
-                            "%s: %s | %s Nano to %s | reddit object: %s | %s\n\n"
+                            "%s: %s | %s Banano to %s | reddit object: %s | %s\n\n"
                             % (
                                 result.reddit_time.strftime("%Y-%m-%d %H:%M:%S"),
                                 result.action,
@@ -238,7 +238,7 @@ def handle_history(message):
                         or result.notes == "sent to unregistered address"
                     ):
                         response += (
-                            "%s: %s | %s Nano to %s | reddit object: %s | %s\n\n"
+                            "%s: %s | %s Banano to %s | reddit object: %s | %s\n\n"
                             % (
                                 result.reddit_time.strftime("%Y-%m-%d %H:%M:%S"),
                                 result.action,
@@ -467,6 +467,11 @@ def handle_send(message):
         response["recipient"] = recipient_info["address"]
         response["status"] = 30
 
+    if sender_info["address"] == recipient_info["address"]:
+        # Don't allow sends to yourself
+        response["status"] = 200
+        return response        
+
     response["hash"] = send(
         sender_info["address"],
         response["amount"],
@@ -477,7 +482,7 @@ def handle_send(message):
         History.update(notes="send to address", address=sender_info["address"], username=sender_info["username"], recipient_username=None, recipient_address=recipient_info["address"],
                     amount=str(response["amount"]), return_status="cleared").where(History.id == entry_id).execute()
         LOGGER.info(
-            f"Sending Nano: {sender_info['address']} {sender_info['private_key']} {response['amount']} {recipient_info['address']}"
+            f"Sending Banano: {sender_info['address']} {sender_info['private_key']} {response['amount']} {recipient_info['address']}"
         )
         return response
 
@@ -485,7 +490,7 @@ def handle_send(message):
     History.update(notes="send to address", address=sender_info["address"], username=sender_info["username"], recipient_username=recipient_info["username"], recipient_address=recipient_info["address"],
                 amount=str(response["amount"]), return_status="cleared").where(History.id == entry_id).execute()
     LOGGER.info(
-        f"Sending Nano: {sender_info['address']} {sender_info['private_key']} {response['amount']} {recipient_info['address']} {recipient_info['username']}"
+        f"Sending Banano: {sender_info['address']} {sender_info['private_key']} {response['amount']} {recipient_info['address']} {recipient_info['username']}"
     )
 
     if response["status"] == 20:
@@ -548,7 +553,7 @@ def handle_opt_in(message):
 
 def parse_recipient_username(recipient_text):
     """
-    Determines if a specified recipient is a nano address or a redditor
+    Determines if a specified recipient is a banano address or a redditor
     :param recipient_text:
     :return: either {address: valid_address} or {username: user}
     """

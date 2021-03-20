@@ -30,7 +30,7 @@ For PM commands, create a new message with any of the following commands (be sur
     'silence <yes/no>' - (default 'no') Prevents the bot from sending you tip notifications or tagging in posts 
     'history <optional: number of records>' - Retrieves tipbot commands. Default 10, maximum is 50.
     'opt-out' - Disables your account. 
-    'opt-in' - Reenables your account. Your Nano may or may not still be available. 
+    'opt-in' - Re-enables your account. 
     'help' - Get this help message\n
 If you wanted to send 0.01 Banano to bbedward, reply:\n
     send 0.01 bbedward\n
@@ -157,6 +157,7 @@ SEND_TEXT = {
         "Your tip of %s is below this amount."
     ),
     190: "Sorry, the user has opted-out of using Banano Tipper.",
+    200: "You cannot send to yourself."
 }
 
 # for subreddits who like minimal response, or 2nd level responses
@@ -270,4 +271,6 @@ def make_response_text(message, response):
             from_raw(response["minimum"]),
             from_raw(response["amount"]),
         )
+    if response["status"] == 200:
+        return SEND_TEXT[response["status"]]
     return None

@@ -34,7 +34,6 @@ def handle_comment(message):
         message_recipient = str(message.author)
         if response["status"] < 100:
             subject = text.SUBJECTS["success"]
-
         else:
             subject = text.SUBJECTS["failure"]
         message_text = response_text + text.COMMENT_FOOTER
@@ -172,7 +171,7 @@ def send_from_comment(message):
         response["status"] = 999
         return response
 
-    # send the nanos!!
+    # send the bans!!
     response["hash"] = send(
         sender_info["address"],
         response["amount"],
@@ -192,7 +191,7 @@ def send_from_comment(message):
     ).where(History.id == entry_id).execute()
     
     LOGGER.info(
-        f"Sending Nano: {sender_info['address']} {sender_info['private_key']} {response['amount']} {recipient_info['address']} {recipient_info['username']}"
+        f"Sending Banano: {sender_info['address']} {sender_info['private_key']} {response['amount']} {recipient_info['address']} {recipient_info['username']}"
     )
 
     if response["status"] == 20:
