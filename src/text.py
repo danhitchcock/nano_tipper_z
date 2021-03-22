@@ -10,7 +10,7 @@ COMMENT_FOOTER = """\n\n
 
 HELP = """
 Help from Banano Tipper! This bot handles tips via the [BANANO](https://banano.cc) currency.
-[Visit us on GitHub](https://github.com/BananoCoin/banano_reddit_tipbot), the [Wiki](http://reddit.com/r/banano_tipbot/wiki/) 
+[Visit us on GitHub](https://github.com/BananoCoin/banano_reddit_tipbot), the [Wiki](https://github.com/BananoCoin/banano_reddit_tipbot/wiki/Using-the-Banano-Reddit-TipBot) 
 or /r/banano_tipbot for more information on its use and its status. Be sure to read the 
 [Terms of Service](https://github.com/BananoCoin/banano_reddit_tipbot#terms-of-service)\n\n
 
