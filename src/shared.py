@@ -135,7 +135,7 @@ class BaseModel(Model):
 
 class History(BaseModel):
     username = CharField()
-    action = CharField()
+    action = CharField(default="unknown")
     reddit_time = DateTimeField(default=datetime.datetime.utcnow)
     sql_time = DateTimeField(default=datetime.datetime.utcnow)
     address = CharField(null=True)
