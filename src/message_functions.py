@@ -148,7 +148,7 @@ def handle_create(message):
         acct = Account.get(username=username)
         response = text.ALREADY_EXISTS % (acct.address, acct.address)
     except Account.DoesNotExist:
-        address = tipper_functions.add_new_account(username)
+        address = tipper_functions.add_new_account(username)['address']
         if address is None:
             response = text.ACCOUNT_MAKE_ERROR_ERROR
         else:
