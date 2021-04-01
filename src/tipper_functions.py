@@ -18,7 +18,7 @@ import shared
 
 def add_history_record(
     username=None,
-    action=None,
+    action="unknown",
     address=None,
     comment_or_message=None,
     recipient_username=None,
@@ -30,6 +30,8 @@ def add_history_record(
     reddit_time=None,
     comment_text=None,
 ):
+    if action is None:
+        action = "unknown"
     history = History(
         username=username,
         action=action,
