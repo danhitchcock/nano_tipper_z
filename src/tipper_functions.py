@@ -32,6 +32,8 @@ def add_history_record(
 ):
     if action is None:
         action = "unknown"
+    if reddit_time is None:
+        reddit_time=datetime.utcnow()
     history = History(
         username=username,
         action=action,
