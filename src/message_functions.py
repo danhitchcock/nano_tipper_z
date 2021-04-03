@@ -143,7 +143,13 @@ def handle_message(message):
         return None
     message_recipient = str(message.author)
     message_text = response + COMMENT_FOOTER
-    send_pm(message_recipient, subject, message_text, bypass_opt_out=True)
+    send_pm(
+        message_recipient,
+        subject,
+        message_text,
+        bypass_opt_out=True,
+        message_id=message.name,
+    )
 
 
 def handle_percentage(message):

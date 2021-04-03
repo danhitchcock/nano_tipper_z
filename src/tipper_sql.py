@@ -57,7 +57,8 @@ def init_messages():
         "id INT AUTO_INCREMENT PRIMARY KEY, "
         "username VARCHAR(255), "
         "subject VARCHAR(255), "
-        "message VARCHAR(5000) "
+        "message VARCHAR(5000), "
+        "message_id VARCHAR(5000)"
         ")"
     )
     MYDB.commit()
@@ -397,6 +398,12 @@ def migrate_add_subreddit_18():
     sql = "ALTER TABLE history ADD subreddit VARCHAR(255)"
     MYCURSOR.execute(sql)
     init_returns()
+    MYDB.commit()
+
+
+def migrate_reply_19():
+    sql = "ALTER TABLE messages ADD message_id VARCHAR(255)"
+    MYCURSOR.execute(sql)
     MYDB.commit()
 
 

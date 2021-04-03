@@ -223,7 +223,7 @@ def update_history_notes(entry_id, text):
     MYDB.commit()
 
 
-def send_pm(recipient, subject, body, bypass_opt_out=False):
+def send_pm(recipient, subject, body, bypass_opt_out=False, message_id=None):
     opt_in = True
     # If there is not a bypass to opt in, check the status
     if not bypass_opt_out:
@@ -234,8 +234,11 @@ def send_pm(recipient, subject, body, bypass_opt_out=False):
 
     # if the user has opted in, or if there is an override to send the PM even if they have not
     if opt_in or not bypass_opt_out:
-        sql = "INSERT INTO messages (username, subject, message) VALUES (%s, %s, %s)"
-        val = (recipient, subject, body)
+        sql = (
+            "INSERT INTO messages (username, subject, message, message_id)"
+            " VALUES (%s, %s, %s, %s)"
+        )
+        val = (recipient, subject, body, message_id)
         MYCURSOR.execute(sql, val)
         MYDB.commit()
 
