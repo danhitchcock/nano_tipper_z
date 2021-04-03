@@ -25,7 +25,8 @@ def init_history():
         "comment_id VARCHAR(255), "
         "comment_text VARCHAR(255), "
         "notes VARCHAR(255), "
-        "return_status VARCHAR(255)"
+        "return_status VARCHAR(255), "
+        "subreddit VARCHAR(255)"
         ")"
     )
     MYDB.commit()
@@ -118,13 +119,15 @@ def add_history_record(
     notes=None,
     reddit_time=None,
     comment_text=None,
+    subreddit=None,
 ):
     if sql_time is None:
         sql_time = time.strftime("%Y-%m-%d %H:%M:%S")
 
     sql = (
         "INSERT INTO history (username, action, sql_time, address, comment_or_message, recipient_username, "
-        "recipient_address, amount, hash, comment_id, notes, reddit_time, comment_text, return_status) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
+        "recipient_address, amount, hash, comment_id, notes, reddit_time, comment_text, return_status, subreddit) "
+        "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
     )
 
     val = (
@@ -142,8 +145,9 @@ def add_history_record(
         reddit_time,
         comment_text,
         None,
+        subreddit,
     )
-    # todo make sure the rowid is atomic
+    # todo make sure the row id is atomic
     MYCURSOR.execute(sql, val)
     MYDB.commit()
     return MYCURSOR.lastrowid
@@ -386,6 +390,13 @@ def migrate_subreddit_17():
     MYCURSOR.execute(sql)
     sql = "UPDATE subreddits SET minimum = 0.001"
     MYCURSOR.execute(sql)
+    MYDB.commit()
+
+
+def migrate_add_subreddit_18():
+    sql = "ALTER TABLE history ADD subreddit VARCHAR(255)"
+    MYCURSOR.execute(sql)
+    init_returns()
     MYDB.commit()
 
 

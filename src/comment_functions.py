@@ -87,6 +87,7 @@ def send_from_comment(message):
         comment_id=message.name,
         reddit_time=message_time.strftime("%Y-%m-%d %H:%M:%S"),
         comment_text=str(message.body)[:255],
+        subreddit=str(message.subreddit).lower(),
     )
 
     # check if it's a donate command at the end

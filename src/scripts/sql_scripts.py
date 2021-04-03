@@ -48,10 +48,10 @@ def pull_history(u, n):
     :param n:
     :return:
     """
-    sql = "SELECT id, username, sql_time, action, amount, comment_id, notes, recipient_username, recipient_address, return_status, comment_text FROM history WHERE username=%s ORDER BY id DESC limit %s"
+    sql = "SELECT id, username, sql_time, action, amount, comment_id, notes, recipient_username, recipient_address, return_status, comment_text, subreddit FROM history WHERE username=%s ORDER BY id DESC limit %s"
     val = (u, n)
     if u is None:
-        sql = "SELECT id, username, sql_time, action, amount, comment_id, notes, recipient_username, recipient_address, return_status, comment_text FROM history ORDER BY id DESC limit %s"
+        sql = "SELECT id, username, sql_time, action, amount, comment_id, notes, recipient_username, recipient_address, return_status, comment_text, subreddit FROM history ORDER BY id DESC limit %s"
         val = (n,)
     MYCURSOR.execute(sql, val)
     results = MYCURSOR.fetchall()
@@ -59,7 +59,7 @@ def pull_history(u, n):
         LOGGER.info("Username %s not found." % u)
     MYDB.commit()
     LOGGER.info(
-        "Printing results: Username, Datetime, action, amount, comment_id, notes_recipient_username, recipient_address"
+        "Printing results: Username, Datetime, action, amount, comment_id, notes_recipient_username, recipient_address, subreddit"
     )
     for result in results:
         LOGGER.info(result)
