@@ -216,7 +216,8 @@ def send_from_comment(message):
     )["hash"]
 
     # if the recipient is not active, add it to our return table.
-    if not recipient_info["active"]:
+    # also, nanocenter projects won't have "active"
+    if "active" in recipient_info.keys() and not recipient_info["active"]:
         add_return_record(
             username=sender_info["username"],
             reddit_time=message_time.strftime("%Y-%m-%d %H:%M:%S"),

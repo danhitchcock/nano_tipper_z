@@ -86,6 +86,7 @@ def mock_account_info(key, by_address=False):
             "balance": to_raw(100),
             "account_exists": True,
             "opt_in": True,
+            "active": True,
         },
         "poor": {
             "username": "poor",
@@ -96,6 +97,7 @@ def mock_account_info(key, by_address=False):
             "balance": 0,
             "account_exists": True,
             "opt_in": True,
+            "active": True,
         },
         "high_min": {
             "username": "high_min",
@@ -106,6 +108,7 @@ def mock_account_info(key, by_address=False):
             "balance": 0,
             "account_exists": True,
             "opt_in": True,
+            "active": True,
         },
         "nano_valid": {
             "username": None,
@@ -116,6 +119,7 @@ def mock_account_info(key, by_address=False):
             "balance": None,
             "account_exists": False,
             "opt_in": True,
+            "active": True,
         },
         "silent": {
             "username": "high_min",
@@ -126,6 +130,7 @@ def mock_account_info(key, by_address=False):
             "balance": 0,
             "account_exists": True,
             "opt_in": True,
+            "active": True,
         },
         "out": {
             "username": "rich",
@@ -136,6 +141,7 @@ def mock_account_info(key, by_address=False):
             "balance": to_raw(100),
             "account_exists": True,
             "opt_in": False,
+            "active": True,
         },
     }
     if not by_address:
@@ -258,6 +264,7 @@ def mock_add_new_account(username):
         "silence": False,
         "balance": 0,
         "account_exists": False,
+        "active": False,
     }
 
 
@@ -298,6 +305,10 @@ def handle_send_from_message_mocks(monkeypatch):
     monkeypatch.setattr(tipper_functions, "account_info", mock_account_info)
     monkeypatch.setattr(
         message_functions, "add_history_record", lambda *args, **kwargs: None
+    )
+
+    monkeypatch.setattr(
+        message_functions, "add_return_record", lambda *args, **kwargs: None
     )
     monkeypatch.setattr(
         tipper_functions,
@@ -515,6 +526,9 @@ def handle_send_from_comment_mocks(monkeypatch):
     )
     monkeypatch.setattr(tipper_functions, "add_new_account", mock_add_new_account)
     monkeypatch.setattr(comment_functions, "update_history_notes", lambda *args: None)
+    monkeypatch.setattr(
+        comment_functions, "add_return_record", lambda *args, **kwargs: None
+    )
     monkeypatch.setattr(tipper_functions, "query_sql", mock_query_sql)
     monkeypatch.setattr(tipper_functions, "exec_sql", lambda *args: None)
     monkeypatch.setattr(comment_functions, "send", lambda *args: {"hash": "success!"})

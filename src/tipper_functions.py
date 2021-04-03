@@ -599,7 +599,10 @@ def return_transactions():
 
                 if (donation_amount > 0) and (donation_amount <= int(txn[2])):
                     hash2 = send(
-                        address, private_key, donation_amount, TIPBOT_DONATION_ADDRESS,
+                        address,
+                        private_key,
+                        donation_amount,
+                        TIPBOT_DONATION_ADDRESS,
                     )["hash"]
                     add_history_record(
                         action="donate",
