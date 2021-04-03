@@ -8,7 +8,12 @@ from shared import MYCURSOR, MYDB, REDDIT, PROGRAM_MINIMUM, SUBREDDITS, to_raw
 
 from message_functions import handle_message
 
-from tipper_functions import parse_action, return_transactions, update_status_message
+from tipper_functions import (
+    parse_action,
+    return_transactions,
+    return_transactions_new,
+    update_status_message,
+)
 from comment_functions import handle_comment
 
 
@@ -91,10 +96,12 @@ def main_loop():
         None: lambda x: None,
     }
     inactive_timer = time.time()
+    inactivate_timer_new = time.time()
     receive_timer = time.time()
     subreddit_timer = time.time()
     update_status_message()
     return_transactions()
+    return_transactions_new()
     for action_item in stream_comments_messages():
         action = parse_action(action_item)
         actions[action](action_item)
@@ -103,6 +110,11 @@ def main_loop():
         if time.time() - inactive_timer > 43200:
             inactive_timer = time.time()
             return_transactions()
+
+        # run the inactive script at the end of the loop; every 12 hours
+        if time.time() - inactivate_timer_new > 43200:
+            inactivate_timer_new = time.time()
+            return_transactions_new()
 
         # run the receive script every 20 seconds
         if time.time() - receive_timer > 20:
