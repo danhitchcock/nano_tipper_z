@@ -970,7 +970,7 @@ def test_stream_comments_messages(monkeypatch):
     reddit.inbox = MockRedditInbox()
     monkeypatch.setattr(tipbot, "CYCLE_TIME", 0)
     monkeypatch.setattr(tipbot, "REDDIT", reddit)
-    monkeypatch.setattr(tipbot, "SUBREDDITS", MockSubreddit())
+    monkeypatch.setattr(shared, "SUBREDDITS", MockSubreddit())
     items = []
     for item in stream_comments_messages():
         items.append(item)

@@ -1,5 +1,6 @@
 import datetime
 import text
+import shared
 from shared import (
     MYDB,
     MYCURSOR,
@@ -158,10 +159,16 @@ def send_from_comment(message):
         return response
 
     # check that it's above the subreddit minimum
-    if response["amount"] < to_raw(response["subreddit_minimum"]):
-        update_history_notes(entry_id, "amount below subreddit minimum")
-        response["status"] = 150
-        return response
+    if response["subreddit_status"] != "untracked":
+        if response["amount"] < to_raw(response["subreddit_minimum"]):
+            update_history_notes(entry_id, "amount below subreddit minimum")
+            response["status"] = 150
+            return response
+    else:
+        if from_raw(response["amount"] * shared.USD_VALUE) < 1:
+            update_history_notes(entry_id, "amount below untracked minimum")
+            response["status"] = 150
+            return response
 
     # if it's a normal send, pull the account author
     # we will distinguish users from donations by the presence of a private key

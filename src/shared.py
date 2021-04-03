@@ -1,4 +1,6 @@
 import os
+import requests
+import json
 import mysql.connector
 import configparser
 import praw
@@ -54,6 +56,15 @@ try:
     SQL_PASSWORD = config["SQL"]["sql_password"]
     DATABASE_NAME = config["SQL"]["database_name"]
 
+    try:
+        url = "https://min-api.cryptocompare.com/data/price?fsym={}&tsyms={}".format(
+            CURRENCY, "USD"
+        )
+        results = requests.get(url, timeout=1)
+        results = json.loads(results.text)
+        USD_VALUE = float(results["USD"])
+    except requests.exceptions.ReadTimeout:
+        USD_VALUE = 0
 except KeyError as e:
     LOGGER.info("Failed to read tipper.ini. Falling back to test-defaults...")
     LOGGER.info("Failed on: ", e)
@@ -82,6 +93,7 @@ except KeyError as e:
     REP = ""
     DPOW_ENDPOINT = ""
     USE_DPOW = False
+    USD_VALUE = 1
 
 # only fails if no databases have been created
 try:

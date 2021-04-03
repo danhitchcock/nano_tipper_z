@@ -1,10 +1,17 @@
 import time
-
+import requests
+import json
 from time import sleep
 
 from tipper_rpc import get_pendings, open_or_receive_block
 import shared
-from shared import MYCURSOR, MYDB, REDDIT, PROGRAM_MINIMUM, SUBREDDITS, to_raw
+from shared import (
+    MYCURSOR,
+    MYDB,
+    REDDIT,
+    PROGRAM_MINIMUM,
+    to_raw,
+)
 
 from message_functions import handle_message
 
@@ -30,7 +37,7 @@ def stream_comments_messages():
     :return:
     """
     previous_time = time.time()
-    previous_comments = {comment for comment in SUBREDDITS.comments()}
+    previous_comments = {comment for comment in shared.SUBREDDITS.comments()}
     previous_messages = {message for message in REDDIT.inbox.all(limit=25)}
     previous_all = previous_comments.union(previous_messages)
 
@@ -42,7 +49,7 @@ def stream_comments_messages():
         previous_time = time.time()
 
         # check for new comments
-        updated_comments = {comment for comment in SUBREDDITS.comments()}
+        updated_comments = {comment for comment in shared.SUBREDDITS.comments()}
         updated_messages = {message for message in REDDIT.inbox.all(limit=25)}
         updated_all = updated_comments.union(updated_messages)
         new = updated_all - previous_all
@@ -86,7 +93,7 @@ def auto_receive():
 
 
 def main_loop():
-    global SUBREDDITS
+    # our "subreddits" object, not to be confused with shared.SUBREDDITS
     actions = {
         "message": handle_message,
         "comment": handle_comment,
@@ -99,6 +106,8 @@ def main_loop():
     inactivate_timer_new = time.time()
     receive_timer = time.time()
     subreddit_timer = time.time()
+    usd_timer = time.time()
+
     update_status_message()
     return_transactions()
     return_transactions_new()
@@ -125,8 +134,20 @@ def main_loop():
         if time.time() - subreddit_timer > 300:
             subreddit_timer = time.time()
             shared.SUBREDDITS = shared.get_subreddits()
-            SUBREDDITS = shared.SUBREDDITS
             update_status_message()
+
+        # refresh USD amount every 5 minutes
+        if time.time() - usd_timer > 300:
+            try:
+                usd_timer = time.time()
+                url = "https://min-api.cryptocompare.com/data/price?fsym={}&tsyms={}".format(
+                    "Nano", "USD"
+                )
+                results = requests.get(url, timeout=1)
+                results = json.loads(results.text)
+                shared.USD_VALUE = float(results["USD"])
+            except requests.exceptions.ReadTimeout:
+                pass
 
 
 if __name__ == "__main__":
