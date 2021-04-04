@@ -243,8 +243,11 @@ def list_subreddits():
     return myresult
 
 
-def list_returns():
-    MYCURSOR.execute("SELECT * FROM returns")
+def list_returns(status=None):
+    if status:
+        MYCURSOR.execute("SELECT * FROM returns WHERE return_status=%s", (status,))
+    else:
+        MYCURSOR.execute("SELECT * FROM returns")
     myresult = MYCURSOR.fetchall()
     MYDB.commit()
     for res in myresult:

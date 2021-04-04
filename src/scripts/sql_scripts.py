@@ -91,3 +91,9 @@ def modify_history(id):
     sql = "UPDATE history SET sql_time='2020-06-10 09:21:28' WHERE id=%s"
     MYCURSOR.execute(sql, (id,))
     MYDB.commit()
+
+
+@click.command()
+@click.option("-s", "--status", default=None)
+def list_returns(status):
+    tipper_sql.list_returns(status)
