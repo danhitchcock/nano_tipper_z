@@ -4,12 +4,16 @@ import tipper_functions
 import text
 from tipper_functions import (
     parse_text,
-    add_history_record,
     TipError,
     update_history_notes,
     parse_raw_amount,
     send_pm,
     activate,
+)
+
+from tipper_sql import (
+    add_history_record,
+    add_return_record,
 )
 from tipper_rpc import (
     check_balance,
@@ -103,7 +107,20 @@ def handle_message(message):
         response = handle_delete_project(message)
 
     # a few administrative tasks
-    elif command in ["restart", "stop", "disable", "deactivate"]:
+    elif command == ["restart"]:
+        if str(message.author).lower() in [
+            TIPBOT_OWNER,
+            "rockmsockmjesus",
+        ]:  # "joohansson"]:
+            add_history_record(
+                username=str(message.author),
+                action="restart",
+                comment_text=str(message.body)[:255],
+                comment_or_message="message",
+                comment_id=message.name,
+            )
+            sys.exit(0)
+    elif command in ["stop", "disable", "deactivate"]:
         if str(message.author).lower() in [
             TIPBOT_OWNER,
             "rockmsockmjesus",
@@ -126,7 +143,13 @@ def handle_message(message):
         return None
     message_recipient = str(message.author)
     message_text = response + COMMENT_FOOTER
-    send_pm(message_recipient, subject, message_text, bypass_opt_out=True)
+    send_pm(
+        message_recipient,
+        subject,
+        message_text,
+        bypass_opt_out=True,
+        message_id=message.name,
+    )
 
 
 def handle_percentage(message):
@@ -739,11 +762,12 @@ def handle_send(message):
         response["amount"],
         recipient_info["address"],
     )["hash"]
+
     # if it was an address, just send to the address
     if "username" not in recipient_info.keys():
         sql = (
             "UPDATE history SET notes = %s, address = %s, username = %s, recipient_username = %s, "
-            "recipient_address = %s, amount = %s, return_status = %s WHERE id = %s"
+            "recipient_address = %s, amount = %s WHERE id = %s"
         )
         val = (
             "send to address",
@@ -752,7 +776,6 @@ def handle_send(message):
             None,
             recipient_info["address"],
             str(response["amount"]),
-            "cleared",
             entry_id,
         )
         tipper_functions.exec_sql(sql, val)
@@ -760,11 +783,25 @@ def handle_send(message):
             f"Sending Nano: {sender_info['address']} {sender_info['private_key']} {response['amount']} {recipient_info['address']}"
         )
         return response
+    else:
+        # otherwise, check if the user is active
+        if not recipient_info["active"]:
+            add_return_record(
+                username=sender_info["username"],
+                reddit_time=message_time.strftime("%Y-%m-%d %H:%M:%S"),
+                recipient_username=recipient_info["username"],
+                recipient_address=recipient_info["address"],
+                amount=str(response["amount"]),
+                hash=response["hash"],
+                comment_id=message.name,
+                return_status="returnable",
+                history_id=entry_id,
+            )
 
     # Update the sql and send the PMs
     sql = (
         "UPDATE history SET notes = %s, address = %s, username = %s, recipient_username = %s, "
-        "recipient_address = %s, amount = %s, hash = %s, return_status = %s WHERE id = %s"
+        "recipient_address = %s, amount = %s, hash = %s WHERE id = %s"
     )
     val = (
         "sent to user",
@@ -774,7 +811,6 @@ def handle_send(message):
         recipient_info["address"],
         str(response["amount"]),
         response["hash"],
-        "cleared",
         entry_id,
     )
     tipper_functions.exec_sql(sql, val)

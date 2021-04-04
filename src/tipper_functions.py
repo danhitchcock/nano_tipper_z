@@ -21,53 +21,9 @@ from shared import (
 from text import HELP, RETURN_WARNING, SUBJECTS
 
 from tipper_rpc import generate_account, check_balance, send
-from tipper_sql import list_subreddits
+from tipper_sql import list_subreddits, add_history_record
 import text
 import shared
-
-
-def add_history_record(
-    username=None,
-    action=None,
-    sql_time=None,
-    address=None,
-    comment_or_message=None,
-    recipient_username=None,
-    recipient_address=None,
-    amount=None,
-    hash=None,
-    comment_id=None,
-    notes=None,
-    reddit_time=None,
-    comment_text=None,
-):
-    if sql_time is None:
-        sql_time = time.strftime("%Y-%m-%d %H:%M:%S")
-
-    sql = (
-        "INSERT INTO history (username, action, sql_time, address, comment_or_message, recipient_username, "
-        "recipient_address, amount, hash, comment_id, notes, reddit_time, comment_text) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
-    )
-
-    val = (
-        username,
-        action,
-        sql_time,
-        address,
-        comment_or_message,
-        recipient_username,
-        recipient_address,
-        amount,
-        hash,
-        comment_id,
-        notes,
-        reddit_time,
-        comment_text,
-    )
-    # todo make sure the rowid is atomic
-    MYCURSOR.execute(sql, val)
-    MYDB.commit()
-    return MYCURSOR.lastrowid
 
 
 def make_graceful(func):
@@ -147,6 +103,7 @@ def add_new_account(username):
         "minimum": to_raw(RECIPIENT_MINIMUM),
         "silence": False,
         "balance": 0,
+        "active": False,
         "account_exists": True,
     }
 
@@ -239,9 +196,9 @@ def account_info(key, by_address=False):
     :return: dict - name, address, private_key, balance
     """
     if not by_address:
-        sql = "SELECT username, address, private_key, minimum, silence, opt_in FROM accounts WHERE username=%s"
+        sql = "SELECT username, address, private_key, minimum, silence, opt_in, active FROM accounts WHERE username=%s"
     else:
-        sql = "SELECT username, address, private_key, minimum, silence, opt_in FROM accounts WHERE address=%s"
+        sql = "SELECT username, address, private_key, minimum, silence, opt_in, active FROM accounts WHERE address=%s"
     val = (key,)
     result = query_sql(sql, val)
     if len(result) > 0:
@@ -254,6 +211,7 @@ def account_info(key, by_address=False):
             "balance": check_balance(result[0][1])[0],
             "account_exists": True,
             "opt_in": result[0][5],
+            "active": result[0][6],
         }
     return None
 
@@ -265,7 +223,7 @@ def update_history_notes(entry_id, text):
     MYDB.commit()
 
 
-def send_pm(recipient, subject, body, bypass_opt_out=False):
+def send_pm(recipient, subject, body, bypass_opt_out=False, message_id=None):
     opt_in = True
     # If there is not a bypass to opt in, check the status
     if not bypass_opt_out:
@@ -276,8 +234,11 @@ def send_pm(recipient, subject, body, bypass_opt_out=False):
 
     # if the user has opted in, or if there is an override to send the PM even if they have not
     if opt_in or not bypass_opt_out:
-        sql = "INSERT INTO messages (username, subject, message) VALUES (%s, %s, %s)"
-        val = (recipient, subject, body)
+        sql = (
+            "INSERT INTO messages (username, subject, message, message_id)"
+            " VALUES (%s, %s, %s, %s)"
+        )
+        val = (recipient, subject, body, message_id)
         MYCURSOR.execute(sql, val)
         MYDB.commit()
 
@@ -419,6 +380,142 @@ def query_sql(sql, val=None):
     return results
 
 
+def return_transactions_new():
+
+    # remove all activated recipients
+    LOGGER.info("Running inactive script")
+    myresults = query_sql("SELECT username FROM accounts WHERE active IS NOT TRUE")
+    inactivated_accounts = {item[0] for item in myresults}
+
+    myresults = query_sql("SELECT recipient_username FROM returns")
+    return_accounts = {item[0] for item in myresults}
+
+    # accounts which have been activated and should be removed from the returns
+    accounts_to_remove = return_accounts - inactivated_accounts
+    for account in accounts_to_remove:
+        exec_sql("DELETE FROM returns WHERE recipient_username = %s", val=(account,))
+
+    # return accounts
+    myresults = query_sql("SELECT recipient_username FROM returns")
+    return_accounts = {item[0] for item in myresults}
+    returns = {}
+    # warn recipients
+    for return_from in return_accounts:
+        # return transactions over 35 days old
+        sql = (
+            "SELECT id, username, amount, history_id FROM returns WHERE"
+            " recipient_username = %s"
+            " AND `sql_time` <= SUBDATE( CURRENT_TIMESTAMP, INTERVAL 35 DAY)"
+            " AND return_status = 'warned'"
+        )
+        val = (return_from,)
+        txns = query_sql(sql, val)
+        # if there are transactions, do them
+        if len(txns) > 0:
+            sql = "SELECT address, private_key FROM accounts WHERE username = %s"
+            inactive_results = query_sql(sql, (return_from,))
+            from_address = inactive_results[0][0]
+            private_key = inactive_results[0][1]
+            for txn in txns:
+                # set the pre-update message to 'failed'. This will be
+                # deleted upon success
+                sql = "UPDATE returns SET return_status = 'failed' WHERE id = %s"
+                val = (txn[0],)
+                exec_sql(sql, val)
+
+                # get the transaction information and find out to whom we are returning
+                sql = "SELECT address, percentage FROM accounts WHERE username = %s"
+                val = (txn[1],)
+                returned_results = query_sql(sql, val)
+                recipient_address = returned_results[0][0]
+                percentage = returned_results[0][1]
+                percentage = float(percentage) / 100
+
+                # send it back
+                donation_amount = from_raw(int(txn[2]))
+                donation_amount = donation_amount * percentage
+                donation_amount = to_raw(donation_amount)
+                return_amount = int(txn[2]) - donation_amount
+
+                new_entry = 0
+                if (return_amount > 0) and (return_amount <= int(txn[2])):
+                    hash = send(
+                        from_address, private_key, return_amount, recipient_address
+                    )["hash"]
+                    new_entry = add_history_record(
+                        action="return",
+                        hash=hash,
+                        amount=return_amount,
+                        notes="Returned transaction from history record %s" % txn[3],
+                        username=txn[1],
+                        recipient_username=return_from,
+                    )
+
+                if (donation_amount > 0) and (donation_amount <= int(txn[2])):
+                    hash2 = send(
+                        from_address,
+                        private_key,
+                        donation_amount,
+                        TIPBOT_DONATION_ADDRESS,
+                    )["hash"]
+                    new_entry = add_history_record(
+                        action="donate",
+                        hash=hash2,
+                        amount=donation_amount,
+                        notes="Donation from returned tip %s" % txn[3],
+                        username=txn[1],
+                        recipient_username=return_from,
+                    )
+
+                # remove transactions from the return
+                sql = "DELETE FROM returns WHERE id = %s"
+                val = (txn[0],)
+                exec_sql(sql, val)
+
+                # update database if everything goes through
+                sql = f"UPDATE history SET return_status = 'returned by {new_entry}' WHERE id = %s"
+                val = (txn[3],)
+                exec_sql(sql, val)
+
+                # add transactions to the messaging queue to build a single message
+                message_recipient = txn[1]
+                if message_recipient not in returns.keys():
+                    returns[message_recipient] = {
+                        "percent": round(percentage * 100, 2),
+                        "transactions": [],
+                    }
+                returns[message_recipient]["transactions"].append(
+                    [
+                        return_from,
+                        from_raw(int(txn[2])),
+                        from_raw(return_amount),
+                        from_raw(donation_amount),
+                    ]
+                )
+
+        # send warning messages on day 31
+        sql = (
+            "SELECT id FROM returns WHERE"
+            " recipient_username = %s"
+            " AND `sql_time` <= SUBDATE( CURRENT_TIMESTAMP, INTERVAL 31 DAY)"
+            " AND return_status = 'returnable'"
+        )
+        txns = query_sql(sql, (return_from,))
+        if len(txns) >= 1:
+            LOGGER.info(f"Warning Message to {return_from}")
+            send_pm(return_from, SUBJECTS["RETURN_WARNING"], RETURN_WARNING + HELP)
+            for txn in txns:
+                sql = "UPDATE returns SET return_status = 'warned' WHERE id = %s"
+                val = (txn[0],)
+                exec_sql(sql, val)
+
+        # send out our return messages
+    for user in returns:
+        message = text.make_return_message(returns[user])
+        send_pm(user, SUBJECTS["RETURN_MESSAGE"], message)
+    LOGGER.info("Inactivated script complete.")
+
+
 def return_transactions():
     LOGGER.info("Running inactive script")
     myresults = query_sql("SELECT username FROM accounts WHERE active IS NOT TRUE")
@@ -505,7 +602,10 @@ def return_transactions():
 
                 if (donation_amount > 0) and (donation_amount <= int(txn[2])):
                     hash2 = send(
-                        address, private_key, donation_amount, TIPBOT_DONATION_ADDRESS,
+                        address,
+                        private_key,
+                        donation_amount,
+                        TIPBOT_DONATION_ADDRESS,
                     )["hash"]
                     add_history_record(
                         action="donate",

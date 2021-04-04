@@ -1,5 +1,6 @@
 import datetime
 import text
+import shared
 from shared import (
     MYDB,
     MYCURSOR,
@@ -13,7 +14,6 @@ from shared import (
     to_raw,
 )
 from tipper_functions import (
-    add_history_record,
     parse_text,
     update_history_notes,
     TipError,
@@ -21,12 +21,13 @@ from tipper_functions import (
     send_pm,
     check_balance,
 )
+
+from tipper_sql import add_history_record, add_return_record
 from tipper_rpc import send
 import tipper_functions
 
 # handles tip commands on subreddits
 def handle_comment(message):
-
     response = send_from_comment(message)
     response_text = text.make_response_text(message, response)
 
@@ -87,6 +88,7 @@ def send_from_comment(message):
         comment_id=message.name,
         reddit_time=message_time.strftime("%Y-%m-%d %H:%M:%S"),
         comment_text=str(message.body)[:255],
+        subreddit=str(message.subreddit).lower(),
     )
 
     # check if it's a donate command at the end
@@ -157,10 +159,16 @@ def send_from_comment(message):
         return response
 
     # check that it's above the subreddit minimum
-    if response["amount"] < to_raw(response["subreddit_minimum"]):
-        update_history_notes(entry_id, "amount below subreddit minimum")
-        response["status"] = 150
-        return response
+    if response["subreddit_status"] != "untracked":
+        if response["amount"] < to_raw(response["subreddit_minimum"]):
+            update_history_notes(entry_id, "amount below subreddit minimum")
+            response["status"] = 150
+            return response
+    else:
+        if from_raw(response["amount"] * shared.USD_VALUE) < 1:
+            update_history_notes(entry_id, "amount below untracked minimum")
+            response["status"] = 150
+            return response
 
     # if it's a normal send, pull the account author
     # we will distinguish users from donations by the presence of a private key
@@ -215,10 +223,25 @@ def send_from_comment(message):
         recipient_info["address"],
     )["hash"]
 
+    # if the recipient is not active, add it to our return table.
+    # also, nanocenter projects won't have "active"
+    if "active" in recipient_info.keys() and not recipient_info["active"]:
+        add_return_record(
+            username=sender_info["username"],
+            reddit_time=message_time.strftime("%Y-%m-%d %H:%M:%S"),
+            recipient_username=recipient_info["username"],
+            recipient_address=recipient_info["address"],
+            amount=str(response["amount"]),
+            hash=response["hash"],
+            comment_id=message.name,
+            return_status="returnable",
+            history_id=entry_id,
+        )
+
     # Update the sql and send the PMs
     sql = (
         "UPDATE history SET notes = %s, address = %s, username = %s, recipient_username = %s, "
-        "recipient_address = %s, amount = %s, hash = %s, return_status = %s WHERE id = %s"
+        "recipient_address = %s, amount = %s, hash = %s WHERE id = %s"
     )
     val = (
         "sent to user",
@@ -228,7 +251,6 @@ def send_from_comment(message):
         recipient_info["address"],
         str(response["amount"]),
         response["hash"],
-        "cleared",
         entry_id,
     )
     tipper_functions.exec_sql(sql, val)
@@ -255,7 +277,7 @@ def send_from_comment(message):
     # update the sql database and send
     sql = (
         "UPDATE history SET notes = %s, address = %s, username = %s, recipient_username = %s, "
-        "recipient_address = %s, amount = %s, return_status = %s WHERE id = %s"
+        "recipient_address = %s, amount = %s WHERE id = %s"
     )
     val = (
         "sent to user",
@@ -264,7 +286,6 @@ def send_from_comment(message):
         recipient_info["username"],
         recipient_info["address"],
         str(response["amount"]),
-        "cleared",
         entry_id,
     )
     tipper_functions.exec_sql(sql, val)
