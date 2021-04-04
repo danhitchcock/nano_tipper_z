@@ -165,7 +165,7 @@ def send_from_comment(message):
             response["status"] = 150
             return response
     else:
-        if from_raw(response["amount"] * shared.USD_VALUE) < 1:
+        if from_raw(response["amount"] * shared.USD_VALUE) < 0.9:
             update_history_notes(entry_id, "amount below untracked minimum")
             response["status"] = 150
             return response
