@@ -375,6 +375,15 @@ def clear_messages():
     MYDB.commit()
 
 
+def list_messages():
+    MYCURSOR.execute("SELECT * FROM messages")
+    myresult = MYCURSOR.fetchall()
+    MYDB.commit()
+    for res in myresult:
+        print(res)
+    return myresult
+
+
 def update_to_nano():
     sql = "UPDATE accounts SET address = REPLACE(address, 'xrb_', 'nano_')"
     MYCURSOR.execute(sql)
