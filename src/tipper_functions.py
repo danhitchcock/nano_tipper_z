@@ -508,7 +508,6 @@ def return_transactions_new():
                 sql = "UPDATE returns SET return_status = 'warned' WHERE id = %s"
                 val = (txn[0],)
                 exec_sql(sql, val)
-
         # send out our return messages
     for user in returns:
         message = text.make_return_message(returns[user])

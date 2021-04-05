@@ -97,3 +97,13 @@ def modify_history(id):
 @click.option("-s", "--status", default=None)
 def list_returns(status):
     tipper_sql.list_returns(status)
+
+
+@click.command()
+def list_messages():
+    tipper_sql.list_messages()
+
+
+@click.command()
+def clear_messages():
+    tipper_sql.clear_messages()

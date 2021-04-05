@@ -14,6 +14,8 @@ from .sql_scripts import (
     list_users,
     modify_history,
     list_returns,
+    list_messages,
+    clear_messages,
 )
 from .rpc_scripts import block_count, address_pendings, all_pendings
 
@@ -34,3 +36,5 @@ cli.add_command(modify_history)
 cli.add_command(address_pendings)
 cli.add_command(all_pendings)
 cli.add_command(list_returns)
+cli.add_command(list_messages)
+cli.add_command(clear_messages)
