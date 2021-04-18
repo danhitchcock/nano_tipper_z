@@ -171,7 +171,7 @@ SEND_TEXT_MIN = {
         "no Tipper)](https://github.com/BananoCoin/banano_reddit_tipbot)"
     ),
     20: (
-        "^(Made a new account and )^[sent](https://creeper.banano.cc.cc/explorer/block/%s) ^%s ^BAN ^to ^(/u/%s) ^- [^(Bana"
+        "^(Made a new account and )^[sent](https://creeper.banano.cc/explorer/block/%s) ^%s ^BAN ^to ^(/u/%s) ^- [^(Bana"
         "no Tipper)](https://github.com/BananoCoin/banano_reddit_tipbot)"
     ),
     100: (
