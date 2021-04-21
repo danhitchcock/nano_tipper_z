@@ -91,7 +91,7 @@ class NumberUtil(object):
     def truncate_digits(cls, in_number: float, max_digits: int) -> float:
         """Restrict maximum decimal digits by removing them"""
         getcontext().prec = max_digits
-        working_num = int(Decimal(in_number) * Decimal(Decimal(10) ** Decimal(max_digits)))
+        working_num = int(Decimal(str(in_number)) * Decimal(Decimal("10") ** Decimal(str(max_digits))))
         return working_num / (10 ** max_digits)
 
 
