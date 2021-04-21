@@ -7,6 +7,7 @@ import sys
 import secrets
 import string
 import re
+from decimal import Decimal, getcontext
 
 from bitstring import BitArray
 from hashlib import blake2b
@@ -89,8 +90,10 @@ class NumberUtil(object):
     @classmethod
     def truncate_digits(cls, in_number: float, max_digits: int) -> float:
         """Restrict maximum decimal digits by removing them"""
-        working_num = int(in_number * (10 ** max_digits))
+        getcontext().prec = max_digits
+        working_num = int(Decimal(in_number) * Decimal(Decimal(10) ** Decimal(max_digits)))
         return working_num / (10 ** max_digits)
+
 
     @classmethod
     def format_float(cls, in_number: float) -> str:
