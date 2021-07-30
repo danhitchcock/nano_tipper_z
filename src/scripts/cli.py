@@ -17,7 +17,7 @@ from .sql_scripts import (
     list_messages,
     clear_messages,
 )
-from .rpc_scripts import block_count, address_pendings, all_pendings
+from .rpc_scripts import block_count, address_pendings, all_pendings, total_funds
 
 
 @click.group()
@@ -38,3 +38,4 @@ cli.add_command(all_pendings)
 cli.add_command(list_returns)
 cli.add_command(list_messages)
 cli.add_command(clear_messages)
+cli.add_command(total_funds)
