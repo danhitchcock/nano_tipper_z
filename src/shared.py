@@ -148,7 +148,11 @@ def get_subreddits():
     results = MYCURSOR.fetchall()
     MYDB.commit()
     if len(results) == 0:
-        return None
+        class MockSubreddit():
+            def comments(self):
+                return []
+        return MockSubreddit()
+
     subreddits = "+".join(result[0] for result in results)
     return REDDIT.subreddit(subreddits)
 
@@ -156,7 +160,7 @@ def get_subreddits():
 # disable for testing
 try:
     SUBREDDITS = get_subreddits()
-except AttributeError:
+except (AttributeError, mysql.connector.errors.ProgrammingError) as e:
     SUBREDDITS = None
 
 

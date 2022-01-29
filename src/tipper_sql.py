@@ -419,28 +419,10 @@ def migrate_reply_19():
     MYDB.commit()
 
 
-if __name__ == "__main__":
-    # add_subreddit("nano_tipper", True, None, "friendly")
-    # init_history()
-    # init_messages()
-    # init_projects()
-    # init_subreddits()
-    # update_to_nano()
-    # init_projects()
-    # subreddits()
-    # clear_messages()
-    sql = "DELETE FROM returns"
-    # val = (txn[0],)
-    MYCURSOR.execute(sql)
-    MYDB.commit()
-
-    # add_return_record(
-    #     username="zily88",
-    #     sql_time="2021-04-03 00:00:00",
-    #     recipient_username="zily88",
-    #     return_status="returnable",
-    #     amount=1 * 10 ** 28,
-    # )
-    # history(100)
-    # update_percentage()
-    # accounts()
+def init_tables():
+    init_history()
+    init_returns()
+    init_messages()
+    init_accounts()
+    init_subreddits()
+    init_projects()

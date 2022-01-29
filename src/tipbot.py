@@ -89,7 +89,7 @@ def auto_receive():
         except KeyError:
             pass
         except Exception as e:
-            print(e)
+            print("Autoreceive error: ",pendings, e)
 
 
 def main_loop():
