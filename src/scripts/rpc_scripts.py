@@ -50,7 +50,7 @@ def total_funds():
             num_over_10 +=1
             num_over_1+=1
             num_over_p5+=1
-        elif user_balance >=11:
+        elif user_balance >=1:
             num_over_1+=1
             num_over_p5+=1
         elif user_balance >=.5:
