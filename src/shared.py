@@ -63,7 +63,7 @@ try:
         results = requests.get(url, timeout=1)
         results = json.loads(results.text)
         USD_VALUE = float(results["USD"])
-    except requests.exceptions.ReadTimeout:
+    except Exception:
         USD_VALUE = 0
 except KeyError as e:
     LOGGER.info("Failed to read tipper.ini. Falling back to test-defaults...")
