@@ -59,5 +59,8 @@ def total_funds():
             num_zero+=1
 
     print("Total Nano: ", balance)
+    print("Total Over 10: ", num_over_10)
     print("Total Over 1: ", num_over_1)
+    print("Total Over 0.5: ", num_over_p5)
+    print("Total 0: ", num_zero)
 
