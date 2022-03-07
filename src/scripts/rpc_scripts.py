@@ -38,8 +38,13 @@ def total_funds():
     addresses = [str(result[1]) for result in myresult]
     MYDB.commit()
     balance = 0
+    num_over_1 = 0
     for username, address in zip(usernames, addresses):
         new_balance = tipper_rpc.check_balance(address)
-        balance += new_balance[0] / 10**30 + new_balance[1] / 10**30
+        user_balance =new_balance[0] / 10**30 + new_balance[1] / 10**30
+        balance += user_balance
+        if user_balance >=1:
+            num_over_1+=1
     print("Total Nano: ", balance)
+    print("Total Over 1: ", num_over_1)
 
