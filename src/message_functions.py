@@ -142,7 +142,12 @@ def handle_message(message):
         )
         return None
     message_recipient = str(message.author)
-    message_text = response + COMMENT_FOOTER
+    closing_header = "***Unfortunately this Tipbot needs to be [shut down](https://www.reddit.com/r/nano_tipper/comments/t5uo0e/tipbot_to_shut_down/?utm_source=share&utm_medium=web2x&context=3)." \
+                     " Please withdraw your funds to your own wallet by sending a PM (not a chat) to /u/nano_tipper with the text\n" \
+                     "`send nano_your_nano_address all`\n. We recommend (Natrium)[https://natrium.io/], however there are many (others)[https://hub.nano.org/i/wallets/2].\n\n" \
+                     "The bot will continue running until June 1st with this message. Post on /r/nano_tipper if you have any questions or problems, or contact /u/zily88.\n\n"
+
+    message_text = closing_header + response + COMMENT_FOOTER
     send_pm(
         message_recipient,
         subject,
@@ -731,22 +736,25 @@ def handle_send(message):
 
     # if we have a username, pull their info
     if "username" in recipient_info.keys():
-        response["recipient"] = recipient_info["username"]
-        recipient_name = recipient_info["username"]
-        recipient_info = tipper_functions.account_info(recipient_name)
-        response["status"] = 10
-        if recipient_info is None:
-            recipient_info = tipper_functions.add_new_account(response["recipient"])
-            response["status"] = 20
-        elif not recipient_info["opt_in"]:
-            response["status"] = 190
-            return response
+        response['status'] = 101
+        return response
+        # response["recipient"] = recipient_info["username"]
+        # recipient_name = recipient_info["username"]
+        # recipient_info = tipper_functions.account_info(recipient_name)
+        # response["status"] = 10
+        # if recipient_info is None:
+        #     recipient_info = tipper_functions.add_new_account(response["recipient"])
+        #     response["status"] = 20
+        # elif not recipient_info["opt_in"]:
+        #     response["status"] = 190
+        #     return response
     # check if it's an address
     else:
         # otherwise, just use the address. Everything is None except address
         recipient_info["minimum"] = 0
         response["recipient"] = recipient_info["address"]
         response["status"] = 30
+
 
     # check the send amount is above the user minimum, if a username is provided
     # if it was just an address, this would be -1
@@ -975,7 +983,7 @@ def parse_recipient_username(recipient_text):
         shared.CURRENCY == "Nano"
         and (
             recipient_text[:5].lower() == "nano_"
-            or recipient_text[:4].lower() == "xrb_"
+            or recipient_text[:4].lower() == "xrb_" or recipient_text[:4].lower() == "xno_"
         )
         or (shared.CURRENCY == "Banano" and recipient_text[:4].lower() == "ban_")
     ):

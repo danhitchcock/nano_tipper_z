@@ -58,6 +58,7 @@ def send_from_comment(message):
     40 - donated to nanocenter project
     Tip not sent
     100 - sender account does not exist
+    101 - shutting down
     110 - Amount and/or recipient not specified
     120 - could not parse send amount
     130 - below program minimum
@@ -115,6 +116,8 @@ def send_from_comment(message):
     response["subreddit_status"] = results[0][0]
     response["subreddit_minimum"] = float(results[0][1])
 
+    response['status'] = 101
+    return response
     # check that it wasn't a mistyped currency code or something
     if parsed_text[2] in EXCLUDED_REDDITORS:
         response["status"] = 140

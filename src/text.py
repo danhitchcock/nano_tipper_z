@@ -180,6 +180,9 @@ SEND_TEXT = {
         "You don't have an account yet. Please PM me with `create` in the body to "
         "make an account."
     ),
+101: (
+        "The Tipbot is (shutting down)[https://www.reddit.com/r/nano_tipper/comments/t5uo0e/tipbot_to_shut_down/]. Sends/tips to other Redditors have been disabled. Please withdraw your funds."
+    ),
     110: "You must specify an amount and a user, e.g. `send 1 nano_tipper`.",
     120: "I could not read the amount or the currency code. Is '%s' a number? This could also mean the "
     "currency converter is down.",
@@ -220,10 +223,12 @@ SEND_TEXT_MIN = {
         "ject %s)"
     ),
     100: (
-        "^(Tip not sent. Error code )^[%s](https://github.com/danhitchcock/nano_tipp"
-        "er_z#error-codes) ^- [^(Nano Tipper)](https://github.com/danhitchcock/nano_"
-        "tipper_z)"
+        "^(Sorry, the Reddit nano tipbot needs to be shut down. Please withdraw your funds)."
     ),
+101: (
+        "^(Sorry, the Reddit nano tipbot needs to be shut down. Please withdraw your funds)."
+    ),
+
 }
 
 OPT_IN = """
@@ -323,7 +328,8 @@ def make_response_text(message, response):
             response["recipient"],
             response["hash"],
         )
-    if response["status"] in [100, 110, 140, 150, 160, 190, 200]:
+
+    if response["status"] in [100, 101, 110, 140, 150, 160, 190, 200]:
         return SEND_TEXT[response["status"]]
     if response["status"] == 120:
         return SEND_TEXT[response["status"]] % response["amount"]
