@@ -1,5 +1,6 @@
 import click
 import tipper_rpc
+import time
 from shared import MYCURSOR, MYDB, to_raw
 from tipper_functions import send_pm
 
@@ -53,14 +54,15 @@ def total_funds():
                     "Tipbot shutting down. Please withdraw your funds.",
                     "Unfortunately the Reddit Nano TipBot is shutting down"
                     " (https://www.reddit.com/r/nano_tipper/comments/t5uo0e/tipbot_to_shut_down/)."
-                    " You have a balance over 1 Nano, please withdraw this to your personal account by replying"
-                    " to this messsage with:\n"
-                    "`send all nano_your_address_here`\n"
-                    "Withdraws will be disabled on June 1st. If you still have funds on the account at this time,"
+                    f" You have a balance of {balance} Nano, please withdraw this to your personal account by replying"
+                    " to this messsage with:\n\n"
+                    "`send all nano_your_personal_address_here`\n\n"
+                    " replaceing 'nano_your_personal_address_here' with your actual address."
+                    " Withdraws will be disabled on June 1st. If you still have funds on the account at this time,"
                     " please message /u/zily88 to retrieve them. In the meatime, continue following /r/nanocurrency"
                     " to see if a new Reddit TipBot is launched.")
             print(num_over_1, "Sent to ", username)
-            sleep(6)
+            time.sleep(6)
 
 
         if user_balance >=10:
