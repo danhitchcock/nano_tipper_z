@@ -54,22 +54,25 @@ def total_funds():
                     "Tipbot shutting down. Please withdraw your funds.",
                     "Unfortunately the Reddit Nano TipBot is shutting down"
                     " (https://www.reddit.com/r/nano_tipper/comments/t5uo0e/tipbot_to_shut_down/)."
-                    f" You have a balance of {balance} Nano, please withdraw this to your personal account by replying"
+                    f" You have a balance of {user_balance} Nano, please withdraw this to your personal account by replying"
                     " to this messsage with:\n\n"
                     "`send all nano_your_personal_address_here`\n\n"
-                    " replaceing 'nano_your_personal_address_here' with your actual address."
+                    " replacing 'nano_your_personal_address_here' with your actual address."
                     " Withdraws will be disabled on June 1st. If you still have funds on the account at this time,"
-                    " please message /u/zily88 to retrieve them. In the meatime, continue following /r/nanocurrency"
-                    " to see if a new Reddit TipBot is launched.")
+                    " please message /u/zily88 to retrieve them.\n\n"
+                    " It's sad to shut this down, as this was my first major programming project, but it needs"
+                    " to happen. But this isn't the end of Reddit Nano tipping, I'm confident another person will"
+                    " launch a better TipBot in the future. Stay tuned to /r/nanocurrency.")
             print(num_over_1, "Sent to ", username)
-            time.sleep(6)
-
+            time.sleep(10)
 
         if user_balance >=10:
             num_over_10 +=1
             num_over_1+=1
             num_over_p5+=1
         elif user_balance >=1:
+
+
             num_over_1+=1
             num_over_p5+=1
         elif user_balance >=.5:
