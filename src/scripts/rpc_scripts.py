@@ -63,7 +63,7 @@ def total_funds():
                     " It's sad to shut this down, as this was my first major programming project, but it needs"
                     " to happen. But this isn't the end of Reddit Nano tipping, I'm confident another person will"
                     " launch a better TipBot in the future. Stay tuned to /r/nanocurrency.")
-            print(num_over_1, "Sent to ", username)
+            print(num_over_p5, user_balance, username)
             time.sleep(10)
 
         if user_balance >=10:
