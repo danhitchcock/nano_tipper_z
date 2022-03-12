@@ -49,7 +49,14 @@ def total_funds():
         new_balance = tipper_rpc.check_balance(address)
         user_balance =new_balance[0] / 10**30 + new_balance[1] / 10**30
         balance += user_balance
-        if username == "zily88":
+        if user_balance >=10:
+            num_over_10 +=1
+            num_over_1+=1
+            num_over_p5+=1
+        elif user_balance >=1:
+            num_over_1+=1
+            num_over_p5+=1
+        elif user_balance >=.5:
             send_pm(username,
                     "Tipbot shutting down. Please withdraw your funds.",
                     "Unfortunately the Reddit Nano TipBot is shutting down"
@@ -65,17 +72,6 @@ def total_funds():
                     " launch a better TipBot in the future. Stay tuned to /r/nanocurrency.")
             print(num_over_p5, user_balance, username)
             time.sleep(10)
-
-        if user_balance >=10:
-            num_over_10 +=1
-            num_over_1+=1
-            num_over_p5+=1
-        elif user_balance >=1:
-
-
-            num_over_1+=1
-            num_over_p5+=1
-        elif user_balance >=.5:
             num_over_p5+=1
         if user_balance <=.0000001:
             num_zero+=1
