@@ -37,7 +37,8 @@ def stream_comments_messages():
     :return:
     """
     previous_time = time.time()
-    previous_comments = {comment for comment in shared.SUBREDDITS.comments()}
+    # previous_comments = {comment for comment in shared.SUBREDDITS.comments()}
+    previous_comments = set()
     previous_messages = {message for message in REDDIT.inbox.all(limit=25)}
     previous_all = previous_comments.union(previous_messages)
 
@@ -49,7 +50,8 @@ def stream_comments_messages():
         previous_time = time.time()
 
         # check for new comments
-        updated_comments = {comment for comment in shared.SUBREDDITS.comments()}
+        # updated_comments = {comment for comment in shared.SUBREDDITS.comments()}
+        updated_comments = set()
         updated_messages = {message for message in REDDIT.inbox.all(limit=25)}
         updated_all = updated_comments.union(updated_messages)
         new = updated_all - previous_all
