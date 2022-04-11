@@ -60,9 +60,7 @@ def total_funds():
             num_over_p5+=1
 
         # for everyone over .5
-        # if user_balance >=0:
-            # avoid accidental double sends
-        if username in ['zily88']:
+        if user_balance >=.01:
             send_pm(username,
                     "Tipbot shutting down. Please withdraw your funds.",
                     "Unfortunately the Reddit Nano TipBot is shutting down"
@@ -75,9 +73,9 @@ def total_funds():
                     " please message /u/zily88 to retrieve them.\n\n"
                     " Also, a new tipbot (not run by me, I am not liable for it) has been deployed and can be found here"
                     " (here)[https://github.com/playnano/nano_tips]. As with any crypto project please do your own research before using it, and I recommend keeping only small amounts on the bot."
-                    " If you have an account with the new bot, you may send to it using the new bot address as your personal address.\n\n")
+                    " If you have an account with the new bot, you may send to it using the new bot address, using it as your personal address.\n\n")
             print(num_over_1, user_balance, username)
-            time.sleep(10)
+            time.sleep(15)
 
 
         if user_balance <=.0000001:
