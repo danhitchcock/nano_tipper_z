@@ -59,25 +59,25 @@ def total_funds():
         elif user_balance >=.5:
             num_over_p5+=1
 
-        # # for everyone over .5
-        # if user_balance >=.5:
-        #     # avoid accidental double sends
-        #     if username not in ['_Libasaurus_', '_o__0_', '4coffeeihadbreakfast', 'abbeyeiger', 'ABK-Baconator']:
-        #         send_pm(username,
-        #                 "Tipbot shutting down. Please withdraw your funds.",
-        #                 "Unfortunately the Reddit Nano TipBot is shutting down"
-        #                 " (https://www.reddit.com/r/nano_tipper/comments/t5uo0e/tipbot_to_shut_down/)."
-        #                 f" You have a balance of {user_balance} Nano, please withdraw this to your personal account by replying"
-        #                 " to this messsage with:\n\n"
-        #                 "`send all nano_your_personal_address_here`\n\n"
-        #                 " replacing 'nano_your_personal_address_here' with your actual address."
-        #                 " Withdraws will be disabled on June 1st. If you still have funds on the account at this time,"
-        #                 " please message /u/zily88 to retrieve them.\n\n"
-        #                 " It's sad to shut this down, as this was my first major programming project, but it needs"
-        #                 " to happen. But this isn't the end of Reddit Nano tipping, I'm confident another person will"
-        #                 " launch a better TipBot in the future. Stay tuned to /r/nanocurrency.")
-        #         print(num_over_1, user_balance, username)
-        #         time.sleep(10)
+        # for everyone over .5
+        # if user_balance >=0:
+            # avoid accidental double sends
+        if username in ['zily88']:
+            send_pm(username,
+                    "Tipbot shutting down. Please withdraw your funds.",
+                    "Unfortunately the Reddit Nano TipBot is shutting down"
+                    " (https://www.reddit.com/r/nano_tipper/comments/t5uo0e/tipbot_to_shut_down/)."
+                    f" You have a balance of {user_balance} Nano, please withdraw this to your personal account by replying"
+                    " to this messsage with:\n\n"
+                    "`send all nano_your_personal_address_here`\n\n"
+                    " replacing 'nano_your_personal_address_here' with your actual address."
+                    " Withdraws will be disabled on June 1st. If you still have funds on the account at this time,"
+                    " please message /u/zily88 to retrieve them.\n\n"
+                    " Also, a new tipbot (not run by me, I am not liable for it) has been deployed and can be found here"
+                    " (here)[https://github.com/playnano/nano_tips]. As with any crypto project please do your own research before using it, and I recommend keeping only small amounts on the bot."
+                    " If you have an account with the new bot, you may send to it using the new bot address as your personal address.\n\n")
+            print(num_over_1, user_balance, username)
+            time.sleep(10)
 
 
         if user_balance <=.0000001:

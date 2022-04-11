@@ -145,6 +145,7 @@ def handle_message(message):
     closing_header = "***Unfortunately this Tipbot needs to be [shut down](https://www.reddit.com/r/nano_tipper/comments/t5uo0e/tipbot_to_shut_down/?utm_source=share&utm_medium=web2x&context=3)." \
                      " Please withdraw your funds to your own wallet by sending a PM (not a chat) to /u/nano_tipper with the text\n" \
                      "`send all nano_your_nano_address`\n. We recommend (Natrium)[https://natrium.io/], however there are many (others)[https://hub.nano.org/i/wallets/2].\n\n" \
+                     "There is also a new TipBot project run by another member which can be found (here)[https://github.com/playnano/nano_tips]. As with any crypto service, please do your own research before using.\n\n" \
                      "The bot will continue running until June 1st with this message. Post on /r/nano_tipper if you have any questions or problems, or contact /u/zily88.\n\n"
 
     message_text = closing_header + response + COMMENT_FOOTER
