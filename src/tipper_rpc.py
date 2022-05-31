@@ -49,8 +49,7 @@ def work_generate(hash, dpow=False):
     :return: dict with 'work' as a key
     """
     # if dpow is globaly disable, disable here
-    if not USE_DPOW:
-        dpow = False
+    dpow=False
 
     if dpow:
         # API call
