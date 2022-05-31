@@ -130,7 +130,7 @@ def main_loop():
         # run the receive script every 20 seconds
         if time.time() - receive_timer > 20:
             receive_timer = time.time()
-            # auto_receive()
+            auto_receive()
 
         # refresh subreddit status every 5 minutes
         if time.time() - subreddit_timer > 300:
