@@ -332,9 +332,11 @@ def backup_keys():
     MYCURSOR.execute(sql)
     results = MYCURSOR.fetchall()
     MYDB.commit()
-    with open("../backup", "w") as f:
+    with open("../backup_keys", "w") as f:
         for result in results:
-            f.write(result[0] + "," + result[1] + "," + result[2] + "\n")
+            for r in result:
+                f.write(str(r) + ";")
+            f.write("\n")
 
 
 def backup_accounts():
@@ -342,7 +344,7 @@ def backup_accounts():
     MYCURSOR.execute(sql)
     results = MYCURSOR.fetchall()
     MYDB.commit()
-    with open("../backup_accounts", "w") as f:
+    with open("../backup_accounts.csv", "w") as f:
         for result in results:
             for r in result:
                 f.write(str(r) + ";")
@@ -354,11 +356,53 @@ def backup_history():
     MYCURSOR.execute(sql)
     results = MYCURSOR.fetchall()
     MYDB.commit()
-    with open("../backup_history", "w") as f:
+    with open("../backup_history.csv", "w") as f:
         for result in results:
             for r in result:
                 f.write(str(r) + ";")
             f.write("\n")
+
+
+def backup_subreddits():
+    sql = "SELECT * FROM subreddits"
+    MYCURSOR.execute(sql)
+    results = MYCURSOR.fetchall()
+    MYDB.commit()
+    with open("../backup_subreddits.csv", "w") as f:
+        for result in results:
+            for r in result:
+                f.write(str(r) + ";")
+            f.write("\n")
+
+def backup_returns():
+    sql = "SELECT * FROM returns"
+    MYCURSOR.execute(sql)
+    results = MYCURSOR.fetchall()
+    MYDB.commit()
+    with open("../backup_returns.csv", "w") as f:
+        for result in results:
+            for r in result:
+                f.write(str(r) + ";")
+            f.write("\n")
+
+def backup_returns():
+    sql = "SELECT * FROM projects"
+    MYCURSOR.execute(sql)
+    results = MYCURSOR.fetchall()
+    MYDB.commit()
+    with open("../backup_projects.csv", "w") as f:
+        for result in results:
+            for r in result:
+                f.write(str(r) + ";")
+            f.write("\n")
+
+def backup_all():
+    backup_accounts()
+    backup_subreddits()
+    backup_history()
+    backup_returns()
+    backup_projects()
+
 
 
 def update_percentage():
