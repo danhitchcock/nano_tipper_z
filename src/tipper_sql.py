@@ -332,7 +332,7 @@ def backup_keys():
     MYCURSOR.execute(sql)
     results = MYCURSOR.fetchall()
     MYDB.commit()
-    with open("../backup_keys", "w") as f:
+    with open("backup_keys", "w") as f:
         for result in results:
             for r in result:
                 f.write(str(r) + ";")
@@ -344,7 +344,7 @@ def backup_accounts():
     MYCURSOR.execute(sql)
     results = MYCURSOR.fetchall()
     MYDB.commit()
-    with open("../backup_accounts.csv", "w") as f:
+    with open("backup_accounts.csv", "w") as f:
         for result in results:
             for r in result:
                 f.write(str(r) + ";")
@@ -356,7 +356,7 @@ def backup_history():
     MYCURSOR.execute(sql)
     results = MYCURSOR.fetchall()
     MYDB.commit()
-    with open("../backup_history.csv", "w") as f:
+    with open("backup_history.csv", "w") as f:
         for result in results:
             for r in result:
                 f.write(str(r) + ";")
@@ -368,7 +368,7 @@ def backup_subreddits():
     MYCURSOR.execute(sql)
     results = MYCURSOR.fetchall()
     MYDB.commit()
-    with open("../backup_subreddits.csv", "w") as f:
+    with open("backup_subreddits.csv", "w") as f:
         for result in results:
             for r in result:
                 f.write(str(r) + ";")
@@ -379,7 +379,7 @@ def backup_returns():
     MYCURSOR.execute(sql)
     results = MYCURSOR.fetchall()
     MYDB.commit()
-    with open("../backup_returns.csv", "w") as f:
+    with open("backup_returns.csv", "w") as f:
         for result in results:
             for r in result:
                 f.write(str(r) + ";")
@@ -390,7 +390,7 @@ def backup_projects():
     MYCURSOR.execute(sql)
     results = MYCURSOR.fetchall()
     MYDB.commit()
-    with open("../backup_projects.csv", "w") as f:
+    with open("backup_projects.csv", "w") as f:
         for result in results:
             for r in result:
                 f.write(str(r) + ";")
