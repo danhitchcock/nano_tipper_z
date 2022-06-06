@@ -385,7 +385,7 @@ def backup_returns():
                 f.write(str(r) + ";")
             f.write("\n")
 
-def backup_returns():
+def backup_projects():
     sql = "SELECT * FROM projects"
     MYCURSOR.execute(sql)
     results = MYCURSOR.fetchall()
